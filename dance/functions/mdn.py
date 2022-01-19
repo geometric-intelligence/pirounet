@@ -2,7 +2,7 @@
 from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, merge, concatenate, Dense, LSTM, CuDNNLSTM
-from keras.engine.topology import Layer
+from tensorflow.python.keras.layers import Layer
 from keras import optimizers
 from keras import backend as K
 import tensorflow_probability as tfp
