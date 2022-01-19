@@ -1,0 +1,9 @@
+*.pyc
+*-checkpoint.py
+.ipynb_checkpoints/*
+functions/.ipynb_checkpoints/*
+*__pycache__/*
+*.h5
+*.log
+*.json
+*.npy
