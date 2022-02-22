@@ -1,4 +1,4 @@
-# modified from
+# Modified from
 # https://towardsdatascience.com/implementation-differences-in-lstm-layers-tensorflow-vs-pytorch-77a31d742f74
 import math
 import os
@@ -41,7 +41,8 @@ class LstmEncoder(torch.nn.Module):
         print("starting the forward of encoder. the first step is calling layer lstm1")
         h1, (h1_T, c1_T) = self.lstm1(inputs)
         print(
-            "done layer lstm1. It returned h1 of shape {} and h1_T of shape{}".format(
+            "done layer lstm1."
+            " It returned h1 of shape {} and h1_T of shape{}".format(
                 h1.shape, h1_T.shape
             )
         )
@@ -51,7 +52,8 @@ class LstmEncoder(torch.nn.Module):
             print("this is loop iteration {}. Calling layer lstm2".format(i))
             h2, (h2_T, c2_T) = self.lstm2(h1)
             print(
-                "done layer lstm 2. lstm2 returns h2 of shape {} and h2_T of shape {}".format(
+                "done layer lstm 2. "
+                "lstm2 returns h2 of shape {} and h2_T of shape {}".format(
                     h2.shape, h2_T.shape
                 )
             )
@@ -175,13 +177,16 @@ class LstmVAE(torch.nn.Module):
 
     def elbo(self, x_in, x_out, z, q_param, p_param=None):
         print(
-            "x_in has shape {} and x_out has shape {}".format(x_in.shape, x_out.shape)
+            "x_in has shape {}"
+            " and x_out has shape {}".format(x_in.shape, x_out.shape)
         )
-        recon_loss = torch.sum(torch.norm((x_in - x_out)) ** 2)  # x_out is sequence
+        recon_loss = torch.sum(torch.norm((x_in - x_out)) ** 2)
+        # x_out is sequence
         # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
 
         regul_loss = self._kld(z, q_param, p_param)
-        # -0.5*K.mean(K.sum(1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
+        # -0.5*K.mean(K.sum(
+        # 1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
 
         return recon_loss + regul_loss
 
@@ -211,13 +216,15 @@ class LstmVAE(torch.nn.Module):
 #     # tf.set_random_seed(1)
 #     # np.random.seed(1)
 #     # identify available GPU's
-#     #     gpus = K.tensorflow_backend._get_available_gpus() # works with TF 1 (?)
+#     #     gpus = K.tensorflow_backend.
+# _get_available_gpus() # works with TF 1 (?)
 #     #     gpus = tf.config.experimental.list_physical_devices('GPU') # works with TF 2
 
 #     os.environ[
 #         "CUDA_VISIBLE_DEVICES"
 #     ] = "3"  # pick a number < 4 on ML4HEP; < 3 on Voltan
-#     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction=0.5)
+#     gpu_options = tf.GPUOptions(
+# allow_growth=True, per_process_gpu_memory_fraction=0.5)
 #     sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 #     # allow dynamic GPU memory allocation
 #     config = tf.compat.v1.ConfigProto()
