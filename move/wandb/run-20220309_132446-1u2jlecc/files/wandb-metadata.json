@@ -1,0 +1,24 @@
+{
+    "os": "Linux-3.10.0-957.27.2.el7.x86_64-x86_64-with-centos-7.6.1810-Core",
+    "python": "3.7.8",
+    "heartbeatAt": "2022-03-09T21:24:58.367298",
+    "startedAt": "2022-03-09T21:24:46.497502",
+    "docker": null,
+    "gpu": "Tesla V100-PCIE-32GB",
+    "gpu_count": 2,
+    "cpu_count": 32,
+    "cuda": "10.1.168",
+    "args": [],
+    "state": "running",
+    "program": "main.py",
+    "codePath": "move/main.py",
+    "git": {
+        "remote": "git@github.com:bioshape-lab/move.git",
+        "commit": "ef757df10aa458d81609942d84af97b2f81d1b33"
+    },
+    "email": "papillon@umail.ucsb.edu",
+    "root": "/home/papillon/move",
+    "host": "pod-gpu.podcluster",
+    "username": "papillon",
+    "executable": "/home/papillon/anaconda3/bin/python"
+}
