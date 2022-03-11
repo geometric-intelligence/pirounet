@@ -1,7 +1,7 @@
 .DS_Store
 .vscode/*
 Anaconda3-5.3.1-Linux-x86_64.sh
-.wandb
+*.wandb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
