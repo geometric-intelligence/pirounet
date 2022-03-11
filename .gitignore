@@ -1,7 +1,7 @@
-.DS_Store
+_Store
 .vscode/*
 Anaconda3-5.3.1-Linux-x86_64.sh
-move/wandb/
+move/wandb
 
 
 # Byte-compiled / optimized / DLL files
