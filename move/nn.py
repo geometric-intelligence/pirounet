@@ -10,8 +10,11 @@ import torch.nn as nn
 from torch.nn import init
 from torch.autograd import Variable
 import wandb
+from matplotlib import animation
 
 from config import *
+from artifact import *
+
 
 
 class LstmEncoder(torch.nn.Module):
@@ -43,7 +46,11 @@ class LstmEncoder(torch.nn.Module):
         inputs has shape=[batch_size, seq_len, input_features].
         """
         # print("starting the forward of encoder. the first step is calling layer lstm1")
+        # print("input to encoder should have [8,128,159]")
+        # print(inputs.shape)
         h1, (h1_T, c1_T) = self.lstm1(inputs)
+        # print('h after linear encoder layer')
+        # print(h1.shape)
         # print(
         #     "done layer lstm1."
         #     " It returned h1 of shape {} and h1_T of shape{}".format(
@@ -54,7 +61,10 @@ class LstmEncoder(torch.nn.Module):
         # print("Now starting the loop of {}-1 lstm layers".format(self.n_layers))
         for i in range(self.n_layers - 1):
             # print("this is loop iteration {}. Calling layer lstm2".format(i))
-            h2, (h2_T, c2_T) = self.lstm2(h1)
+            h1, (h1_T, c1_T) = self.lstm2(h1)
+            # print(' h and last h of second lstm encoder')
+            # print(h1.shape, h1_T.shape)
+
             # # print(
             #     "done layer lstm 2. "
             #     "lstm2 returns h2 of shape {} and h2_T of shape {}".format(
@@ -64,12 +74,10 @@ class LstmEncoder(torch.nn.Module):
 
         # print("Now computing the encoder output.")
         # print("calling mean_block")
-        z_mean = self.mean_block(h2_T)
-        # print("z_mean has shape {}".format(z_mean.shape))
-        z_logvar = self.logvar_block(h2_T)
-        # print("z_logvar has shape {}".format(z_logvar.shape))
+        h1_T_batchfirst = h1_T.squeeze(axis=0)       
+        z_mean = self.mean_block(h1_T_batchfirst)
+        z_logvar = self.logvar_block(h1_T_batchfirst)
         z_sample = self.reparametrize(z_mean, z_logvar)
-        # print("z_sample has shape {}".format(z_sample.shape))
 
         # print("encoder is done")
         return z_sample, z_mean, z_logvar
@@ -83,6 +91,7 @@ class LstmDecoder(torch.nn.Module):
         h_features_loop=32,
         latent_dim=32,
         seq_len=128,
+        negative_slope=0.2,
     ):
         super().__init__()
         self.latent_dim = latent_dim
@@ -90,7 +99,7 @@ class LstmDecoder(torch.nn.Module):
         self.n_layers = n_layers
 
         self.linear = torch.nn.Linear(latent_dim, h_features_loop)
-        self.relu = torch.nn.ReLU()
+        self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
 
         self.lstm_loop = torch.nn.LSTM(
             input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
@@ -103,8 +112,13 @@ class LstmDecoder(torch.nn.Module):
     def forward(self, inputs):
 
         h = self.linear(inputs)
-        h = self.relu(h)
-        h = h.repeat(self.seq_len, 1, 1)
+
+        h = self.leakyrelu(h)
+
+        #assert len(h.shape) == 2, h.shape
+        h = h.reshape((h.shape[0], 1, h.shape[-1]))  # ,self.seq_len, 1, 1)
+
+        h = h.repeat(1, self.seq_len, 1)
 
         for i in range(self.n_layers - 1):
             h, (h_T, c_T) = self.lstm_loop(h)
@@ -116,7 +130,7 @@ class LstmDecoder(torch.nn.Module):
 
 def log_gaussian(x, mu, log_var):
     """
-    Returns the log pdf of a normal distribution parametrised
+    Returns the log pdf of normal distribution parametrised
     by mu and log_var evaluated at x.
     :param x: point to evaluate
     :param mu: mean of distribution
@@ -141,7 +155,7 @@ def log_standard_gaussian(x):
 
 
 class LstmVAE(torch.nn.Module):
-    def __init__(self, input_features=3 * 53):
+    def __init__(self, input_features=3 * 53) : #, h_features_loop):
         """
         Variational Autoencoder model
         consisting of an (LSTM+encoder)/(decoder+LSTM) pair.
@@ -149,7 +163,7 @@ class LstmVAE(torch.nn.Module):
         """
         super(LstmVAE, self).__init__()
 
-        self.encoder = LstmEncoder(input_features=input_features)
+        self.encoder = LstmEncoder(input_features=input_features)  # , h_feature_loop=...
         self.decoder = LstmDecoder()
         self.kl_divergence = 0
 
@@ -303,12 +317,12 @@ def load_data(pattern="data/vae_data/mariel_*.npy"):
 ########################################################################
 #TRAINING FUNCTIONS
 
-def get_loss(model, x, x_recon_batch_first, z, z_mu, z_logvar):
-    loss = torch.mean(model.elbo(x, x_recon_batch_first, z, (z_mu, z_logvar)))
+def get_loss(model, x, x_recon, z, z_mu, z_logvar):
+    loss = torch.mean(model.elbo(x, x_recon, z, (z_mu, z_logvar)))
     return loss
 
 
-def run_train(model, data_train_torch, data_valid_torch, get_loss, optimizer, epochs):
+def run_train(model, data_train_torch, data_valid_torch, data_test_torch, get_loss, optimizer, epochs):
 
     # Run training and track with wandb
     example_ct = 0  # number of examples seen
@@ -337,7 +351,7 @@ def run_train(model, data_train_torch, data_valid_torch, get_loss, optimizer, ep
 
         loss_epoch /= batch_ct # get average loss/epoch
 
-        #valid
+        #Run Validation
         model = model.eval()
 
         loss_valid_epoch = 0
@@ -355,6 +369,30 @@ def run_train(model, data_train_torch, data_valid_torch, get_loss, optimizer, ep
             if ((batch_ct_valid + 1) % 25) == 0:
                 valid_log(loss_valid, example_ct_valid, epoch)            
         
+        #Run testing
+        #Make and log artifact at the end of each epoch (stick-figure video)
+        index_of_chosen_seq = np.random.randint(0,data_test_torch.dataset.shape[0])
+        print('INDEX OF TESTING SEQUENCE IS {}'.format(index_of_chosen_seq))
+        i = 0
+        for x in data_test_torch:
+            i += 1
+
+            if i == index_of_chosen_seq:
+                print('Found test sequence. Running it through model')
+                x = Variable(x)
+                x = x.to(device)
+                x_input = x
+                x_recon, z, z_mu, z_logvar = model(x.float())
+                print('Ran it through model')
+
+            else:            
+                pass
+
+        x_input_formatted = x_input.reshape((128,53,3))
+        x_recon_formatted = x_recon.reshape((128,53,3))
+
+        anim = animate_stick(x_input_formatted, epoch=epoch, index=index_of_chosen_seq, ghost=x_recon_formatted, dot_alpha=0.7, ghost_shift=0.2, figsize=(12,8))
+        print('Called animation function for epoch {}'.format(epoch+1))
 
     print("done training")
 
@@ -363,8 +401,8 @@ def train_batch(x, model, optimizer, get_loss):
     
     #Forward pass
     x_recon, z, z_mu, z_logvar = model(x.float())
-    x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    loss = get_loss(model, x, x_recon_batch_first, z, z_mu, z_logvar)
+    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
+    loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
 
     #Backward pass
     optimizer.zero_grad()
@@ -384,8 +422,8 @@ def valid_batch(x, model, get_loss):
 
     #Forward pass
     x_recon, z, z_mu, z_logvar = model(x.float())
-    x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    valid_loss = get_loss(model, x, x_recon_batch_first, z, z_mu, z_logvar)
+    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
+    valid_loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
 
     return valid_loss
 
