@@ -1,0 +1,40 @@
+name: "Lint"
+
+on:
+  push:
+    branches: [main,github-actions-test]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        python-version: [3.9]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Linting
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.python-version}}
+
+      - name: install dependencies [pip]
+        run:  |
+          pip install --upgrade pip setuptools wheel
+          pip install -q -r dev-requirements.txt
+          pip install -e .
+      - name: Setup flake8 annotations
+        uses: rbialon/flake8-annotations@v1
+      
+      - name: lint [flake8]
+        run: |
+          flake8 move/
+      - name : lint [black and isort]
+        run: |
+          black . --check
+          isort --profile black --check .
