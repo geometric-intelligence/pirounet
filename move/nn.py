@@ -19,7 +19,11 @@ from artifact import *
 
 class LstmEncoder(torch.nn.Module):
     def __init__(
-        self, n_layers=2, input_features=3 * 53, h_features_loop=32, latent_dim=32
+        self, 
+        n_layers,
+        input_features, 
+        h_features_loop,
+        latent_dim
     ):
         super().__init__()
 
@@ -86,12 +90,12 @@ class LstmEncoder(torch.nn.Module):
 class LstmDecoder(torch.nn.Module):
     def __init__(
         self,
-        n_layers=2,
-        output_features=3 * 53,
-        h_features_loop=32,
-        latent_dim=32,
-        seq_len=128,
-        negative_slope=0.2,
+        n_layers,
+        output_features,
+        h_features_loop,
+        latent_dim,
+        seq_len,
+        negative_slope,
     ):
         super().__init__()
         self.latent_dim = latent_dim
@@ -155,7 +159,17 @@ def log_standard_gaussian(x):
 
 
 class LstmVAE(torch.nn.Module):
-    def __init__(self, input_features=3 * 53, kl_weight=0) : #, h_features_loop):
+    def __init__(
+        self, 
+        n_layers=2, 
+        input_features=3 * 53, 
+        h_features_loop=32, 
+        latent_dim=32, 
+        kl_weight=0,
+        output_features=3 * 53,
+        seq_len=128,
+        negative_slope=0.2
+        ) : 
         """
         Variational Autoencoder model
         consisting of an (LSTM+encoder)/(decoder+LSTM) pair.
@@ -163,8 +177,8 @@ class LstmVAE(torch.nn.Module):
         """
         super(LstmVAE, self).__init__()
 
-        self.encoder = LstmEncoder(input_features=input_features)  # , h_feature_loop=...
-        self.decoder = LstmDecoder()
+        self.encoder = LstmEncoder(n_layers=n_layers, input_features=input_features, h_features_loop=h_features_loop, latent_dim=latent_dim)
+        self.decoder = LstmDecoder(n_layers=n_layers, output_features=output_features, h_features_loop=h_features_loop, latent_dim=latent_dim, seq_len=seq_len, negative_slope=negative_slope)
         self.kl_divergence = 0
         self.kl_weight = kl_weight
 
@@ -174,7 +188,7 @@ class LstmVAE(torch.nn.Module):
                 if m.bias is not None:  # initialize b in W*x+b
                     m.bias.data.zero_()
 
-    def _kld(self, z, q_param, p_param=None):
+    def _kld(self, q_param, p_param=None):
         """
         Computes the KL-divergence of
         some element z.
@@ -207,7 +221,7 @@ class LstmVAE(torch.nn.Module):
         # -0.5*K.mean(K.sum(
         # 1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
 
-        return recon_loss + kl_weight*regul_loss
+        return recon_loss + self.kl_weight*regul_loss
 
     def add_flow(self, flow):
         self.flow = flow

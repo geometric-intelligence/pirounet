@@ -40,9 +40,14 @@ if SERVER == 'pod':
 
 
 logging.info('Initialize model')
-my_encoder = LstmEncoder(input_features=3*53, h_features_loop=32, latent_dim=32).to(device)
-my_decoder = LstmDecoder(n_layers=2, output_features=3*53, h_features_loop=32, latent_dim=32, seq_len=128).to(device)
-model = LstmVAE().to(device)  # LstmVAE(input_features, h_features_loop=...)
+model = LstmVAE(n_layers=2, 
+        input_features=3 * 53, 
+        h_features_loop=32, 
+        latent_dim=32, 
+        kl_weight=0,
+        output_features=3 * 53,
+        seq_len=128,
+        negative_slope=0.2).to(device) 
 
 logging.info('Load data')
 ds_all, ds_all_centered, datasets, datasets_centered, ds_counts = load_data()
