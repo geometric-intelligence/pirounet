@@ -15,7 +15,8 @@ from config import *
 
 logging.info('Initialize WandB project')
 
-wandb.init(project="lstm_vae", entity="mathildepapillon", settings=wandb.Settings(start_method="thread"))
+
+wandb.init(project="lstm_vae_spring", entity="mathildepapillon")
 wandb.config = {
   "learning_rate": learning_rate,
   "epochs": epochs,
@@ -39,6 +40,7 @@ if SERVER == 'pod':
     warnings.filterwarnings('ignore')
 
 
+
 logging.info('Initialize model')
 model = LstmVAE(n_layers=2, 
         input_features=3 * 53, 
@@ -48,6 +50,9 @@ model = LstmVAE(n_layers=2,
         output_features=3 * 53,
         seq_len=128,
         negative_slope=0.2).to(device) 
+
+pytorch_total_params = sum(p.numel() for p in model.parameters())
+
 
 logging.info('Load data')
 ds_all, ds_all_centered, datasets, datasets_centered, ds_counts = load_data()

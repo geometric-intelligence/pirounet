@@ -188,7 +188,7 @@ class LstmVAE(torch.nn.Module):
                 if m.bias is not None:  # initialize b in W*x+b
                     m.bias.data.zero_()
 
-    def _kld(self, q_param, p_param=None):
+    def _kld(self, z, q_param, p_param=None):
         """
         Computes the KL-divergence of
         some element z.
