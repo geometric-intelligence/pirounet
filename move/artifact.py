@@ -215,5 +215,3 @@ def animate_stick(seq, epoch, index, ghost=None, ghost_shift=0, figsize=None, zc
 
 
     return anim
-
-
