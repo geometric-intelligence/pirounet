@@ -155,7 +155,7 @@ def log_standard_gaussian(x):
 
 
 class LstmVAE(torch.nn.Module):
-    def __init__(self, input_features=3 * 53) : #, h_features_loop):
+    def __init__(self, input_features=3 * 53, kl_weight=0) : #, h_features_loop):
         """
         Variational Autoencoder model
         consisting of an (LSTM+encoder)/(decoder+LSTM) pair.
@@ -166,6 +166,7 @@ class LstmVAE(torch.nn.Module):
         self.encoder = LstmEncoder(input_features=input_features)  # , h_feature_loop=...
         self.decoder = LstmDecoder()
         self.kl_divergence = 0
+        self.kl_weight = kl_weight
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -206,7 +207,7 @@ class LstmVAE(torch.nn.Module):
         # -0.5*K.mean(K.sum(
         # 1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
 
-        return recon_loss + regul_loss
+        return recon_loss + kl_weight*regul_loss
 
     def add_flow(self, flow):
         self.flow = flow

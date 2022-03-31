@@ -15,7 +15,7 @@ from config import *
 
 logging.info('Initialize WandB project')
 
-wandb.init(project="lstm_vae", entity="mathildepapillon", settings=wandb.Settings(start_method="thread"))
+wandb.init(project="lstm_vae", entity="mathildepapillon", settings=wandb.Settings(start_method="fork"))
 wandb.config = {
   "learning_rate": learning_rate,
   "epochs": epochs,
