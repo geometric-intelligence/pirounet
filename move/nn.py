@@ -253,7 +253,7 @@ class LstmVAE(torch.nn.Module):
 #     return ()
 
 
-def load_data(pattern="data/vae_data/mariel_*.npy"):
+def load_data(pattern="data/mariel_*.npy"):
     # load up the six datasets, performing some minimal preprocessing beforehand
     datasets = {}
     ds_all = []
