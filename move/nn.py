@@ -279,7 +279,7 @@ def load_data(pattern="data/mariel_*.npy"):
     for f in sorted(glob(pattern)):
         ds_name = os.path.basename(f)[7:-4]
         # print("loading:", ds_name)
-        ds = np.load(f).transpose((1, 0, 2))
+        ds = np.load(f, encoding='latin1', allow_pickle=True).transpose((1, 0, 2))
         ds = ds[500:-500, point_mask]
         # print("\t Shape:", ds.shape)
 

@@ -3,9 +3,9 @@ import torch
 
 #Set the configuration of the model 
 logging.info('Confirgure the run')
-batch_size = 5
+batch_size = 8
 learning_rate= 3e-4
-epochs = 20
+epochs = 120
 seq_len=128
 negative_slope = 0 #LeakyRelu
 
