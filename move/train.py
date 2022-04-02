@@ -124,8 +124,8 @@ def train_batch(x, model, optimizer, get_loss):
 
 
 def train_log(loss, example_ct, epoch):
-    # Where the magic happens
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
+    """Log epoch and train loss into wandb."""
+    # wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
     print("Loss after {} examples: {}".format(str(example_ct).zfill(5), loss))
 
 
@@ -142,4 +142,4 @@ def valid_batch(x, model, get_loss):
 
 def valid_log(valid_loss, example_ct, epoch):
     # Where the magic happens
-    wandb.log({"valid_loss": valid_loss})
+    # wandb.log({"valid_loss": valid_loss})
