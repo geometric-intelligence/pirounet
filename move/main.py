@@ -3,11 +3,13 @@ import os
 import sys
 import warnings
 
-import default_config
-import nn
 import numpy as np
 import torch
 import wandb
+
+import default_config
+import nn
+import train
 
 WANDB = False
 
@@ -28,12 +30,13 @@ if WANDB:
     config = wandb.config
 
 else:
-    config = {
-        "learning_rate": default_config.learning_rate,
-        "epochs": default_config.epochs,
-        "batch_size": default_config.batch_size,
-        "seq_len": default_config.seq_len,
-    }
+    class Config:
+        def __init__(self):
+            self.learning_rate = default_config.learning_rate
+            self.epochs = default_config.epochs
+            self.batch_size = default_config.batch_size
+            self.seq_len = default_config.seq_len
+    config = Config()
 
 logging.info(f"Config: {config}")
 
@@ -95,16 +98,16 @@ data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1, num_workers
 
 logging.info("Train/validate and record loss")
 if WANDB:
-    wandb.watch(model, nn.get_loss, log="all", log_freq=100)
+    wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
 )
-nn.run_train(
+train.run_train(
     model,
     data_train_torch,
     data_valid_torch,
     data_test_torch,
-    nn.get_loss,
+    train.get_loss,
     optimizer,
     config.epochs,
 )
