@@ -3,6 +3,7 @@ import os
 import sys
 import warnings
 
+
 import numpy as np
 import torch
 import wandb
@@ -11,32 +12,29 @@ import default_config
 import nn
 import train
 
-WANDB = False
-
 logging.info("Initialize WandB project")
 
-if WANDB:
-    wandb.init(
-        project="new",
-        entity="ninamiolane",
-        # settings=wandb.Settings(start_method="thread"),
-        config={
-            "learning_rate": default_config.learning_rate,
-            "epochs": default_config.epochs,
-            "batch_size": default_config.batch_size,
-            "seq_len": default_config.seq_len,
-        },
-    )
-    config = wandb.config
+wandb.init(
+    project="new",
+    entity="ninamiolane",
+    # settings=wandb.Settings(start_method="thread"),
+    config={
+        "learning_rate": default_config.learning_rate,
+        "epochs": default_config.epochs,
+        "batch_size": default_config.batch_size,
+        "seq_len": default_config.seq_len,
+    },
+)
+config = wandb.config
 
-else:
-    class Config:
-        def __init__(self):
-            self.learning_rate = default_config.learning_rate
-            self.epochs = default_config.epochs
-            self.batch_size = default_config.batch_size
-            self.seq_len = default_config.seq_len
-    config = Config()
+# else:
+#     class Config:
+#         def __init__(self):
+#             self.learning_rate = default_config.learning_rate
+#             self.epochs = default_config.epochs
+#             self.batch_size = default_config.batch_size
+#             self.seq_len = default_config.seq_len
+#     config = Config()
 
 logging.info(f"Config: {config}")
 
@@ -58,7 +56,7 @@ if SERVER == "pod":
 
 logging.info("Initialize model")
 model = nn.LstmVAE(
-    n_layers=2,
+    n_layers=20,
     input_features=3 * 53,
     h_features_loop=32,
     latent_dim=32,
@@ -88,20 +86,21 @@ train_ds = seq_data[ninety_perc:, :, :]
 
 logging.info("Make torch tensor in batches")
 data_train_torch = torch.utils.data.DataLoader(
-    train_ds, batch_size=config.batch_size, num_workers=2
+    train_ds, batch_size=config.batch_size
 )
 data_valid_torch = torch.utils.data.DataLoader(
-    valid_ds, batch_size=config.batch_size, num_workers=2
+    valid_ds, batch_size=config.batch_size
 )
-data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1, num_workers=2)
+data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
 
 
 logging.info("Train/validate and record loss")
-if WANDB:
-    wandb.watch(model, train.get_loss, log="all", log_freq=100)
+
+wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
 )
+
 train.run_train(
     model,
     data_train_torch,
@@ -112,5 +111,4 @@ train.run_train(
     config.epochs,
 )
 
-if WANDB:
-    wandb.finish()
+wandb.finish()

@@ -113,11 +113,24 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))  # ,self.seq_len, 1, 1)
 
         h = h.repeat(1, self.seq_len, 1)
+        print("repeated h:")
+        print(h.shape)
+        print(h)
+        h_before = h
 
         for i in range(self.n_layers - 1):
             h, (h_T, c_T) = self.lstm_loop(h)
+            print(f"h at layer {i}")
+            print(h.shape)
+            print(h)
+
+        equals = np.all(np.equal(h_before[0].detach().numpy(), h[0].detach().numpy()), axis=-1)
+        print("equals shape (expected 128)", equals.shape)        
 
         h, (h_T, c_T) = self.lstm2(h)
+        print("\n \n h just before output, first batch elements, last 8 frames, first 2 joints in 3D:")
+        print(h.shape)
+        print(h[0, 120:, :6])
 
         return h
 
@@ -184,13 +197,14 @@ class LstmVAE(torch.nn.Module):
         self.kl_divergence = 0
         self.kl_weight = kl_weight
 
+        # FIX: This should be in the main.py
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 init.xavier_normal(m.weight.data)  # initialize weight W
                 if m.bias is not None:  # initialize b in W*x+b
                     m.bias.data.zero_()
 
-    def _kld(self, q_param, p_param=None):
+    def _kld(self, z, q_param, p_param=None):
         """
         Computes the KL-divergence of
         some element z.
@@ -238,7 +252,10 @@ class LstmVAE(torch.nn.Module):
         """
         z_sample, z_mean, z_log_var = self.encoder(x)
 
-        self.kl_divergence = self._kld(z_sample, (z_mean, z_log_var))
+        q_param = (z_mean, z_log_var)
+
+        # FIX: KLD was not called correctly
+        self.kl_divergence = self._kld(z_sample, q_param)
 
         x_mean = self.decoder(z_sample)
 

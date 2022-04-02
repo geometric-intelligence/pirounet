@@ -4,7 +4,7 @@ import artifact
 import default_config
 import numpy as np
 import torch
-# import wandb
+import wandb
 from torch.autograd import Variable
 
 
@@ -28,19 +28,20 @@ def run_train(
     example_ct_valid = 0  # number of examples seen
     batch_ct_valid = 0
     for epoch in range(epochs):
-
         # Train
         model = model.train()
 
         loss_epoch = 0
         for x in data_train_torch:
-            x = Variable(x)
+            x = Variable(x)  # TODO: Do we need this?
             x = x.to(default_config.device)
 
             loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch += loss
+            loss_epoch += loss * len(x)
 
             example_ct += len(x)  # add amount of examples in 1 batch
+            loss_epoch /= example_ct  # TODO: Sum of average of losses is not average of loss
+
             batch_ct += 1
 
             # Report metrics every 25th batch
@@ -48,6 +49,7 @@ def run_train(
                 train_log(loss, example_ct, epoch)
 
         loss_epoch /= batch_ct  # get average loss/epoch
+        # TODO: Check: already summed?
 
         # Run Validation
         model = model.eval()
@@ -74,7 +76,7 @@ def run_train(
         index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
         print("INDEX OF TESTING SEQUENCE IS {}".format(index_of_chosen_seq))
         i = 0
-        for x in data_test_torch:
+        for x in data_test_torch: # minibatch: (1, 128, 53*3) batchsize is one
             i += 1
 
             if i == index_of_chosen_seq:
@@ -114,6 +116,7 @@ def train_batch(x, model, optimizer, get_loss):
     loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
 
     # Backward pass
+    # TODO: should the optimizer be put at 0 there?
     optimizer.zero_grad()
     loss.backward()
 
@@ -125,7 +128,7 @@ def train_batch(x, model, optimizer, get_loss):
 
 def train_log(loss, example_ct, epoch):
     """Log epoch and train loss into wandb."""
-    # wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
+    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
     print("Loss after {} examples: {}".format(str(example_ct).zfill(5), loss))
 
 
@@ -142,5 +145,4 @@ def valid_batch(x, model, get_loss):
 
 def valid_log(valid_loss, example_ct, epoch):
     # Where the magic happens
-    # wandb.log({"valid_loss": valid_loss})
-    pass
+    wandb.log({"valid_loss": valid_loss})
