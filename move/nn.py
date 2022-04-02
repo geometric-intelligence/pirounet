@@ -8,23 +8,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import init
-from torch.autograd import Variable
-import wandb
-from matplotlib import animation
-
-from config import *
-from artifact import *
-
 
 
 class LstmEncoder(torch.nn.Module):
-    def __init__(
-        self, 
-        n_layers,
-        input_features, 
-        h_features_loop,
-        latent_dim
-    ):
+    def __init__(self, n_layers, input_features, h_features_loop, latent_dim):
         super().__init__()
 
         self.n_layers = n_layers
@@ -49,7 +36,8 @@ class LstmEncoder(torch.nn.Module):
         """Note that:
         inputs has shape=[batch_size, seq_len, input_features].
         """
-        # print("starting the forward of encoder. the first step is calling layer lstm1")
+        # print("starting the forward of encoder."
+        # print("the first step is calling layer lstm1")
         # print("input to encoder should have [8,128,159]")
         # print(inputs.shape)
         h1, (h1_T, c1_T) = self.lstm1(inputs)
@@ -78,7 +66,7 @@ class LstmEncoder(torch.nn.Module):
 
         # print("Now computing the encoder output.")
         # print("calling mean_block")
-        h1_T_batchfirst = h1_T.squeeze(axis=0)       
+        h1_T_batchfirst = h1_T.squeeze(axis=0)
         z_mean = self.mean_block(h1_T_batchfirst)
         z_logvar = self.logvar_block(h1_T_batchfirst)
         z_sample = self.reparametrize(z_mean, z_logvar)
@@ -119,7 +107,7 @@ class LstmDecoder(torch.nn.Module):
 
         h = self.leakyrelu(h)
 
-        #assert len(h.shape) == 2, h.shape
+        # assert len(h.shape) == 2, h.shape
         h = h.reshape((h.shape[0], 1, h.shape[-1]))  # ,self.seq_len, 1, 1)
 
         h = h.repeat(1, self.seq_len, 1)
@@ -160,16 +148,16 @@ def log_standard_gaussian(x):
 
 class LstmVAE(torch.nn.Module):
     def __init__(
-        self, 
-        n_layers=2, 
-        input_features=3 * 53, 
-        h_features_loop=32, 
-        latent_dim=32, 
+        self,
+        n_layers=2,
+        input_features=3 * 53,
+        h_features_loop=32,
+        latent_dim=32,
         kl_weight=0,
         output_features=3 * 53,
         seq_len=128,
-        negative_slope=0.2
-        ) : 
+        negative_slope=0.2,
+    ):
         """
         Variational Autoencoder model
         consisting of an (LSTM+encoder)/(decoder+LSTM) pair.
@@ -177,8 +165,20 @@ class LstmVAE(torch.nn.Module):
         """
         super(LstmVAE, self).__init__()
 
-        self.encoder = LstmEncoder(n_layers=n_layers, input_features=input_features, h_features_loop=h_features_loop, latent_dim=latent_dim)
-        self.decoder = LstmDecoder(n_layers=n_layers, output_features=output_features, h_features_loop=h_features_loop, latent_dim=latent_dim, seq_len=seq_len, negative_slope=negative_slope)
+        self.encoder = LstmEncoder(
+            n_layers=n_layers,
+            input_features=input_features,
+            h_features_loop=h_features_loop,
+            latent_dim=latent_dim,
+        )
+        self.decoder = LstmDecoder(
+            n_layers=n_layers,
+            output_features=output_features,
+            h_features_loop=h_features_loop,
+            latent_dim=latent_dim,
+            seq_len=seq_len,
+            negative_slope=negative_slope,
+        )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
 
@@ -221,7 +221,7 @@ class LstmVAE(torch.nn.Module):
         # -0.5*K.mean(K.sum(
         # 1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
 
-        return recon_loss + self.kl_weight*regul_loss
+        return recon_loss + self.kl_weight * regul_loss
 
     def add_flow(self, flow):
         self.flow = flow
@@ -328,120 +328,3 @@ def load_data(pattern="data/mariel_*.npy"):
     # # print(ds_all.min(axis=(0,1)))
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
-
-########################################################################
-#TRAINING FUNCTIONS
-
-def get_loss(model, x, x_recon, z, z_mu, z_logvar):
-    loss = torch.mean(model.elbo(x, x_recon, z, (z_mu, z_logvar)))
-    return loss
-
-
-def run_train(model, data_train_torch, data_valid_torch, data_test_torch, get_loss, optimizer, epochs):
-
-    # Run training and track with wandb
-    example_ct = 0  # number of examples seen
-    batch_ct = 0
-    example_ct_valid = 0  # number of examples seen
-    batch_ct_valid = 0
-    for epoch in range(epochs):
-
-        #Train
-        model = model.train()
-
-        loss_epoch = 0
-        for x in data_train_torch:
-            x = Variable(x)
-            x = x.to(device)
-
-            loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch += loss
-
-            example_ct +=  len(x) #add amount of examples in 1 batch
-            batch_ct += 1
-
-            # Report metrics every 25th batch
-            if ((batch_ct + 1) % 25) == 0:
-                train_log(loss, example_ct, epoch)
-
-        loss_epoch /= batch_ct # get average loss/epoch
-
-        #Run Validation
-        model = model.eval()
-
-        loss_valid_epoch = 0
-        for x in data_valid_torch:
-            x = Variable(x)
-            x = x.to(device)
-
-            loss_valid = valid_batch(x, model, get_loss) #same as before, except no back propogation
-            loss_valid_epoch += loss_valid
-
-            example_ct_valid +=  len(x) #add amount of examples in 1 batch
-            batch_ct_valid += 1
-
-            # Report metrics every 25th batch
-            if ((batch_ct_valid + 1) % 25) == 0:
-                valid_log(loss_valid, example_ct_valid, epoch)            
-        
-        #Run testing
-        #Make and log artifact at the end of each epoch (stick-figure video)
-        index_of_chosen_seq = np.random.randint(0,data_test_torch.dataset.shape[0])
-        print('INDEX OF TESTING SEQUENCE IS {}'.format(index_of_chosen_seq))
-        i = 0
-        for x in data_test_torch:
-            i += 1
-
-            if i == index_of_chosen_seq:
-                print('Found test sequence. Running it through model')
-                x = Variable(x)
-                x = x.to(device)
-                x_input = x
-                x_recon, z, z_mu, z_logvar = model(x.float())
-                print('Ran it through model')
-
-            else:            
-                pass
-
-        x_input_formatted = x_input.reshape((128,53,3))
-        x_recon_formatted = x_recon.reshape((128,53,3))
-
-        anim = animate_stick(x_input_formatted, epoch=epoch, index=index_of_chosen_seq, ghost=x_recon_formatted, dot_alpha=0.7, ghost_shift=0.2, figsize=(12,8))
-        print('Called animation function for epoch {}'.format(epoch+1))
-
-    print("done training")
-
-
-def train_batch(x, model, optimizer, get_loss):    
-    
-    #Forward pass
-    x_recon, z, z_mu, z_logvar = model(x.float())
-    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
-    #Backward pass
-    optimizer.zero_grad()
-    loss.backward()
-
-    #Optimizer takes step
-    optimizer.step()
-
-    return loss
-
-def train_log(loss, example_ct, epoch):
-    # Where the magic happens
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-    print('Loss after {} examples: {}'.format(str(example_ct).zfill(5), loss))
-
-def valid_batch(x, model, get_loss):    
-
-    #Forward pass
-    x_recon, z, z_mu, z_logvar = model(x.float())
-    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    valid_loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
-    return valid_loss
-
-def valid_log(valid_loss, example_ct, epoch):
-    # Where the magic happens
-    wandb.log({"valid_loss": valid_loss})

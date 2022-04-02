@@ -3,7 +3,7 @@ import os
 import sys
 import warnings
 
-import config
+import default_config
 import nn
 import numpy as np
 import torch
@@ -12,16 +12,18 @@ import wandb
 logging.info("Initialize WandB project")
 
 wandb.init(
-    project="lstm_vae",
-    entity="mathildepapillon",
-    settings=wandb.Settings(start_method="thread"),
+    # project="lstm_vae",
+    # entity="ninamiolane",
+    # settings=wandb.Settings(start_method="thread"),
+    config={
+        "learning_rate": default_config.learning_rate,
+        "epochs": default_config.epochs,
+        "batch_size": default_config.batch_size,
+        "seq_len": default_config.seq_len,
+    }
 )
-wandb.config = {
-    "learning_rate": config.learning_rate,
-    "epochs": config.epochs,
-    "batch_size": config.batch_size,
-    "seq_len": config.seq_len,
-}
+config = wandb.config
+logging.info(f"Wandb config: {config}")
 
 logging.info("Run server specific commands")
 SERVER = "pod"  # colab
@@ -48,7 +50,7 @@ model = nn.LstmVAE(
     output_features=3 * 53,
     seq_len=128,
     negative_slope=0.2,
-).to(config.device)
+).to(default_config.device)
 
 logging.info("Load data")
 ds_all, ds_all_centered, datasets, datasets_centered, ds_counts = nn.load_data()
