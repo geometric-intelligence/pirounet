@@ -2,7 +2,7 @@ import logging
 import torch
 
 #Set the configuration of the model 
-logging.info('Confirgure the run')
+logging.info('Configure the run')
 batch_size = 8
 learning_rate= 3e-4
 epochs = 20
