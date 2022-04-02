@@ -1,5 +1,7 @@
 # Modified from
-# https://towardsdatascience.com/implementation-differences-in-lstm-layers-tensorflow-vs-pytorch-77a31d742f74
+# https://towardsdatascience.com/
+# implementation-differences-in-lstm-layers-tensorflow
+# -vs-pytorch-77a31d742f74
 import math
 import os
 from glob import glob

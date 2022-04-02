@@ -9,21 +9,34 @@ import numpy as np
 import torch
 import wandb
 
+WANDB = False
+
 logging.info("Initialize WandB project")
 
-wandb.init(
-    # project="lstm_vae",
-    # entity="ninamiolane",
-    # settings=wandb.Settings(start_method="thread"),
-    config={
+if WANDB:
+    wandb.init(
+        project="new",
+        entity="ninamiolane",
+        # settings=wandb.Settings(start_method="thread"),
+        config={
+            "learning_rate": default_config.learning_rate,
+            "epochs": default_config.epochs,
+            "batch_size": default_config.batch_size,
+            "seq_len": default_config.seq_len,
+        },
+    )
+    config = wandb.config
+
+else:
+    config = {
         "learning_rate": default_config.learning_rate,
         "epochs": default_config.epochs,
         "batch_size": default_config.batch_size,
         "seq_len": default_config.seq_len,
     }
-)
-config = wandb.config
-logging.info(f"Wandb config: {config}")
+
+logging.info(f"Config: {config}")
+
 
 logging.info("Run server specific commands")
 SERVER = "pod"  # colab
@@ -81,7 +94,8 @@ data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1, num_workers
 
 
 logging.info("Train/validate and record loss")
-wandb.watch(model, nn.get_loss, log="all", log_freq=100)
+if WANDB:
+    wandb.watch(model, nn.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
 )
@@ -95,4 +109,5 @@ nn.run_train(
     config.epochs,
 )
 
-wandb.finish()
+if WANDB:
+    wandb.finish()
