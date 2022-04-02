@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
-import wandb
+# import wandb
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
 
@@ -328,17 +328,18 @@ def animate_stick(
     current_path = os.path.abspath(os.getcwd())
     filepath = str(current_path) + "/animations/"
     name = "artifact_epoch_{}_index_{}_on_{}.gif".format(epoch, index, now)
-    print("will save at " + filepath + name)
+    fname = filepath + name
+    print("will save at " + fname)
 
-    anim.save(filepath + name, writer="pillow", fps=30)
-    print("Artifact saved at " + filepath + name)
+    anim.save(fname, writer="pillow", fps=30)
+    print("Artifact saved at " + fname)
 
-    # add file to artifact by full path
-    animation_artifact = wandb.Artifact("animation", type="video")
-    print("made wandb artifact")
-    animation_artifact.add_file(filepath + name)
-    print("added file to it")
-    wandb.log_artifact(animation_artifact)
-    print("logged artifact")
+    # # add file to artifact by full path
+    # animation_artifact = wandb.Artifact("animation", type="video")
+    # print("made wandb artifact")
+    # animation_artifact.add_file(fname)
+    # print("added file to it")
+    # wandb.log_artifact(animation_artifact)
+    # print("logged artifact")
 
     return anim

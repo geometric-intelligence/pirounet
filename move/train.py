@@ -4,7 +4,7 @@ import artifact
 import default_config
 import numpy as np
 import torch
-import wandb
+# import wandb
 from torch.autograd import Variable
 
 
@@ -143,3 +143,4 @@ def valid_batch(x, model, get_loss):
 def valid_log(valid_loss, example_ct, epoch):
     # Where the magic happens
     # wandb.log({"valid_loss": valid_loss})
+    pass
