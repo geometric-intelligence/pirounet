@@ -21,9 +21,10 @@ DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 
-
 logging.info("Initialize WandB project.")
 
+# The config put in the init is treated as default
+# and would be overwritten by a sweep
 wandb.init(
     project="move",
     entity="ninamiolane",
@@ -37,7 +38,6 @@ wandb.init(
 config = wandb.config
 
 logging.info(f"Config: {config}")
-
 
 logging.info("Run server specific commands")
 SERVER = "pod"  # colab
@@ -58,10 +58,10 @@ model = nn.LstmVAE(
     input_features=3 * 53,
     h_features_loop=32,
     latent_dim=32,
-    kl_weight=0,
+    kl_weight=config.kl_weight,
     output_features=3 * 53,
     seq_len=config.seq_len,
-    negative_slope=0.2,
+    negative_slope=config.negative_slope,
 ).to(DEVICE)
 
 logging.info("Load data")
