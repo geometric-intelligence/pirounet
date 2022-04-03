@@ -1,0 +1,45 @@
+name: "Test"
+
+on:
+  push:
+    branches: [main,github-actions-test]
+    paths-ignore:
+    - 'README.md'
+    - '.gitignore'
+
+
+  pull_request:
+    branches: [main]
+    paths-ignore:
+    - 'README.md'
+    - '.gitignore'
+
+
+jobs:
+  build:
+
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        python-version: [3.9]
+        test-folder : ['tests']
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build using Python ${{matrix.python-version}}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.python-version}}
+
+      - name: install dependencies [pip]
+        run:  |
+          pip install --upgrade pip setuptools wheel
+          pip install -q -r dev-requirements.txt
+          pip install -e .
+      - name: test [pytest]
+        run: |
+         pytest ${{matrix.test-folder}}
