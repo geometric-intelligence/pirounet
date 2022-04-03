@@ -9,8 +9,6 @@ implementation-differences-in-lstm-layers-tensorflow
 import logging
 
 import torch
-import torch.nn as nn
-from torch.nn import init
 
 
 class LstmEncoder(torch.nn.Module):
@@ -32,8 +30,8 @@ class LstmEncoder(torch.nn.Module):
 
     def reparametrize(self, z_mean, z_logvar):
         """Sample from a multivariate Gaussian.
-        
-        The multivariate Gaussian samples in the vector 
+
+        The multivariate Gaussian samples in the vector
         space of dimension latent_dim.
 
         Parameters
@@ -52,7 +50,7 @@ class LstmEncoder(torch.nn.Module):
 
     def forward(self, inputs):
         """Perform forward pass of the encoder.
-        
+
         Parameters
         ----------
         inputs : array-like
@@ -66,12 +64,10 @@ class LstmEncoder(torch.nn.Module):
         logging.debug(f"Encoder inputs of shape {inputs.shape}")
         h, (h_last_t, _) = self.lstm1(inputs)
         logging.debug(f"LSTM1 gives h of shape: {h.shape}")
-        logging.debug(
-            f"LSTM1 gives h_last_t of shape {h_last_t.shape}")
+        logging.debug(f"LSTM1 gives h_last_t of shape {h_last_t.shape}")
 
         for i in range(self.n_layers - 1):
-            logging.debug(
-                f"- # Encoder LSTM loop iteration {i}/{self.n_layers-1}.")
+            logging.debug(f"- # Encoder LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, _) = self.lstm2(h)
             assert h.shape == (batch_size, seq_len, self.h_features_loop)
             assert h_last_t.shape == (batch_size, 1, self.h_features_loop)
@@ -116,7 +112,7 @@ class LstmDecoder(torch.nn.Module):
 
     def forward(self, inputs):
         """Perform forward pass of the decoder.
-        
+
         Parameters
         ----------
         inputs : array-like, shape=[batch_size, latent_dim]
@@ -134,31 +130,25 @@ class LstmDecoder(torch.nn.Module):
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
 
         for i in range(self.n_layers - 1):
-            logging.debug(
-                f"- # Decoder LSTM loop iteration {i}/{self.n_layers-1}.")
+            logging.debug(f"- # Decoder LSTM loop iteration {i}/{self.n_layers-1}.")
             h, _ = self.lstm_loop(h)
             assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
-            logging.debug(
-                f"First batch example, first 20t: {h[0, :20, :4]}"
-            ) 
+            logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
         h, _ = self.lstm2(h)
         assert h.shape == (batch_size, self.seq_len, self.output_features)
-        logging.debug(
-                f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}"
-            )
-        logging.debug(
-                f"1st batch example, kast 20t, first 2 joints: {h[0, :-20, :6]}"
-            ) 
+        logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
+        logging.debug(f"1st batch example, kast 20t, first 2 joints: {h[0, :-20, :6]}")
         return h
 
 
 class LstmVAE(torch.nn.Module):
     """Variational Autoencoder model with LSTM.
 
-    The architecture consists of an (LSTM+encoder) 
+    The architecture consists of an (LSTM+encoder)
     and (decoder+LSTM) pair.
     """
+
     def __init__(
         self,
         n_layers=2,
@@ -193,14 +183,14 @@ class LstmVAE(torch.nn.Module):
 
         # This initialize the weights and biases
         for m in self.modules():
-            if isinstance(m, nn.Linear):
-                init.xavier_normal(m.weight.data)
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
 
     def _kld(self, z, q_param, p_param=None):
         """Compute KL-divergence.
-        
+
         The KL is defined as:
         KL(q||p) = -∫ q(z) log [ p(z) / q(z) ]
                   = -E[log p(z) - log q(z)]
@@ -217,6 +207,7 @@ class LstmVAE(torch.nn.Module):
             (mu, log_var) of the q-distribution
         p_param: tuple
             (mu, log_var) of the p-distribution
+
         Returns
         -------
         kl : KL(q||p)
@@ -227,10 +218,10 @@ class LstmVAE(torch.nn.Module):
 
     def elbo(self, x, x_recon, z, q_param, p_param=None):
         """Compute ELBO.
-        
+
         Formula in Keras was (reconstrution loss):
         # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
-        
+
         Parameters
         ----------
         x : array-like
@@ -241,7 +232,7 @@ class LstmVAE(torch.nn.Module):
             Shape=[batch_size, seq_len, output_features]
         z : array-like
             Latent variable. Not a sequence.
-            Shape=[batch_size, latent_dim]     
+            Shape=[batch_size, latent_dim]
         """
         assert x.ndim == x_recon.ndim == 3
         assert z.ndim == 2
