@@ -2,8 +2,7 @@ name: move
 channels:
   - defaults
 dependencies:
-  - pip=21.2.4=py39hecd8cb5_0
-  - python=3.9.11=hdfd78df_2
+  - pip
   - pip:
     - matplotlib==3.5.1
     - numpy==1.22.3

@@ -15,7 +15,8 @@ def augment_by_rotations(seq_data, augmentation_factor):
     each new sequence is obtained by rotating the input sequence
     with a different rotation angle.
 
-    Notes:
+    Notes
+    -----
     - N is equal to augmentation_factor.
     - Only rotations of axis z are considered.
 
