@@ -8,6 +8,7 @@ implementation-differences-in-lstm-layers-tensorflow
 
 import logging
 
+import numpy as np
 import torch
 
 
@@ -159,6 +160,20 @@ class LstmDecoder(torch.nn.Module):
         return h
 
 
+class RotationLayer(torch.nn.Module):
+    """Layer that rotates the skeleton around axis z."""
+
+    def __init__(self, theta):
+        c_theta = torch.cos(theta)
+        s_theta = torch.sin(theta)
+        self.rotation_mat = torch.tensor(
+            [[c_theta, -s_theta, 0], [s_theta, c_theta, 0], [0, 0, 1]]
+        )
+
+    def forward(self, x):
+        return torch.dot(x, self.rotation_mat)
+
+
 class LstmVAE(torch.nn.Module):
     """Variational Autoencoder model with LSTM.
 
@@ -176,9 +191,12 @@ class LstmVAE(torch.nn.Module):
         output_features=3 * 53,
         seq_len=128,
         negative_slope=0.2,
+        with_rotation_layer=True,
     ):
         super(LstmVAE, self).__init__()
         self.latent_dim = latent_dim
+        self.with_rotation_layer = with_rotation_layer
+
         self.encoder = LstmEncoder(
             n_layers=n_layers,
             input_features=input_features,
@@ -198,7 +216,7 @@ class LstmVAE(torch.nn.Module):
 
         assert input_features == output_features
 
-        # This initialize the weights and biases
+        # This initializes the weights and biases
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
                 torch.nn.init.xavier_normal(m.weight.data)
@@ -281,11 +299,16 @@ class LstmVAE(torch.nn.Module):
         x_mean : array-like
             reconstructed input
         """
+        if self.with_rotation_layer:
+            theta = np.random.uniform(0, 2 * np.pi)
+            x = RotationLayer(theta)(x)
         z, z_mean, z_log_var = self.encoder(x)
 
         q_param = (z_mean, z_log_var)
 
         self.kl_divergence = self._kld(z, q_param)
 
-        x_mean = self.decoder(z)
-        return x_mean, z, z_mean, z_log_var
+        x_recon = self.decoder(z)
+        if self.with_rotation_layer:
+            x_recon = RotationLayer(-theta)(x_recon)
+        return x_recon, z, z_mean, z_log_var
