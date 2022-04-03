@@ -4,9 +4,12 @@ metric:
   name: valid_loss
 parameters:
   epochs:
-    max: 20
+    max: 200
     min: 10
   learning_rate:
     max: 0.001
     min: 0.000001
+  batch_size:
+    max: 256
+    min: 8
 program: main.py

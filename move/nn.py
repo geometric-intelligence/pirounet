@@ -11,6 +11,11 @@ import logging
 import numpy as np
 import torch
 
+DEVICE = torch.device("cpu")
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+
+
 
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
@@ -170,7 +175,7 @@ class RotationLayer(torch.nn.Module):
         s_theta = torch.sin(theta)
         self.rotation_mat = torch.tensor(
             [[c_theta, -s_theta, 0], [s_theta, c_theta, 0], [0, 0, 1]]
-        )
+        ).to(DEVICE)
 
     def forward(self, x):
         """Rotate a minibatch of sequences of skeletons.
@@ -305,8 +310,8 @@ class LstmVAE(torch.nn.Module):
         Parameters
         ----------
         x : array-like
-            input data.
-            Shape=[batch_size, seqlen, input_features].
+            Input data.
+            Shape=[batch_size, seq_len, input_features].
 
         Returns
         -------
@@ -315,6 +320,7 @@ class LstmVAE(torch.nn.Module):
         """
         if self.with_rotation_layer:
             theta = np.random.uniform(0, 2 * np.pi)
+            x = x.to(DEVICE)
             x = RotationLayer(theta)(x)
         z, z_mean, z_log_var = self.encoder(x)
 

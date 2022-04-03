@@ -60,7 +60,7 @@ def run_train(
             loss = train_batch(x, model, optimizer, get_loss)
             loss_epoch_total += loss * len(x)
 
-            if i_batch % 25 == 0:
+            if i_batch % 50 == 0:
                 batchs_str = str(i_batch).zfill(5)
                 loss_epoch_per_seq = loss_epoch_total / seq_ct_in_epoch
                 logging.info(
@@ -84,7 +84,7 @@ def run_train(
             loss_valid = valid_batch(x, model, get_loss)
             loss_valid_epoch_total += loss_valid * len(x)
 
-            if i_batch % 25 == 0:
+            if i_batch % 50 == 0:
                 batchs_str = str(i_batch).zfill(5)
                 loss_valid_epoch_per_seq = (
                     loss_valid_epoch_total / seq_valid_ct_in_epoch

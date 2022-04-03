@@ -66,7 +66,6 @@ model = nn.LstmVAE(
     negative_slope=config.negative_slope,
 ).to(DEVICE)
 
-logging.info("Load data")
 data_train_torch, data_valid_torch, data_test_torch = datasets.get_mariel_data(config)
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
