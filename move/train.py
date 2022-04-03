@@ -1,11 +1,14 @@
 """Training functions."""
 
 import artifact
-import default_config
 import numpy as np
 import torch
 import wandb
 from torch.autograd import Variable
+
+DEVICE = torch.device("cpu")
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
 
 
 def get_loss(model, x, x_recon, z, z_mean, z_logvar):
@@ -35,7 +38,7 @@ def run_train(
         loss_epoch = 0
         for x in data_train_torch:
             x = Variable(x)  # TODO: Do we need this?
-            x = x.to(default_config.device)
+            x = x.to(DEVICE)
 
             loss = train_batch(x, model, optimizer, get_loss)
             loss_epoch += loss * len(x)
@@ -60,7 +63,7 @@ def run_train(
         loss_valid_epoch = 0
         for x in data_valid_torch:
             x = Variable(x)
-            x = x.to(default_config.device)
+            x = x.to(DEVICE)
 
             loss_valid = valid_batch(x, model, get_loss)
             loss_valid_epoch += loss_valid
@@ -83,9 +86,9 @@ def run_train(
             if i == index_of_chosen_seq:
                 print("Found test sequence. Running it through model")
                 x = Variable(x)
-                x = x.to(default_config.device)
+                x = x.to(DEVICE)
                 x_input = x
-                x_recon, z, z_mu, z_logvar = model(x.float())
+                x_recon, z, z_mean, z_logvar = model(x.float())
                 print("Ran it through model")
 
             else:
@@ -131,16 +134,16 @@ def train_batch(x, model, optimizer, get_loss):
     """
     x_recon, z, z_mean, z_logvar = model(x.float())
     # TODO: compare x and x recon here, especially look if x is not constant.
-    print("\n\nabout x recon:")
-    print(x_recon.shape)
-    print(x_recon[0, :10, :6])
-    print("about x:")
-    print(x.shape)
-    print(x[0, :10, :6])
-    print("\n\n")
+    # print("\n\nabout x recon:")
+    # print(x_recon.shape)
+    # print(x_recon[0, :10, :6])
+    # print("about x:")
+    # print(x.shape)
+    # print(x[0, :10, :6])
+    # print("\n\n")
     loss = get_loss(model, x, x_recon, z, z_mean, z_logvar)
-    print("about loss")
-    print(loss.shape)
+    # print("about loss")
+    # print(loss.shape)
     # Backward pass
     # TODO: should the optimizer be put at 0 there?
     optimizer.zero_grad()

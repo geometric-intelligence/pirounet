@@ -72,7 +72,7 @@ class LstmEncoder(torch.nn.Module):
             logging.debug(f"- # Encoder LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, _) = self.lstm2(h)
             assert h.shape == (batch_size, seq_len, self.h_features_loop)
-            assert h_last_t.shape == (batch_size, 1, self.h_features_loop)
+            assert h_last_t.shape == (1, batch_size, self.h_features_loop)
 
         logging.debug("Computing the encoder output.")
         h1_last_t = h_last_t.squeeze(axis=0)
@@ -99,7 +99,8 @@ class LstmDecoder(torch.nn.Module):
     ):
         super().__init__()
         self.n_layers = n_layers
-        self.output_features
+        self.output_features = output_features
+        self.h_features_loop = h_features_loop
         self.latent_dim = latent_dim
         self.seq_len = seq_len
 
