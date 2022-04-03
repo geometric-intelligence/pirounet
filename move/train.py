@@ -89,7 +89,7 @@ def run_train(
 
             # Report metrics every 25th batch
             if (batch_valid_in_epoch_ct + 1) % 25 == 0:
-                batchs_str = str(batch_in_epoch_ct).zfill(5)
+                batchs_str = str(batch_valid_in_epoch_ct).zfill(5)
                 logging.info(
                     f"# Valid (Epoch {epoch}): "
                     f"Loss/seq after {batchs_str} batches: {loss_valid_epoch_per_seq}"
