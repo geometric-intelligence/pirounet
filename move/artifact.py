@@ -1,8 +1,6 @@
 """Make artifcats and log them to wandb."""
 
 import logging
-import os
-import time
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -10,8 +8,6 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
-
-now = time.strftime("%Y%m%d_%H%M%S")
 
 # these are the ordered label names of the 53 vertices
 # (after the Labeling/SolvingHips points have been excised)
@@ -222,11 +218,10 @@ def put_lines(ax, segments, color=None, lw=2.5, alpha=None):
 
 def animate_stick(
     seq,
-    epoch,
-    index,
+    fname,
     ghost=None,
     ghost_shift=0,
-    figsize=None,
+    figsize=(12, 8),
     zcolor=None,
     pointer=None,
     ax_lims=(-0.4, 0.4),
@@ -327,10 +322,6 @@ def animate_stick(
         fig, update, len(seq), interval=speed, blit=False, save_count=200
     )
 
-    current_path = os.path.abspath(os.getcwd())
-    filepath = str(current_path) + "/animations/"
-    name = f"artifact_epoch_{epoch}_index_{index}_on_{now}.gif"
-    fname = filepath + name
     anim.save(fname, writer="pillow", fps=30)
     logging.info(f"Artifact saved at {fname}.")
 

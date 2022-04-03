@@ -132,8 +132,17 @@ class LstmDecoder(torch.nn.Module):
 
         assert h.shape == (batch_size, self.h_features_loop)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
+        # This one also perform a copy of the initial state
+        # https://curiousily.com/posts/time-series-anomaly
+        # -detection-using-lstm-autoencoder-with-pytorch-in-python/
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+        input_zeros = torch.zeros_like(h)
+        h0 = h[:, 0, :]
+        h0 = h0.reshape((1, h0.shape[0], h0.shape[-1]))
+        c0 = h0
+
+        h, (h_last_t, c_last_t) = self.lstm_loop(input_zeros, (h0, c0))
 
         for i in range(self.n_layers - 1):
             logging.debug(f"- # Decoder LSTM loop iteration {i}/{self.n_layers-1}.")

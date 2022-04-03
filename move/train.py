@@ -1,6 +1,8 @@
 """Training functions."""
 
 import logging
+import os
+import time
 
 import artifact
 import numpy as np
@@ -50,7 +52,7 @@ def run_train(
             batch_in_epoch_ct += 1
             batch_ct += 1
 
-            n_seqs_in_batch = len(x)
+            n_seqs_in_batch, seq_len, _ = x.shape
             seq_ct += n_seqs_in_batch
             x = x.to(DEVICE)
 
@@ -96,39 +98,78 @@ def run_train(
                 )
                 valid_log(loss_valid_epoch_per_seq, seq_valid_ct, epoch)
 
-        # Testing
-        index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
-        logging.info(f"Test: Make stick video for seq of index {index_of_chosen_seq}")
-
-        # Batch size is 1 for data_test_torch
-        for i, x in enumerate(data_test_torch):
-            if i == index_of_chosen_seq:
-                x = x.to(DEVICE)
-                x_recon, _, _, _ = model(x.float())
-                break
-
-        assert x.ndim == 3
-        seq_len = x.shape[-2]
-
-        x_formatted = x.reshape((seq_len, -1, 3))
-        x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
-
-        logging.info(f"Call animation function for epoch {epoch}")
-        fname = artifact.animate_stick(
-            x_formatted,
-            epoch=epoch,
-            index=index_of_chosen_seq,
-            ghost=x_recon_formatted,
-            dot_alpha=0.7,
-            ghost_shift=0.2,
-            figsize=(12, 8),
-        )
-        animation_artifact = wandb.Artifact("animation", type="video")
-        animation_artifact.add_file(fname)
-        wandb.log_artifact(animation_artifact)
-        logging.info("Logged artifact to wandb")
+        train_artifact(model=model, data_train_torch=data_train_torch, epoch=epoch)
+        test_artifact(model=model, data_test_torch=data_test_torch, epoch=epoch)
 
     logging.info("Done training.")
+
+
+def train_artifact(model, data_train_torch, epoch):
+    """Make stick video on seq from train set."""
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    now = time.strftime("%Y%m%d_%H%M%S")
+
+    name = f"artifact_train_epoch_{epoch}_index_{0}_on_{now}.gif"
+    fname = filepath + name
+
+    for x in data_train_torch:
+        x = x[0]  # first seq of the batch
+        seq_len = x.shape[0]
+        x = x.reshape((1, seq_len, x.shape[-1])).to(DEVICE)
+        x_recon, _, _, _ = model(x.float())
+        break
+
+    x_formatted = x.reshape((seq_len, -1, 3))
+    x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
+
+    logging.info(f"Animate stick for epoch {epoch}")
+    fname = artifact.animate_stick(
+        x_recon_formatted,
+        fname=fname,
+        ghost=x_formatted,
+        dot_alpha=0.7,
+        ghost_shift=0.2,
+    )
+    animation_artifact = wandb.Artifact("animation", type="video")
+    animation_artifact.add_file(fname)
+    wandb.log_artifact(animation_artifact)
+    logging.info("Logged train artifact to wandb.")
+
+
+def test_artifact(model, data_test_torch, epoch):
+    """Make stick video on seq from test set."""
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    now = time.strftime("%Y%m%d_%H%M%S")
+
+    seq_index = np.random.randint(0, data_test_torch.dataset.shape[0])
+    logging.info(f"Train: Make stick video for seq of index {seq_index}")
+
+    name = f"artifact_test_epoch_{epoch}_index_{seq_index}_on_{now}.gif"
+    fname = filepath + name
+
+    # Batch size is 1 for data_test_torch
+    for i, x in enumerate(data_test_torch):
+        if i == seq_index:
+            x = x.to(DEVICE)
+            x_recon, _, _, _ = model(x.float())
+            break
+
+    seq_len = x.shape[0]
+    x_formatted = x.reshape((seq_len, -1, 3))
+    x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
+
+    logging.info(f"Animate stick for epoch {epoch}")
+    fname = artifact.animate_stick(
+        x_recon_formatted,
+        fname=fname,
+        ghost=x_formatted,
+        dot_alpha=0.7,
+        ghost_shift=0.2,
+    )
+    animation_artifact = wandb.Artifact("animation", type="video")
+    animation_artifact.add_file(fname)
+    wandb.log_artifact(animation_artifact)
+    logging.info("Logged test artifact to wandb.")
 
 
 def train_batch(x, model, optimizer, get_loss):
