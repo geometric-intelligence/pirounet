@@ -36,6 +36,8 @@ wandb.init(
         "kl_weight": default_config.kl_weight,
         "negative_slope": default_config.negative_slope,
         "n_layers": default_config.n_layers,
+        "h_features_loop": default_config.n_layers,
+        "latent_dim": default_config.latent_dim,
     },
 )
 config = wandb.config
@@ -59,8 +61,8 @@ logging.info("Initialize model")
 model = nn.LstmVAE(
     n_layers=config.n_layers,
     input_features=3 * 53,
-    h_features_loop=32,
-    latent_dim=32,
+    h_features_loop=config.h_features_loop,
+    latent_dim=config.latent_dim,
     kl_weight=config.kl_weight,
     output_features=3 * 53,
     seq_len=config.seq_len,

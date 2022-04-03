@@ -13,6 +13,12 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
     Processing amunts to center each dancer, such that
     the barycenter becomes 0.
+
+    From Petten 2021:
+    Each frame of the dataset is transformed such that the
+    overall average (x,y) position per frame is centered at
+    the same point and scaled such that all of the coordinates
+    fit within the unit cube.
     """
     datasets = {}
     ds_all = []

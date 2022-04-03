@@ -59,29 +59,29 @@ class LstmEncoder(torch.nn.Module):
             shape=[batch_size, seq_len, input_features]
             where input_features = 3 * n_body_joints.
         """
-        assert inputs.ndim == 3, inputs.shape
         assert inputs.shape[-1] == self.input_features
         batch_size, seq_len, _ = inputs.shape
+        logging.debug(f"- Encoder inputs of shape {inputs.shape}")
 
-        logging.debug(f"Encoder inputs of shape {inputs.shape}")
         h, (h_last_t, c_last_t) = self.lstm1(inputs)
-        logging.debug(f"LSTM1 gives h of shape: {h.shape}")
-        logging.debug(f"LSTM1 gives h_last_t of shape {h_last_t.shape}")
+        logging.debug(
+            f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
+        )
 
         for i in range(self.n_layers - 1):
-            logging.debug(f"- # Encoder LSTM loop iteration {i}/{self.n_layers-1}.")
+            logging.debug(f"LSTM2 loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm2(h, (h_last_t, c_last_t))
             assert h.shape == (batch_size, seq_len, self.h_features_loop)
             assert h_last_t.shape == (1, batch_size, self.h_features_loop)
 
-        logging.debug("Computing the encoder output.")
+        logging.debug("Computing encoder output.")
         h1_last_t = h_last_t.squeeze(axis=0)
         assert h1_last_t.shape == (batch_size, self.h_features_loop)
         z_mean = self.mean_block(h1_last_t)
         z_logvar = self.logvar_block(h1_last_t)
         z_sample = self.reparametrize(z_mean, z_logvar)
 
-        logging.debug("Encoder is done.")
+        logging.debug("Encoder done.")
         return z_sample, z_mean, z_logvar
 
 
@@ -118,34 +118,36 @@ class LstmDecoder(torch.nn.Module):
     def forward(self, inputs):
         """Perform forward pass of the decoder.
 
+        This one also perform a copy of the initial state
+        https://curiousily.com/posts/time-series-anomaly
+        -detection-using-lstm-autoencoder-with-pytorch-in-python/
+
         Parameters
         ----------
         inputs : array-like
             Shape=[batch_size, latent_dim]
         """
-        assert inputs.ndim == 2
         assert inputs.shape[-1] == self.latent_dim
         batch_size, _ = inputs.shape
+        logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)
 
         assert h.shape == (batch_size, self.h_features_loop)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
-        # This one also perform a copy of the initial state
-        # https://curiousily.com/posts/time-series-anomaly
-        # -detection-using-lstm-autoencoder-with-pytorch-in-python/
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
-        input_zeros = torch.zeros_like(h)
-        h0 = h[:, 0, :]
-        h0 = h0.reshape((1, h0.shape[0], h0.shape[-1]))
-        c0 = h0
 
-        h, (h_last_t, c_last_t) = self.lstm_loop(input_zeros, (h0, c0))
+        # input_zeros = torch.zeros_like(h)
+        # h0 = h[:, 0, :]
+        # h0 = h0.reshape((1, h0.shape[0], h0.shape[-1]))
+        # c0 = h0
+
+        h, (h_last_t, c_last_t) = self.lstm_loop(h)
 
         for i in range(self.n_layers - 1):
-            logging.debug(f"- # Decoder LSTM loop iteration {i}/{self.n_layers-1}.")
+            logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm_loop(h)
             assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")

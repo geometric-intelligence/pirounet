@@ -15,7 +15,11 @@ if torch.cuda.is_available():
 
 
 def get_loss(model, x, x_recon, z, z_mean, z_logvar):
-    """Return loss as ELBO averaged on the minibatch."""
+    """Return loss as ELBO averaged on the minibatch.
+
+    This gives a loss averaged on all sequences of the minibatch,
+    i.e. a loss per sequence.
+    """
     loss = torch.mean(model.elbo(x, x_recon, z, (z_mean, z_logvar)))
     return loss
 
@@ -41,29 +45,24 @@ def run_train(
     batch_valid_ct = 0
     seq_valid_ct = 0
     for epoch in range(epochs):
-        seqs_in_epoch_ct = 0  # number of examples (sequences) seen
-        batch_in_epoch_ct = 0
-
         # Training
         model = model.train()
-
+        seq_ct_in_epoch = 0  # number of examples (sequences) seen
         loss_epoch_total = 0
-        for x in data_train_torch:
-            batch_in_epoch_ct += 1
+        for i_batch, x in enumerate(data_train_torch):
+            if i_batch == 0:
+                logging.info(f"Train minibatch x of shape: {x.shape}")
             batch_ct += 1
+            seq_ct += len(x)
+            seq_ct_in_epoch += len(x)
 
-            n_seqs_in_batch, seq_len, _ = x.shape
-            seq_ct += n_seqs_in_batch
             x = x.to(DEVICE)
-
             loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch_total += loss * n_seqs_in_batch
+            loss_epoch_total += loss * len(x)
 
-            seqs_in_epoch_ct += n_seqs_in_batch
-            loss_epoch_per_seq = loss_epoch_total / seqs_in_epoch_ct
-            # Report metrics every 25th batch
-            if (batch_in_epoch_ct + 1) % 25 == 0:
-                batchs_str = str(batch_in_epoch_ct).zfill(5)
+            if i_batch % 25 == 0:
+                batchs_str = str(i_batch).zfill(5)
+                loss_epoch_per_seq = loss_epoch_total / seq_ct_in_epoch
                 logging.info(
                     f"Train (Epoch {epoch}): "
                     f"Loss/seq after {batchs_str} batchs: {loss_epoch_per_seq}"
@@ -72,57 +71,63 @@ def run_train(
 
         # Validation
         model = model.eval()
-        seqs_valid_in_epoch_ct = 0  # number of examples (sequences) seen
-        batch_valid_in_epoch_ct = 0
-
+        seq_valid_ct_in_epoch = 0  # number of examples (sequences) seen
         loss_valid_epoch_total = 0
-        for x in data_valid_torch:
+        for i_batch, x in enumerate(data_valid_torch):
+            if i_batch == 0:
+                logging.info(f"Valid minibatch x of shape: {x.shape}")
             batch_valid_ct += 1
-            batch_valid_in_epoch_ct += 1
+            seq_valid_ct += len(x)
+            seq_valid_ct_in_epoch += len(x)
+
             x = x.to(DEVICE)
-            n_seqs_in_batch = len(x)
-            seq_valid_ct += n_seqs_in_batch
-
             loss_valid = valid_batch(x, model, get_loss)
-            loss_valid_epoch_total += loss_valid * n_seqs_in_batch
+            loss_valid_epoch_total += loss_valid * len(x)
 
-            seqs_valid_in_epoch_ct += n_seqs_in_batch
-            loss_valid_epoch_per_seq = loss_valid_epoch_total / seqs_valid_in_epoch_ct
-
-            # Report metrics every 25th batch
-            if (batch_valid_in_epoch_ct + 1) % 25 == 0:
-                batchs_str = str(batch_valid_in_epoch_ct).zfill(5)
+            if i_batch % 25 == 0:
+                batchs_str = str(i_batch).zfill(5)
+                loss_valid_epoch_per_seq = (
+                    loss_valid_epoch_total / seq_valid_ct_in_epoch
+                )
                 logging.info(
                     f"# Valid (Epoch {epoch}): "
                     f"Loss/seq after {batchs_str} batches: {loss_valid_epoch_per_seq}"
                 )
                 valid_log(loss_valid_epoch_per_seq, seq_valid_ct, epoch)
 
-        train_artifact(model=model, data_train_torch=data_train_torch, epoch=epoch)
-        test_artifact(model=model, data_test_torch=data_test_torch, epoch=epoch)
+        # Artifacts
+        logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
+        filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+        now = time.strftime("%Y%m%d_%H%M%S")
+
+        name = f"train_artifact_epoch_{epoch}_on_{now}.gif"
+        fname = os.path.join(filepath, name)
+        train_artifact(model=model, data_train_torch=data_train_torch, fname=fname)
+
+        seq_index = np.random.randint(0, data_test_torch.dataset.shape[0])
+        name = f"test_artifact_epoch_{epoch}_index_{seq_index}_on_{now}.gif"
+        fname = os.path.join(filepath, name)
+        test_artifact(
+            model=model,
+            data_test_torch=data_test_torch,
+            fname=fname,
+            seq_index=seq_index,
+        )
 
     logging.info("Done training.")
 
 
-def train_artifact(model, data_train_torch, epoch):
+def train_artifact(model, data_train_torch, fname):
     """Make stick video on seq from train set."""
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
-    now = time.strftime("%Y%m%d_%H%M%S")
-
-    name = f"artifact_train_epoch_{epoch}_index_{0}_on_{now}.gif"
-    fname = filepath + name
-
     for x in data_train_torch:
-        x = x[0]  # first seq of the batch
-        seq_len = x.shape[0]
-        x = x.reshape((1, seq_len, x.shape[-1])).to(DEVICE)
+        x = x.to(DEVICE)
         x_recon, _, _, _ = model(x.float())
         break
 
-    x_formatted = x.reshape((seq_len, -1, 3))
-    x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
+    _, seq_len, _ = x.shape
+    x_formatted = x[0].reshape((seq_len, -1, 3))
+    x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
 
-    logging.info(f"Animate stick for epoch {epoch}")
     fname = artifact.animate_stick(
         x_recon_formatted,
         fname=fname,
@@ -136,17 +141,8 @@ def train_artifact(model, data_train_torch, epoch):
     logging.info("Logged train artifact to wandb.")
 
 
-def test_artifact(model, data_test_torch, epoch):
+def test_artifact(model, data_test_torch, fname, seq_index):
     """Make stick video on seq from test set."""
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
-    now = time.strftime("%Y%m%d_%H%M%S")
-
-    seq_index = np.random.randint(0, data_test_torch.dataset.shape[0])
-    logging.info(f"Train: Make stick video for seq of index {seq_index}")
-
-    name = f"artifact_test_epoch_{epoch}_index_{seq_index}_on_{now}.gif"
-    fname = filepath + name
-
     # Batch size is 1 for data_test_torch
     for i, x in enumerate(data_test_torch):
         if i == seq_index:
@@ -154,11 +150,10 @@ def test_artifact(model, data_test_torch, epoch):
             x_recon, _, _, _ = model(x.float())
             break
 
-    seq_len = x.shape[0]
+    _, seq_len, _ = x.shape
     x_formatted = x.reshape((seq_len, -1, 3))
     x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
 
-    logging.info(f"Animate stick for epoch {epoch}")
     fname = artifact.animate_stick(
         x_recon_formatted,
         fname=fname,
