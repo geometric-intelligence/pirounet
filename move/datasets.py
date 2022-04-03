@@ -52,7 +52,8 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     ds_all *= 2 / xy_range
     ds_all[:, :, :2] -= 1.0
 
-    # it's also useful to have these datasets centered, i.e. with the x and y offsets
+    # it's also useful to have these datasets centered,
+    # i.e. with the x and y offsets
     # subtracted from each individual frame
 
     ds_all_centered = ds_all.copy()
@@ -74,6 +75,7 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 
 def get_mariel_data(config):
+    """Transform mariel data into train/val/test torch loaders."""
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
