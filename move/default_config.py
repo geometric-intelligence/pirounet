@@ -27,5 +27,5 @@ seq_len = 128
 negative_slope = 0  # LeakyRelu
 kl_weight = 0
 n_layers = 3
-h_feature_loop = 384
+h_features_loop = 384
 latent_dim = 256

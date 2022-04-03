@@ -16,12 +16,10 @@ import wandb
 logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
 
-logging.info("Setup device")
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
-
-logging.info("Initialize WandB project.")
+logging.info(f"Using device {DEVICE}")
 
 # The config put in the init is treated as default
 # and would be overwritten by a sweep
@@ -36,12 +34,11 @@ wandb.init(
         "kl_weight": default_config.kl_weight,
         "negative_slope": default_config.negative_slope,
         "n_layers": default_config.n_layers,
-        "h_features_loop": default_config.n_layers,
+        "h_features_loop": default_config.h_features_loop,
         "latent_dim": default_config.latent_dim,
     },
 )
 config = wandb.config
-
 logging.info(f"Config: {config}")
 
 logging.info("Run server specific commands")
