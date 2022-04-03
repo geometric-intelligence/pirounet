@@ -64,7 +64,7 @@ def run_train(
                 batchs_str = str(batch_in_epoch_ct).zfill(5)
                 logging.info(
                     f"Train (Epoch {epoch}): "
-                    f"Loss/seq after {batchs_str} batchs: {loss}"
+                    f"Loss/seq after {batchs_str} batchs: {loss_epoch_per_seq}"
                 )
                 train_log(loss_epoch_per_seq, seq_ct, epoch)
 
@@ -92,7 +92,7 @@ def run_train(
                 batchs_str = str(batch_in_epoch_ct).zfill(5)
                 logging.info(
                     f"# Valid (Epoch {epoch}): "
-                    f"Loss/seq after {batchs_str} batches: {loss}"
+                    f"Loss/seq after {batchs_str} batches: {loss_valid_epoch_per_seq}"
                 )
                 valid_log(loss_valid_epoch_per_seq, seq_valid_ct, epoch)
 
