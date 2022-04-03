@@ -8,11 +8,9 @@ import wandb
 from torch.autograd import Variable
 
 
-def get_loss(model, x, x_recon, z, z_mu, z_logvar):
-    """Return loss as ELBO averaged on the minibatch.
-    
-    """
-    loss = torch.mean(model.elbo(x, x_recon, z, (z_mu, z_logvar)))
+def get_loss(model, x, x_recon, z, z_mean, z_logvar):
+    """Return loss as ELBO averaged on the minibatch."""
+    loss = torch.mean(model.elbo(x, x_recon, z, (z_mean, z_logvar)))
     return loss
 
 
@@ -43,7 +41,9 @@ def run_train(
             loss_epoch += loss * len(x)
 
             example_ct += len(x)  # add amount of examples in 1 batch
-            loss_epoch /= example_ct  # TODO: Sum of average of losses is not average of loss
+            loss_epoch /= (
+                example_ct  # TODO: Sum of average of losses is not average of loss
+            )
 
             batch_ct += 1
 
@@ -62,9 +62,7 @@ def run_train(
             x = Variable(x)
             x = x.to(default_config.device)
 
-            loss_valid = valid_batch(
-                x, model, get_loss
-            )  # same as before, except no back propogation
+            loss_valid = valid_batch(x, model, get_loss)
             loss_valid_epoch += loss_valid
 
             example_ct_valid += len(x)  # add amount of examples in 1 batch
@@ -79,7 +77,7 @@ def run_train(
         index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
         print("INDEX OF TESTING SEQUENCE IS {}".format(index_of_chosen_seq))
         i = 0
-        for x in data_test_torch: # minibatch: (1, 128, 53*3) batchsize is one
+        for x in data_test_torch:  # minibatch: (1, 128, 53*3) batchsize is one
             i += 1
 
             if i == index_of_chosen_seq:
@@ -114,14 +112,14 @@ def train_batch(x, model, optimizer, get_loss):
     """Perform a forward pass at training time.
 
     The loss is backpropagated at training time.
-    
+
     Parameters
     ----------
     x : array-like, shape=[batch_size, seq_len, 3*n_joints]
         Input to the model.
     model : torch.nn.Module
         Model performing the forward pass.
-    optimizer : 
+    optimizer :
     get_loss : callable
         Function defining the loss.
     Returns
@@ -130,7 +128,7 @@ def train_batch(x, model, optimizer, get_loss):
         Loss as computed through get_loss on
         an input minibatch.
     """
-    x_recon, z, z_mu, z_logvar = model(x.float())
+    x_recon, z, z_mean, z_logvar = model(x.float())
     # TODO: compare x and x recon here, especially look if x is not constant.
     print("\n\nabout x recon:")
     print(x_recon.shape)
@@ -139,7 +137,7 @@ def train_batch(x, model, optimizer, get_loss):
     print(x.shape)
     print(x[0, :10, :6])
     print("\n\n")
-    loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
+    loss = get_loss(model, x, x_recon, z, z_mean, z_logvar)
     print("about loss")
     print(loss.shape)
     # Backward pass
@@ -163,7 +161,7 @@ def valid_batch(x, model, get_loss):
     """Perform a forward pass at validation time.
 
     The loss is not backpropagated at validation time.
-    
+
     Parameters
     ----------
     x : array-like, shape=[batch_size, seq_len, 3*n_joints]
@@ -178,8 +176,8 @@ def valid_batch(x, model, get_loss):
         Validation loss as computed through get_loss on
         an input minibatch.
     """
-    x_recon, z, z_mu, z_logvar = model(x.float())
-    valid_loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
+    x_recon, z, z_mean, z_logvar = model(x.float())
+    valid_loss = get_loss(model, x, x_recon, z, z_mean, z_logvar)
     return valid_loss
 
 
