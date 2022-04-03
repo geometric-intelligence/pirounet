@@ -1,3 +1,5 @@
+"""Main file performing training."""
+
 import logging
 import os
 import sys

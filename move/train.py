@@ -122,6 +122,7 @@ def train_batch(x, model, optimizer, get_loss):
     optimizer :
     get_loss : callable
         Function defining the loss.
+
     Returns
     -------
     loss : float-like, shape=[]
@@ -170,6 +171,7 @@ def valid_batch(x, model, get_loss):
         Model performing the forward pass.
     get_loss : callable
         Function defining the loss.
+
     Returns
     -------
     valid_loss : float-like

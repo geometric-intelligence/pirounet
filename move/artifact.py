@@ -1,3 +1,5 @@
+"""Make artifcats and log them to wandb."""
+
 import os
 import time
 
@@ -235,7 +237,7 @@ def animate_stick(
     cmap="inferno",
     pointer_color="black",
 ):
-
+    """Create skeleton animation."""
     # Put data on CPU and convert to numpy array
     seq = seq.cpu().data.numpy()
     ghost = ghost.cpu().data.numpy()

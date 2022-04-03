@@ -12,6 +12,8 @@ import torch
 
 
 class LstmEncoder(torch.nn.Module):
+    """Encoder with LSTM layers."""
+
     def __init__(self, n_layers, input_features, h_features_loop, latent_dim):
         super().__init__()
         self.n_layers = n_layers
@@ -84,6 +86,8 @@ class LstmEncoder(torch.nn.Module):
 
 
 class LstmDecoder(torch.nn.Module):
+    """Decoder with LSTM layers."""
+
     def __init__(
         self,
         n_layers,
@@ -248,7 +252,8 @@ class LstmVAE(torch.nn.Module):
         return recon_loss + self.kl_weight * regul_loss
 
     def forward(self, x, y=None):
-        """
+        """Perform forward pass of the VAE.
+
         Runs a data point through the model in order
         to provide its reconstruction and q distribution
         parameters.
