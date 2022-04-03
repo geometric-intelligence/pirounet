@@ -4,7 +4,6 @@ import artifact
 import numpy as np
 import torch
 import wandb
-from torch.autograd import Variable
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -37,7 +36,6 @@ def run_train(
 
         loss_epoch = 0
         for x in data_train_torch:
-            x = Variable(x)  # TODO: Do we need this?
             x = x.to(DEVICE)
 
             loss = train_batch(x, model, optimizer, get_loss)
@@ -62,7 +60,6 @@ def run_train(
 
         loss_valid_epoch = 0
         for x in data_valid_torch:
-            x = Variable(x)
             x = x.to(DEVICE)
 
             loss_valid = valid_batch(x, model, get_loss)
@@ -85,7 +82,6 @@ def run_train(
 
             if i == index_of_chosen_seq:
                 print("Found test sequence. Running it through model")
-                x = Variable(x)
                 x = x.to(DEVICE)
                 x_input = x
                 x_recon, z, z_mean, z_logvar = model(x.float())
