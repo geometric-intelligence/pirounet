@@ -1,4 +1,4 @@
-"""Make artifcats and log them to wandb."""
+"""Make artifacts and log them to wandb."""
 
 import logging
 
