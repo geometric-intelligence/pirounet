@@ -83,14 +83,83 @@ skeleton_lines = [
     (("RKNE", "RKNI"), ("RHEL",)),
     (("LKNE", "LKNI"), ("LFWT", "RFWT", "LBWT", "RBWT")),  # knee to "navel"
     (("RKNE", "RKNI"), ("LFWT", "RFWT", "LBWT", "RBWT")),
-    (("LFWT", "RFWT", "LBWT", "RBWT"), ("STRN", "T10",),),  # "navel" to chest
-    (("STRN", "T10",), ("CLAV", "C7",),),  # chest to neck
-    (("CLAV", "C7",), ("LFSH", "LBSH",),),  # neck to shoulders
-    (("CLAV", "C7",), ("RFSH", "RBSH",),),
-    (("LFSH", "LBSH",), ("LELB", "LIEL",),),  # shoulders to elbows
-    (("RFSH", "RBSH",), ("RELB", "RIEL",),),
-    (("LELB", "LIEL",), ("LOWR", "LIWR",),),  # elbows to wrist
-    (("RELB", "RIEL",), ("ROWR", "RIWR",),),
+    (
+        ("LFWT", "RFWT", "LBWT", "RBWT"),
+        (
+            "STRN",
+            "T10",
+        ),
+    ),  # "navel" to chest
+    (
+        (
+            "STRN",
+            "T10",
+        ),
+        (
+            "CLAV",
+            "C7",
+        ),
+    ),  # chest to neck
+    (
+        (
+            "CLAV",
+            "C7",
+        ),
+        (
+            "LFSH",
+            "LBSH",
+        ),
+    ),  # neck to shoulders
+    (
+        (
+            "CLAV",
+            "C7",
+        ),
+        (
+            "RFSH",
+            "RBSH",
+        ),
+    ),
+    (
+        (
+            "LFSH",
+            "LBSH",
+        ),
+        (
+            "LELB",
+            "LIEL",
+        ),
+    ),  # shoulders to elbows
+    (
+        (
+            "RFSH",
+            "RBSH",
+        ),
+        (
+            "RELB",
+            "RIEL",
+        ),
+    ),
+    (
+        (
+            "LELB",
+            "LIEL",
+        ),
+        (
+            "LOWR",
+            "LIWR",
+        ),
+    ),  # elbows to wrist
+    (
+        (
+            "RELB",
+            "RIEL",
+        ),
+        (
+            "ROWR",
+            "RIWR",
+        ),
+    ),
     (("LFHD",), ("LBHD",)),  # draw lines around circumference of the head
     (("LBHD",), ("RBHD",)),
     (("RBHD",), ("RFHD",)),
