@@ -14,6 +14,11 @@ import wandb
 logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
 
+logging.info("Setup device")
+DEVICE = torch.device("cpu")
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+
 
 logging.info("Initialize WandB project.")
 
@@ -55,7 +60,7 @@ model = nn.LstmVAE(
     output_features=3 * 53,
     seq_len=config.seq_len,
     negative_slope=0.2,
-).to(default_config.device)
+).to(DEVICE)
 
 logging.info("Load data")
 data_train_torch, data_valid_torch, data_test_torch = datasets.get_mariel_data(config)

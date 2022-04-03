@@ -327,7 +327,7 @@ def animate_stick(
 
     current_path = os.path.abspath(os.getcwd())
     filepath = str(current_path) + "/animations/"
-    name = "artifact_epoch_{}_index_{}_on_{}.gif".format(epoch, index, now)
+    name = f"artifact_epoch_{epoch}_index_{index}_on_{now}.gif"
     fname = filepath + name
     print("will save at " + fname)
 
