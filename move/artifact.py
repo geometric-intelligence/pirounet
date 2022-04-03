@@ -8,7 +8,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
-import wandb
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
 
@@ -333,12 +332,6 @@ def animate_stick(
     name = f"artifact_epoch_{epoch}_index_{index}_on_{now}.gif"
     fname = filepath + name
     anim.save(fname, writer="pillow", fps=30)
-    logging.info(f"Artifact saved at {fname}")
+    logging.info(f"Artifact saved at {fname}.")
 
-    # add file to artifact by full path
-    animation_artifact = wandb.Artifact("animation", type="video")
-    animation_artifact.add_file(fname)
-    wandb.log_artifact(animation_artifact)
-    logging.info("Logged artifact to wandb")
-
-    return anim
+    return fname

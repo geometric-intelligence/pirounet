@@ -67,9 +67,6 @@ model = nn.LstmVAE(
 logging.info("Load data")
 data_train_torch, data_valid_torch, data_test_torch = datasets.get_mariel_data(config)
 
-
-logging.info("Train/validate and record loss")
-
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)

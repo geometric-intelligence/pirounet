@@ -81,21 +81,23 @@ def get_mariel_data(config):
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    logging.info("Make seq_data of shape [number of seq, seq_len, input_features]")
+    logging.info(
+        "Preprocessing: Get seq_data of shape [n_seqs, seq_len, input_features]"
+    )
     seq_data = np.zeros(
         (my_data.shape[0] - config.seq_len, config.seq_len, my_data.shape[1])
     )
     for i in range((ds_all.shape[0] - config.seq_len)):
         seq_data[i] = my_data[i : i + config.seq_len]
 
-    logging.info("Make training data and validing data")
+    logging.info("Preprocessing: Split into train/validation/test data.")
     five_perc = int(round(seq_data.shape[0] * 0.05))
     ninety_perc = seq_data.shape[0] - (2 * five_perc)
     valid_ds = seq_data[:five_perc, :, :]
     test_ds = seq_data[five_perc : (2 * five_perc), :, :]
     train_ds = seq_data[ninety_perc:, :, :]
 
-    logging.info("Make torch tensor in batches")
+    logging.info("Preprocessing: Convert into torch dataloader")
     data_train_torch = torch.utils.data.DataLoader(
         train_ds, batch_size=config.batch_size
     )

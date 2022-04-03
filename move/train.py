@@ -75,30 +75,30 @@ def run_train(
             loss_valid = valid_batch(x, model, get_loss)
             loss_valid_epoch_total += loss_valid * n_seqs_in_batch
 
-            seqs_valid_in_epoch_ct += len(x)
+            seqs_valid_in_epoch_ct += n_seqs_in_batch
+            loss_valid_epoch_per_seq = loss_valid_epoch_total / seqs_valid_in_epoch_ct
 
             # Report metrics every 25th batch
             if (batchs_valid_in_epoch_ct + 1) % 25 == 0:
-                valid_log(loss_valid, batchs_valid_in_epoch_ct, epoch)
+                valid_log(loss_valid_epoch_per_seq, batchs_valid_in_epoch_ct, epoch)
 
         # Testing
         index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
         logging.info(f"Test: Make stick video for seq of index {index_of_chosen_seq}")
 
-        for i, x in enumerate(
-            data_test_torch
-        ):  # minibatch: (1, 128, 53*3) batchsize is one
+        # Batch size is 1 for data_test_torch
+        for i, x in enumerate(data_test_torch):
             if i == index_of_chosen_seq:
                 x = x.to(DEVICE)
-                x_input = x.copy()
                 x_recon, _, _, _ = model(x.float())
+                break
 
-        x_input_formatted = x_input.reshape((128, 53, 3))
-        x_recon_formatted = x_recon.reshape((128, 53, 3))
+        x_formatted = x.reshape((128, -1, 3))
+        x_recon_formatted = x_recon.reshape((128, -1, 3))
 
-        logging.info(f"Called animation function for epoch {epoch + 1}")
-        _ = artifact.animate_stick(
-            x_input_formatted,
+        logging.info(f"Call animation function for epoch {epoch}")
+        fname = artifact.animate_stick(
+            x_formatted,
             epoch=epoch,
             index=index_of_chosen_seq,
             ghost=x_recon_formatted,
@@ -106,6 +106,10 @@ def run_train(
             ghost_shift=0.2,
             figsize=(12, 8),
         )
+        animation_artifact = wandb.Artifact("animation", type="video")
+        animation_artifact.add_file(fname)
+        wandb.log_artifact(animation_artifact)
+        logging.info("Logged artifact to wandb")
 
     logging.info("Done training.")
 
@@ -148,7 +152,7 @@ def train_log(loss, batchs_in_epoch_ct, batch_ct, epoch):
     """Log epoch and train loss into wandb."""
     wandb.log({"epoch": epoch, "loss": loss}, step=batch_ct)
     batchs_str = str(batchs_in_epoch_ct).zfill(5)
-    logging.info(f"Train (Epoch {epoch}): Loss after {batchs_str} batchs: {loss}")
+    logging.info(f"Train (Epoch {epoch}): Loss/seq after {batchs_str} batchs: {loss}")
 
 
 def valid_batch(x, model, get_loss):
@@ -180,4 +184,6 @@ def valid_log(loss, batchs_in_epoch_ct, epoch):
     """Log validation loss to wandb."""
     wandb.log({"valid_loss": loss})
     batchs_str = str(batchs_in_epoch_ct).zfill(5)
-    logging.info(f"# Valid (Epoch {epoch}): loss after {batchs_str} batches: {loss}")
+    logging.info(
+        f"# Valid (Epoch {epoch}): Loss/seq after {batchs_str} batches: {loss}"
+    )
