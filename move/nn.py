@@ -3,10 +3,7 @@
 # implementation-differences-in-lstm-layers-tensorflow
 # -vs-pytorch-77a31d742f74
 import math
-import os
-from glob import glob
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import init
@@ -35,8 +32,12 @@ class LstmEncoder(torch.nn.Module):
         return eps.mul(std).add_(z_mean)
 
     def forward(self, inputs):
-        """Note that:
-        inputs has shape=[batch_size, seq_len, input_features].
+        """Perform forward pass of the encoder.
+        
+        Parameters:
+        inputs : array-like
+            shape=[batch_size, seq_len, input_features]
+            where input_features = 3 * n_body_joints.
         """
         # print("starting the forward of encoder."
         # print("the first step is calling layer lstm1")
@@ -104,6 +105,7 @@ class LstmDecoder(torch.nn.Module):
         )
 
     def forward(self, inputs):
+        """Perform forward pass of the decoder."""
 
         h = self.linear(inputs)
 
@@ -113,24 +115,21 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))  # ,self.seq_len, 1, 1)
 
         h = h.repeat(1, self.seq_len, 1)
-        print("repeated h:")
-        print(h.shape)
-        print(h)
-        h_before = h
+        # print("repeated h:")
+        # print(h.shape)
+        # print(h[0])
+        # h_before = h
 
         for i in range(self.n_layers - 1):
             h, (h_T, c_T) = self.lstm_loop(h)
-            print(f"h at layer {i}")
-            print(h.shape)
-            print(h)
-
-        equals = np.all(np.equal(h_before[0].detach().numpy(), h[0].detach().numpy()), axis=-1)
-        print("equals shape (expected 128)", equals.shape)        
+            # print(f"h at layer {i}, first batch el, first 10 frmes, first joints in 3D")
+            # print(h.shape)
+            # print(h[0, :20, :6])   
 
         h, (h_T, c_T) = self.lstm2(h)
-        print("\n \n h just before output, first batch elements, last 8 frames, first 2 joints in 3D:")
-        print(h.shape)
-        print(h[0, 120:, :6])
+        # print("\n \n h just before output, first batch element, first 10 frames, first joints in 3D:")
+        # print(h.shape)
+        # print(h[0, :20, :6])
 
         return h
 
@@ -229,7 +228,14 @@ class LstmVAE(torch.nn.Module):
         #     "x_in has shape {}"
         #     " and x_out has shape {}".format(x_in.shape, x_out.shape)
         # )
-        recon_loss = torch.sum(torch.norm((x_in - x_out)) ** 2)
+        recon_loss = (x_in - x_out) ** 2 # 8, 128, 159
+        print("\n\n recon loss")
+        print(recon_loss.shape)
+        print(recon_loss[0])
+        recon_loss = torch.sum(recon_loss, axis=2)
+        print(recon_loss.shape)
+        print(recon_loss[0])
+        recon_loss = torch.sum(recon_loss)
         # x_out is sequence
         # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
 
@@ -285,65 +291,3 @@ class LstmVAE(torch.nn.Module):
 #     #     # print("GPUs found: {}".format(len(gpus)))
 #     return ()
 
-
-def load_data(pattern="data/mariel_*.npy"):
-    # load up the six datasets, performing some minimal preprocessing beforehand
-    datasets = {}
-    ds_all = []
-
-    exclude_points = [26, 53]
-    point_mask = np.ones(55, dtype=bool)
-    point_mask[exclude_points] = 0
-
-    for f in sorted(glob(pattern)):
-        ds_name = os.path.basename(f)[7:-4]
-        # print("loading:", ds_name)
-        ds = np.load(f).transpose((1, 0, 2))
-        ds = ds[500:-500, point_mask]
-        # print("\t Shape:", ds.shape)
-
-        ds[:, :, 2] *= -1
-        # print("\t Min:", np.min(ds, axis=(0, 1)))
-        # print("\t Max:", np.max(ds, axis=(0, 1)))
-
-        # ds = filter_points(ds)
-
-        datasets[ds_name] = ds
-        ds_all.append(ds)
-
-    ds_counts = np.array([ds.shape[0] for ds in ds_all])
-    ds_offsets = np.zeros_like(ds_counts)
-    ds_offsets[1:] = np.cumsum(ds_counts[:-1])
-
-    ds_all = np.concatenate(ds_all)
-    # print("Full data shape:", ds_all.shape)
-    # # print("Offsets:", ds_offsets)
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    xy_min = min(low[:2])
-    xy_max = max(hi[:2])
-    xy_range = xy_max - xy_min
-    ds_all[:, :, :2] -= xy_min
-    ds_all *= 2 / xy_range
-    ds_all[:, :, :2] -= 1.0
-
-    # it's also useful to have these datasets centered, i.e. with the x and y offsets
-    # subtracted from each individual frame
-
-    ds_all_centered = ds_all.copy()
-    ds_all_centered[:, :, :2] -= ds_all_centered[:, :, :2].mean(axis=1, keepdims=True)
-
-    datasets_centered = {}
-    for ds in datasets:
-        datasets[ds][:, :, :2] -= xy_min
-        datasets[ds] *= 2 / xy_range
-        datasets[ds][:, :, :2] -= 1.0
-        datasets_centered[ds] = datasets[ds].copy()
-        datasets_centered[ds][:, :, :2] -= datasets[ds][:, :, :2].mean(
-            axis=1, keepdims=True
-        )
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts

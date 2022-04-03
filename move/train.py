@@ -9,6 +9,9 @@ from torch.autograd import Variable
 
 
 def get_loss(model, x, x_recon, z, z_mu, z_logvar):
+    """Return loss as ELBO averaged on the minibatch.
+    
+    """
     loss = torch.mean(model.elbo(x, x_recon, z, (z_mu, z_logvar)))
     return loss
 
@@ -108,13 +111,37 @@ def run_train(
 
 
 def train_batch(x, model, optimizer, get_loss):
+    """Perform a forward pass at training time.
 
-    # Forward pass
+    The loss is backpropagated at training time.
+    
+    Parameters
+    ----------
+    x : array-like, shape=[batch_size, seq_len, 3*n_joints]
+        Input to the model.
+    model : torch.nn.Module
+        Model performing the forward pass.
+    optimizer : 
+    get_loss : callable
+        Function defining the loss.
+    Returns
+    -------
+    loss : float-like, shape=[]
+        Loss as computed through get_loss on
+        an input minibatch.
+    """
     x_recon, z, z_mu, z_logvar = model(x.float())
-    # x_recon_batch_first=x_recon.reshape(
-    # (x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
+    # TODO: compare x and x recon here, especially look if x is not constant.
+    print("\n\nabout x recon:")
+    print(x_recon.shape)
+    print(x_recon[0, :10, :6])
+    print("about x:")
+    print(x.shape)
+    print(x[0, :10, :6])
+    print("\n\n")
     loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
+    print("about loss")
+    print(loss.shape)
     # Backward pass
     # TODO: should the optimizer be put at 0 there?
     optimizer.zero_grad()
@@ -133,16 +160,29 @@ def train_log(loss, example_ct, epoch):
 
 
 def valid_batch(x, model, get_loss):
+    """Perform a forward pass at validation time.
 
-    # Forward pass
+    The loss is not backpropagated at validation time.
+    
+    Parameters
+    ----------
+    x : array-like, shape=[batch_size, seq_len, 3*n_joints]
+        Input to the model.
+    model : torch.nn.Module
+        Model performing the forward pass.
+    get_loss : callable
+        Function defining the loss.
+    Returns
+    -------
+    valid_loss : float-like
+        Validation loss as computed through get_loss on
+        an input minibatch.
+    """
     x_recon, z, z_mu, z_logvar = model(x.float())
-    # x_recon_batch_first=x_recon.reshape(
-    # (x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
     valid_loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
     return valid_loss
 
 
 def valid_log(valid_loss, example_ct, epoch):
-    # Where the magic happens
+    """Log validation loss to wandb."""
     wandb.log({"valid_loss": valid_loss})
