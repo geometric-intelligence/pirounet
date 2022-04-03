@@ -64,13 +64,13 @@ class LstmEncoder(torch.nn.Module):
         batch_size, seq_len, _ = inputs.shape
 
         logging.debug(f"Encoder inputs of shape {inputs.shape}")
-        h, (h_last_t, _) = self.lstm1(inputs)
+        h, (h_last_t, c_last_t) = self.lstm1(inputs)
         logging.debug(f"LSTM1 gives h of shape: {h.shape}")
         logging.debug(f"LSTM1 gives h_last_t of shape {h_last_t.shape}")
 
         for i in range(self.n_layers - 1):
             logging.debug(f"- # Encoder LSTM loop iteration {i}/{self.n_layers-1}.")
-            h, (h_last_t, _) = self.lstm2(h)
+            h, (h_last_t, c_last_t) = self.lstm2(h, (h_last_t, c_last_t))
             assert h.shape == (batch_size, seq_len, self.h_features_loop)
             assert h_last_t.shape == (1, batch_size, self.h_features_loop)
 
@@ -137,7 +137,7 @@ class LstmDecoder(torch.nn.Module):
 
         for i in range(self.n_layers - 1):
             logging.debug(f"- # Decoder LSTM loop iteration {i}/{self.n_layers-1}.")
-            h, _ = self.lstm_loop(h)
+            h, (h_last_t, c_last_t) = self.lstm_loop(h)
             assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 

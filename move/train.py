@@ -107,8 +107,11 @@ def run_train(
                 x_recon, _, _, _ = model(x.float())
                 break
 
-        x_formatted = x.reshape((128, -1, 3))
-        x_recon_formatted = x_recon.reshape((128, -1, 3))
+        assert x.ndim == 3
+        seq_len = x.shape[-2]
+
+        x_formatted = x.reshape((seq_len, -1, 3))
+        x_recon_formatted = x_recon.reshape((seq_len, -1, 3))
 
         logging.info(f"Call animation function for epoch {epoch}")
         fname = artifact.animate_stick(

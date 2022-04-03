@@ -90,12 +90,16 @@ def get_mariel_data(config):
     for i in range((ds_all.shape[0] - config.seq_len)):
         seq_data[i] = my_data[i : i + config.seq_len]
 
+    logging.info(f">> Seq data has shape {seq_data.shape}")
     logging.info("Preprocessing: Split into train/validation/test data.")
     five_perc = int(round(seq_data.shape[0] * 0.05))
     ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    valid_ds = seq_data[:five_perc, :, :]
-    test_ds = seq_data[five_perc : (2 * five_perc), :, :]
-    train_ds = seq_data[ninety_perc:, :, :]
+    train_ds = seq_data[:ninety_perc, :, :]
+    valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
+    test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
+    logging.info(f">> Train ds has shape {train_ds.shape}")
+    logging.info(f">> Valid ds has shape {valid_ds.shape}")
+    logging.info(f">> Test ds has shape {test_ds.shape}")
 
     logging.info("Preprocessing: Convert into torch dataloader")
     data_train_torch = torch.utils.data.DataLoader(

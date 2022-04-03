@@ -35,6 +35,7 @@ wandb.init(
         "seq_len": default_config.seq_len,
         "kl_weight": default_config.kl_weight,
         "negative_slope": default_config.negative_slope,
+        "n_layers": default_config.n_layers,
     },
 )
 config = wandb.config
@@ -56,7 +57,7 @@ elif SERVER == "pod":
 
 logging.info("Initialize model")
 model = nn.LstmVAE(
-    n_layers=2,
+    n_layers=config.n_layers,
     input_features=3 * 53,
     h_features_loop=32,
     latent_dim=32,
