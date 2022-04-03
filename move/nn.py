@@ -187,8 +187,7 @@ class RotationLayer(torch.nn.Module):
         """
         batch_size, seq_len, _ = x.shape
         x = x.reshape((batch_size, seq_len, -1, 3))
-        x = torch.einsum(
-            "...j, ...ij->...i", x, self.rotation_mat)
+        x = torch.einsum("...j, ...ij->...i", x, self.rotation_mat)
         return x.reshape((batch_size, seq_len, -1))
 
 

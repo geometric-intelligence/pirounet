@@ -39,15 +39,18 @@ def augment_by_rotations(seq_data, augmentation_factor):
         thetas = np.random.uniform(0, 2 * np.pi, size=(augmentation_factor,))
         c_thetas = np.cos(thetas)
         s_thetas = np.sin(thetas)
-        rotation_mats = [np.array(
-            [[c, -s, 0], [s, c, 0], [0, 0, 1]]) for c, s in zip(c_thetas, s_thetas)]
+        rotation_mats = [
+            np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+            for c, s in zip(c_thetas, s_thetas)
+        ]
         rotation_mats = np.stack(rotation_mats, axis=0)
         assert rotation_mats.shape == (augmentation_factor, 3, 3), rotation_mats.shape
         seq_len, input_features = seq.shape
         seq = seq.reshape((seq_len, -1, 3))
         rotated_seq = np.einsum("...j, nij->...ni", seq, rotation_mats)
         rotated_seq = rotated_seq.reshape(
-            (augmentation_factor, seq_len, input_features))
+            (augmentation_factor, seq_len, input_features)
+        )
         rotated_seq_data.append(rotated_seq)
 
     seq_data = np.stack(rotated_seq_data, axis=0).reshape((-1, seq_len, input_features))
@@ -146,7 +149,8 @@ def get_mariel_data(config, augmentation_factor=1):
     if augmentation_factor > 1:
         logging.info(
             "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}")
+            f"factor = {augmentation_factor}"
+        )
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
 
