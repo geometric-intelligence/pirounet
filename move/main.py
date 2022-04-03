@@ -26,7 +26,7 @@ logging.info("Initialize WandB project.")
 
 wandb.init(
     project="move",
-    entity="bioshape-lab",
+    entity="ninamiolane",
     config={
         "learning_rate": default_config.learning_rate,
         "epochs": default_config.epochs,

@@ -1,5 +1,7 @@
 """Training functions."""
 
+import logging
+
 import artifact
 import numpy as np
 import torch
@@ -25,74 +27,76 @@ def run_train(
     optimizer,
     epochs,
 ):
-    """Run training and track it with wandb."""
-    example_ct = 0  # number of examples seen
+    """Run training and track it with wandb.
+
+    The loss is given average on the number of examples (i.e. sequences)
+    that have been seen until the current minibatch.
+
+    loss_epoch = average loss per sequence.
+    """
     batch_ct = 0
-    example_ct_valid = 0  # number of examples seen
-    batch_ct_valid = 0
+    batch_valid_ct = 0
     for epoch in range(epochs):
-        # Train
+        seqs_in_epoch_ct = 0  # number of examples (sequences) seen
+        batchs_in_epoch_ct = 0
+
+        # Training
         model = model.train()
 
-        loss_epoch = 0
+        loss_epoch_total = 0
         for x in data_train_torch:
+            batchs_in_epoch_ct += 1
+            batch_ct += 1
+
+            n_seqs_in_batch = len(x)
             x = x.to(DEVICE)
 
             loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch += loss * len(x)
+            loss_epoch_total += loss * n_seqs_in_batch
 
-            example_ct += len(x)  # add amount of examples in 1 batch
-            loss_epoch /= (
-                example_ct  # TODO: Sum of average of losses is not average of loss
-            )
-
-            batch_ct += 1
-
+            seqs_in_epoch_ct += n_seqs_in_batch
+            loss_epoch_per_seq = loss_epoch_total / seqs_in_epoch_ct
             # Report metrics every 25th batch
-            if ((batch_ct + 1) % 25) == 0:
-                train_log(loss, example_ct, epoch)
+            if (batchs_in_epoch_ct + 1) % 25 == 0:
+                train_log(loss_epoch_per_seq, batchs_in_epoch_ct, batch_ct, epoch)
 
-        loss_epoch /= batch_ct  # get average loss/epoch
-        # TODO: Check: already summed?
-
-        # Run Validation
+        # Validation
         model = model.eval()
+        seqs_valid_in_epoch_ct = 0  # number of examples (sequences) seen
+        batchs_valid_in_epoch_ct = 0
 
-        loss_valid_epoch = 0
+        loss_valid_epoch_total = 0
         for x in data_valid_torch:
+            batch_valid_ct += 1
+            batchs_valid_in_epoch_ct += 1
             x = x.to(DEVICE)
+            n_seqs_in_batch = len(x)
 
             loss_valid = valid_batch(x, model, get_loss)
-            loss_valid_epoch += loss_valid
+            loss_valid_epoch_total += loss_valid * n_seqs_in_batch
 
-            example_ct_valid += len(x)  # add amount of examples in 1 batch
-            batch_ct_valid += 1
+            seqs_valid_in_epoch_ct += len(x)
 
             # Report metrics every 25th batch
-            if ((batch_ct_valid + 1) % 25) == 0:
-                valid_log(loss_valid, example_ct_valid, epoch)
+            if (batchs_valid_in_epoch_ct + 1) % 25 == 0:
+                valid_log(loss_valid, batchs_valid_in_epoch_ct, epoch)
 
-        # Run testing
-        # Make and log artifact at the end of each epoch (stick-figure video)
+        # Testing
         index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
-        print("INDEX OF TESTING SEQUENCE IS {}".format(index_of_chosen_seq))
-        i = 0
-        for x in data_test_torch:  # minibatch: (1, 128, 53*3) batchsize is one
-            i += 1
+        logging.info(f"Test: Make stick video for seq of index {index_of_chosen_seq}")
 
+        for i, x in enumerate(
+            data_test_torch
+        ):  # minibatch: (1, 128, 53*3) batchsize is one
             if i == index_of_chosen_seq:
-                print("Found test sequence. Running it through model")
                 x = x.to(DEVICE)
-                x_input = x
-                x_recon, z, z_mean, z_logvar = model(x.float())
-                print("Ran it through model")
-
-            else:
-                pass
+                x_input = x.copy()
+                x_recon, _, _, _ = model(x.float())
 
         x_input_formatted = x_input.reshape((128, 53, 3))
         x_recon_formatted = x_recon.reshape((128, 53, 3))
 
+        logging.info(f"Called animation function for epoch {epoch + 1}")
         _ = artifact.animate_stick(
             x_input_formatted,
             epoch=epoch,
@@ -102,9 +106,8 @@ def run_train(
             ghost_shift=0.2,
             figsize=(12, 8),
         )
-        print("Called animation function for epoch {}".format(epoch + 1))
 
-    print("done training")
+    logging.info("Done training.")
 
 
 def train_batch(x, model, optimizer, get_loss):
@@ -128,33 +131,24 @@ def train_batch(x, model, optimizer, get_loss):
         Loss as computed through get_loss on
         an input minibatch.
     """
-    x_recon, z, z_mean, z_logvar = model(x.float())
-    # TODO: compare x and x recon here, especially look if x is not constant.
-    # print("\n\nabout x recon:")
-    # print(x_recon.shape)
-    # print(x_recon[0, :10, :6])
-    # print("about x:")
-    # print(x.shape)
-    # print(x[0, :10, :6])
-    # print("\n\n")
-    loss = get_loss(model, x, x_recon, z, z_mean, z_logvar)
-    # print("about loss")
-    # print(loss.shape)
-    # Backward pass
-    # TODO: should the optimizer be put at 0 there?
     optimizer.zero_grad()
+
+    x_recon, z, z_mean, z_logvar = model(x.float())
+    assert x.shape == x_recon.shape
+
+    loss = get_loss(model, x, x_recon, z, z_mean, z_logvar)
+    assert len(loss.shape) == 0
+
     loss.backward()
-
-    # Optimizer takes step
     optimizer.step()
-
     return loss
 
 
-def train_log(loss, example_ct, epoch):
+def train_log(loss, batchs_in_epoch_ct, batch_ct, epoch):
     """Log epoch and train loss into wandb."""
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-    print("Loss after {} examples: {}".format(str(example_ct).zfill(5), loss))
+    wandb.log({"epoch": epoch, "loss": loss}, step=batch_ct)
+    batchs_str = str(batchs_in_epoch_ct).zfill(5)
+    logging.info(f"Train (Epoch {epoch}): Loss after {batchs_str} batchs: {loss}")
 
 
 def valid_batch(x, model, get_loss):
@@ -182,6 +176,8 @@ def valid_batch(x, model, get_loss):
     return valid_loss
 
 
-def valid_log(valid_loss, example_ct, epoch):
+def valid_log(loss, batchs_in_epoch_ct, epoch):
     """Log validation loss to wandb."""
-    wandb.log({"valid_loss": valid_loss})
+    wandb.log({"valid_loss": loss})
+    batchs_str = str(batchs_in_epoch_ct).zfill(5)
+    logging.info(f"# Valid (Epoch {epoch}): loss after {batchs_str} batches: {loss}")

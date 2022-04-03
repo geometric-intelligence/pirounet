@@ -1,5 +1,6 @@
 """Make artifcats and log them to wandb."""
 
+import logging
 import os
 import time
 
@@ -331,17 +332,13 @@ def animate_stick(
     filepath = str(current_path) + "/animations/"
     name = f"artifact_epoch_{epoch}_index_{index}_on_{now}.gif"
     fname = filepath + name
-    print("will save at " + fname)
-
     anim.save(fname, writer="pillow", fps=30)
-    print("Artifact saved at " + fname)
+    logging.info(f"Artifact saved at {fname}")
 
     # add file to artifact by full path
     animation_artifact = wandb.Artifact("animation", type="video")
-    print("made wandb artifact")
     animation_artifact.add_file(fname)
-    print("added file to it")
     wandb.log_artifact(animation_artifact)
-    print("logged artifact")
+    logging.info("Logged artifact to wandb")
 
     return anim
