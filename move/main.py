@@ -27,7 +27,7 @@ logging.info("Initialize WandB project.")
 # and would be overwritten by a sweep
 wandb.init(
     project="move",
-    entity="ninamiolane",
+    entity="bioshape-lab",
     config={
         "learning_rate": default_config.learning_rate,
         "epochs": default_config.epochs,
