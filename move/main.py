@@ -13,12 +13,15 @@ import default_config
 import nn
 import train
 
-logging.info("Initialize WandB project")
+
+# Can be replaced by logging.DEBUG or logging.WARNING
+logging.basicConfig(level=logging.INFO)
+
+logging.info("Initialize WandB project.")
 
 wandb.init(
-    project="new",
-    entity="ninamiolane",
-    # settings=wandb.Settings(start_method="thread"),
+    project="move",
+    entity="bioshape-lab",
     config={
         "learning_rate": default_config.learning_rate,
         "epochs": default_config.epochs,
