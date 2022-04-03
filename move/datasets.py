@@ -146,7 +146,7 @@ def get_mariel_data(config, augmentation_factor=1):
         logging.info(
             f"Preprocessing: data augmentation by rotations, factor = {augmentation_factor}")
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq data has shape: {seq_data.shape}")
+        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
 
     five_perc = int(round(seq_data.shape[0] * 0.05))
     ninety_perc = seq_data.shape[0] - (2 * five_perc)
