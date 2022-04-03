@@ -115,7 +115,8 @@ class LstmDecoder(torch.nn.Module):
 
         Parameters
         ----------
-        inputs : array-like, shape=[batch_size, latent_dim]
+        inputs : array-like
+            Shape=[batch_size, latent_dim]
         """
         assert inputs.ndim == 2
         assert inputs.shape[-1] == self.latent_dim
@@ -138,7 +139,7 @@ class LstmDecoder(torch.nn.Module):
         h, _ = self.lstm2(h)
         assert h.shape == (batch_size, self.seq_len, self.output_features)
         logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
-        logging.debug(f"1st batch example, kast 20t, first 2 joints: {h[0, :-20, :6]}")
+        logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
 
 

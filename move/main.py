@@ -3,19 +3,17 @@ import os
 import sys
 import warnings
 
-
-import numpy as np
-import torch
-import wandb
-
 import datasets
 import default_config
 import nn
+import torch
 import train
-
+import wandb
 
 # Can be replaced by logging.DEBUG or logging.WARNING
 logging.basicConfig(level=logging.INFO)
+warnings.filterwarnings("ignore")
+
 
 logging.info("Initialize WandB project.")
 
@@ -42,11 +40,9 @@ if SERVER == "colab":
     drive.mount("/content/drive")
     # %cd /content/drive/MyDrive/colab-github/move/dance
     sys.path.append(os.path.dirname(os.getcwd()))
-    warnings.filterwarnings("ignore")
 
-if SERVER == "pod":
+elif SERVER == "pod":
     sys.path.append(os.path.dirname(os.getcwd()))
-    warnings.filterwarnings("ignore")
 
 
 logging.info("Initialize model")
@@ -62,7 +58,7 @@ model = nn.LstmVAE(
 ).to(default_config.device)
 
 logging.info("Load data")
-data_train_torch, data_valid_torch, data_test_torch = datasets.get_mariel_tensor_data(config)
+data_train_torch, data_valid_torch, data_test_torch = datasets.get_mariel_data(config)
 
 
 logging.info("Train/validate and record loss")

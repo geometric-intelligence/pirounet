@@ -1,14 +1,14 @@
+import logging
 import os
 from glob import glob
 
-import logging
 import numpy as np
 import torch
 
 
-def load_mariel_raw_data(pattern="data/mariel_*.npy"):
+def load_mariel_raw(pattern="data/mariel_*.npy"):
     """Load six datasets and perform minimal preprocessing.
-    
+
     Processing amunts to center each dancer, such that
     the barycenter becomes 0.
     """
@@ -72,8 +72,9 @@ def load_mariel_raw_data(pattern="data/mariel_*.npy"):
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
 
-def get_mariel_tensor_data(config):
-    ds_all, ds_all_centered, datasets, datasets_centered, ds_counts = load_mariel_raw_data()
+
+def get_mariel_data(config):
+    ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
     logging.info("Make seq_data of shape [number of seq, seq_len, input_features]")
