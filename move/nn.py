@@ -161,9 +161,11 @@ class LstmDecoder(torch.nn.Module):
 
 
 class RotationLayer(torch.nn.Module):
-    """Layer that rotates the skeleton around axis z."""
+    """Rotate a sequence of skeletons around axis z."""
 
     def __init__(self, theta):
+        super(RotationLayer, self).__init__()
+        theta = torch.tensor(theta)
         c_theta = torch.cos(theta)
         s_theta = torch.sin(theta)
         self.rotation_mat = torch.tensor(
@@ -171,7 +173,19 @@ class RotationLayer(torch.nn.Module):
         )
 
     def forward(self, x):
-        return torch.dot(x, self.rotation_mat)
+        """Rotate a minibatch of sequences of skeletons.
+        
+        Parameters
+        ----------
+        x : array-like
+            Sequence of skeletons.
+            Shape=[batch_size, seq_len, 3*n_body_joints]
+        """
+        batch_size, seq_len, _ = x.shape
+        x = x.reshape((batch_size, seq_len, -1, 3))
+        x = torch.einsum(
+            "...j, ...ij->...i", x, self.rotation_mat)
+        return x.reshape((batch_size, seq_len, -1))
 
 
 class LstmVAE(torch.nn.Module):
