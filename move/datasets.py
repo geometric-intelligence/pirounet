@@ -7,6 +7,7 @@ from glob import glob
 import numpy as np
 import torch
 
+
 def augment_by_rotations(seq_data, augmentation_factor):
     """Augment the dataset of sequences.
 
@@ -17,16 +18,16 @@ def augment_by_rotations(seq_data, augmentation_factor):
     Notes:
     - N is equal to augmentation_factor.
     - Only rotations of axis z are considered.
-    
+
     Parameters
     ----------
     seq_data : array-like
         Original dataset of sequences.
         Shape=[n_seqs, seq_len, input_features]
     augmentation_factor : int
-        Multiplication factor, i.e. how many new sequences 
+        Multiplication factor, i.e. how many new sequences
         are generated from one given sequence.
-    
+
     Returns
     -------
     rotated_seq_data : array-like
@@ -129,7 +130,7 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 def get_mariel_data(config, augmentation_factor=1):
     """Transform mariel data into train/val/test torch loaders.
-    
+
     Note: Pettee 2019 keeps augmentation_factor=1.
     """
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
@@ -144,7 +145,8 @@ def get_mariel_data(config, augmentation_factor=1):
 
     if augmentation_factor > 1:
         logging.info(
-            f"Preprocessing: data augmentation by rotations, factor = {augmentation_factor}")
+            "Preprocessing: data augmentation by rotations, "
+            f"factor = {augmentation_factor}")
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
 

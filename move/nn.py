@@ -16,7 +16,6 @@ if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 
 
-
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
 
@@ -179,7 +178,7 @@ class RotationLayer(torch.nn.Module):
 
     def forward(self, x):
         """Rotate a minibatch of sequences of skeletons.
-        
+
         Parameters
         ----------
         x : array-like
