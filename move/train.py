@@ -35,20 +35,23 @@ def run_train(
     loss_epoch = average loss per sequence.
     """
     batch_ct = 0
+    seq_ct = 0
     batch_valid_ct = 0
+    seq_valid_ct = 0
     for epoch in range(epochs):
         seqs_in_epoch_ct = 0  # number of examples (sequences) seen
-        batchs_in_epoch_ct = 0
+        batch_in_epoch_ct = 0
 
         # Training
         model = model.train()
 
         loss_epoch_total = 0
         for x in data_train_torch:
-            batchs_in_epoch_ct += 1
+            batch_in_epoch_ct += 1
             batch_ct += 1
 
             n_seqs_in_batch = len(x)
+            seq_ct += n_seqs_in_batch
             x = x.to(DEVICE)
 
             loss = train_batch(x, model, optimizer, get_loss)
@@ -57,20 +60,26 @@ def run_train(
             seqs_in_epoch_ct += n_seqs_in_batch
             loss_epoch_per_seq = loss_epoch_total / seqs_in_epoch_ct
             # Report metrics every 25th batch
-            if (batchs_in_epoch_ct + 1) % 25 == 0:
-                train_log(loss_epoch_per_seq, batchs_in_epoch_ct, batch_ct, epoch)
+            if (batch_in_epoch_ct + 1) % 25 == 0:
+                batchs_str = str(batch_in_epoch_ct).zfill(5)
+                logging.info(
+                    f"Train (Epoch {epoch}): "
+                    f"Loss/seq after {batchs_str} batchs: {loss}"
+                )
+                train_log(loss_epoch_per_seq, seq_ct, epoch)
 
         # Validation
         model = model.eval()
         seqs_valid_in_epoch_ct = 0  # number of examples (sequences) seen
-        batchs_valid_in_epoch_ct = 0
+        batch_valid_in_epoch_ct = 0
 
         loss_valid_epoch_total = 0
         for x in data_valid_torch:
             batch_valid_ct += 1
-            batchs_valid_in_epoch_ct += 1
+            batch_valid_in_epoch_ct += 1
             x = x.to(DEVICE)
             n_seqs_in_batch = len(x)
+            seq_valid_ct += n_seqs_in_batch
 
             loss_valid = valid_batch(x, model, get_loss)
             loss_valid_epoch_total += loss_valid * n_seqs_in_batch
@@ -79,8 +88,13 @@ def run_train(
             loss_valid_epoch_per_seq = loss_valid_epoch_total / seqs_valid_in_epoch_ct
 
             # Report metrics every 25th batch
-            if (batchs_valid_in_epoch_ct + 1) % 25 == 0:
-                valid_log(loss_valid_epoch_per_seq, batchs_valid_in_epoch_ct, epoch)
+            if (batch_valid_in_epoch_ct + 1) % 25 == 0:
+                batchs_str = str(batch_in_epoch_ct).zfill(5)
+                logging.info(
+                    f"# Valid (Epoch {epoch}): "
+                    f"Loss/seq after {batchs_str} batches: {loss}"
+                )
+                valid_log(loss_valid_epoch_per_seq, seq_valid_ct, epoch)
 
         # Testing
         index_of_chosen_seq = np.random.randint(0, data_test_torch.dataset.shape[0])
@@ -148,11 +162,9 @@ def train_batch(x, model, optimizer, get_loss):
     return loss
 
 
-def train_log(loss, batchs_in_epoch_ct, batch_ct, epoch):
+def train_log(loss, seq_ct, epoch):
     """Log epoch and train loss into wandb."""
-    wandb.log({"epoch": epoch, "loss": loss}, step=batch_ct)
-    batchs_str = str(batchs_in_epoch_ct).zfill(5)
-    logging.info(f"Train (Epoch {epoch}): Loss/seq after {batchs_str} batchs: {loss}")
+    wandb.log({"epoch": epoch, "loss": loss}, step=seq_ct)
 
 
 def valid_batch(x, model, get_loss):
@@ -180,10 +192,6 @@ def valid_batch(x, model, get_loss):
     return valid_loss
 
 
-def valid_log(loss, batchs_in_epoch_ct, epoch):
+def valid_log(valid_loss, seq_ct, epoch):
     """Log validation loss to wandb."""
-    wandb.log({"valid_loss": loss})
-    batchs_str = str(batchs_in_epoch_ct).zfill(5)
-    logging.info(
-        f"# Valid (Epoch {epoch}): Loss/seq after {batchs_str} batches: {loss}"
-    )
+    wandb.log({"valid_loss": valid_loss})

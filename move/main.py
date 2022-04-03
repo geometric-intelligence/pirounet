@@ -33,6 +33,8 @@ wandb.init(
         "epochs": default_config.epochs,
         "batch_size": default_config.batch_size,
         "seq_len": default_config.seq_len,
+        "kl_weight": default_config.kl_weight,
+        "negative_slope": default_config.negative_slope,
     },
 )
 config = wandb.config
