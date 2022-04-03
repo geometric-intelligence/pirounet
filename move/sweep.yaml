@@ -1,0 +1,12 @@
+method: bayes
+metric:
+  goal: minimize
+  name: valid_loss
+parameters:
+  epochs:
+    max: 20
+    min: 10
+  learning_rate:
+    max: 0.001
+    min: 5e-05
+program: main.py
