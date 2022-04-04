@@ -188,7 +188,7 @@ class LstmVAE(torch.nn.Module):
                 if m.bias is not None:  # initialize b in W*x+b
                     m.bias.data.zero_()
 
-    def _kld(self, q_param, p_param=None):
+    def _kld(self, z, q_param, p_param=None):
         """
         Computes the KL-divergence of
         some element z.
@@ -279,7 +279,7 @@ def load_data(pattern="data/mariel_*.npy"):
     for f in sorted(glob(pattern)):
         ds_name = os.path.basename(f)[7:-4]
         # print("loading:", ds_name)
-        ds = np.load(f).transpose((1, 0, 2))
+        ds = np.load(f, encoding='latin1', allow_pickle=True).transpose((1, 0, 2))
         ds = ds[500:-500, point_mask]
         # print("\t Shape:", ds.shape)
 
