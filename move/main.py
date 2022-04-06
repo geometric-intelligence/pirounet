@@ -39,7 +39,7 @@ wandb.init(
     },
 )
 config = wandb.config
-logging.info(f"Config: {config}")
+logging.info("Config: {config}")
 
 logging.info("Run server specific commands")
 SERVER = "pod"  # colab
