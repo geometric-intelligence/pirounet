@@ -1,33 +1,31 @@
-# Modified from
-# https://towardsdatascience.com/implementation-differences-in-lstm-layers-tensorflow-vs-pytorch-77a31d742f74
-import math
-import os
-from glob import glob
+"""Architectures of neural networks.
+
+The LstmVAE has been adapted from beyond-imitation, using:
+https://towardsdatascience.com/
+implementation-differences-in-lstm-layers-tensorflow
+-vs-pytorch-77a31d742f74
+"""
+
+import logging
 
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.nn import init
-from torch.autograd import Variable
-import wandb
-from matplotlib import animation
 
-from config import *
-from artifact import *
-
+DEVICE = torch.device("cpu")
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
 
 
 class LstmEncoder(torch.nn.Module):
-    def __init__(
-        self, 
-        n_layers,
-        input_features, 
-        h_features_loop,
-        latent_dim
-    ):
-        super().__init__()
+    """Encoder with LSTM layers."""
 
+    def __init__(self, n_layers, input_features, h_features_loop, latent_dim):
+        super().__init__()
         self.n_layers = n_layers
+        self.input_features = input_features
+        self.h_features_loop = h_features_loop
+        self.latent_dim = latent_dim
+
         self.lstm1 = torch.nn.LSTM(
             input_size=input_features, hidden_size=h_features_loop, batch_first=True
         )
@@ -38,56 +36,63 @@ class LstmEncoder(torch.nn.Module):
         self.logvar_block = torch.nn.Linear(h_features_loop, latent_dim)
 
     def reparametrize(self, z_mean, z_logvar):
-        # # print("reparametrize function called")
+        """Sample from a multivariate Gaussian.
+
+        The multivariate Gaussian samples in the vector
+        space of dimension latent_dim.
+
+        Parameters
+        ----------
+        z_mean : array-like, shape=[batch_size, latent_dim]
+            Mean of the multivariate Gaussian.
+        z_logvar : array-like, shape=[batch_size, latent_dim]
+            Log of the variance of the multivariate Gaussian.
+        """
+        assert z_mean.shape[-1] == self.latent_dim
+        assert z_logvar.shape[-1] == self.latent_dim
+
         std = torch.exp(0.5 * z_logvar)
-        # print("made std")
         eps = torch.randn_like(std)
-        # print("# print made eps")
         return eps.mul(std).add_(z_mean)
 
     def forward(self, inputs):
-        """Note that:
-        inputs has shape=[batch_size, seq_len, input_features].
+        """Perform forward pass of the encoder.
+
+        Parameters
+        ----------
+        inputs : array-like
+            shape=[batch_size, seq_len, input_features]
+            where input_features = 3 * n_body_joints.
         """
-        # print("starting the forward of encoder. the first step is calling layer lstm1")
-        # print("input to encoder should have [8,128,159]")
-        # print(inputs.shape)
-        h1, (h1_T, c1_T) = self.lstm1(inputs)
-        # print('h after linear encoder layer')
-        # print(h1.shape)
-        # print(
-        #     "done layer lstm1."
-        #     " It returned h1 of shape {} and h1_T of shape{}".format(
-        #         h1.shape, h1_T.shape
-        #     )
-        # )
+        assert inputs.shape[-1] == self.input_features
+        batch_size, seq_len, _ = inputs.shape
+        logging.debug(f"- Encoder inputs of shape {inputs.shape}")
 
-        # print("Now starting the loop of {}-1 lstm layers".format(self.n_layers))
+        h, (h_last_t, c_last_t) = self.lstm1(inputs)
+        logging.debug(
+            f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
+        )
+
         for i in range(self.n_layers - 1):
-            # print("this is loop iteration {}. Calling layer lstm2".format(i))
-            h1, (h1_T, c1_T) = self.lstm2(h1)
-            # print(' h and last h of second lstm encoder')
-            # print(h1.shape, h1_T.shape)
+            logging.debug(f"LSTM2 loop iteration {i}/{self.n_layers-1}.")
+            h, (h_last_t, c_last_t) = self.lstm2(h, (h_last_t, c_last_t))
+            assert h.shape == (batch_size, seq_len, self.h_features_loop)
+            assert h_last_t.shape == (1, batch_size, self.h_features_loop)
 
-            # # print(
-            #     "done layer lstm 2. "
-            #     "lstm2 returns h2 of shape {} and h2_T of shape {}".format(
-            #         h2.shape, h2_T.shape
-            #     )
-            # )
-
-        # print("Now computing the encoder output.")
-        # print("calling mean_block")
-        h1_T_batchfirst = h1_T.squeeze(axis=0)       
-        z_mean = self.mean_block(h1_T_batchfirst)
-        z_logvar = self.logvar_block(h1_T_batchfirst)
+        logging.debug("Computing encoder output.")
+        h1_last_t = h_last_t.squeeze(axis=0)
+        assert h1_last_t.shape == (batch_size, self.h_features_loop)
+        z_mean = self.mean_block(h1_last_t)
+        z_logvar = self.logvar_block(h1_last_t)
         z_sample = self.reparametrize(z_mean, z_logvar)
 
-        # print("encoder is done")
+        logging.debug("Encoder done.")
         return z_sample, z_mean, z_logvar
 
 
 class LstmDecoder(torch.nn.Module):
+    """Decoder with LSTM layers."""
+
     def __init__(
         self,
         n_layers,
@@ -98,9 +103,11 @@ class LstmDecoder(torch.nn.Module):
         negative_slope,
     ):
         super().__init__()
+        self.n_layers = n_layers
+        self.output_features = output_features
+        self.h_features_loop = h_features_loop
         self.latent_dim = latent_dim
         self.seq_len = seq_len
-        self.n_layers = n_layers
 
         self.linear = torch.nn.Linear(latent_dim, h_features_loop)
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
@@ -114,334 +121,212 @@ class LstmDecoder(torch.nn.Module):
         )
 
     def forward(self, inputs):
+        """Perform forward pass of the decoder.
+
+        This one also perform a copy of the initial state
+        https://curiousily.com/posts/time-series-anomaly
+        -detection-using-lstm-autoencoder-with-pytorch-in-python/
+
+        Parameters
+        ----------
+        inputs : array-like
+            Shape=[batch_size, latent_dim]
+        """
+        assert inputs.shape[-1] == self.latent_dim
+        batch_size, _ = inputs.shape
+        logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
 
         h = self.linear(inputs)
-
         h = self.leakyrelu(h)
 
-        #assert len(h.shape) == 2, h.shape
-        h = h.reshape((h.shape[0], 1, h.shape[-1]))  # ,self.seq_len, 1, 1)
-
+        assert h.shape == (batch_size, self.h_features_loop)
+        h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
+        assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+
+        # input_zeros = torch.zeros_like(h)
+        # h0 = h[:, 0, :]
+        # h0 = h0.reshape((1, h0.shape[0], h0.shape[-1]))
+        # c0 = h0
+
+        h, (h_last_t, c_last_t) = self.lstm_loop(h)
 
         for i in range(self.n_layers - 1):
-            h, (h_T, c_T) = self.lstm_loop(h)
+            logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
+            h, (h_last_t, c_last_t) = self.lstm_loop(h)
+            assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+            logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
-        h, (h_T, c_T) = self.lstm2(h)
-
+        h, _ = self.lstm2(h)
+        assert h.shape == (batch_size, self.seq_len, self.output_features)
+        logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
+        logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
 
 
-def log_gaussian(x, mu, log_var):
-    """
-    Returns the log pdf of normal distribution parametrised
-    by mu and log_var evaluated at x.
-    :param x: point to evaluate
-    :param mu: mean of distribution
-    :param log_var: log variance of distribution
-    :return: log N(x|µ,σ)
-    """
-    log_pdf = (
-        -0.5 * math.log(2 * math.pi)
-        - log_var / 2
-        - (x - mu) ** 2 / (2 * torch.exp(log_var))
-    )
-    return torch.sum(log_pdf, dim=-1)
+class RotationLayer(torch.nn.Module):
+    """Rotate a sequence of skeletons around axis z."""
 
+    def __init__(self, theta):
+        super(RotationLayer, self).__init__()
+        theta = torch.tensor(theta)
+        c_theta = torch.cos(theta)
+        s_theta = torch.sin(theta)
+        self.rotation_mat = torch.tensor(
+            [[c_theta, -s_theta, 0], [s_theta, c_theta, 0], [0, 0, 1]]
+        ).to(DEVICE)
 
-def log_standard_gaussian(x):
-    """
-    Evaluates the log pdf of a standard normal distribution at x.
-    :param x: point to evaluate
-    :return: log N(x|0,I)
-    """
-    return torch.sum(-0.5 * math.log(2 * math.pi) - x ** 2 / 2, dim=-1)
+    def forward(self, x):
+        """Rotate a minibatch of sequences of skeletons.
+
+        Parameters
+        ----------
+        x : array-like
+            Sequence of skeletons.
+            Shape=[batch_size, seq_len, 3*n_body_joints]
+        """
+        batch_size, seq_len, _ = x.shape
+        x = x.reshape((batch_size, seq_len, -1, 3))
+        x = torch.einsum("...j, ...ij->...i", x, self.rotation_mat)
+        return x.reshape((batch_size, seq_len, -1))
 
 
 class LstmVAE(torch.nn.Module):
+    """Variational Autoencoder model with LSTM.
+
+    The architecture consists of an (LSTM+encoder)
+    and (decoder+LSTM) pair.
+    """
+
     def __init__(
-        self, 
-        n_layers=2, 
-        input_features=3 * 53, 
-        h_features_loop=32, 
-        latent_dim=32, 
+        self,
+        n_layers=2,
+        input_features=3 * 53,
+        h_features_loop=32,
+        latent_dim=32,
         kl_weight=0,
         output_features=3 * 53,
         seq_len=128,
-        negative_slope=0.2
-        ) : 
-        """
-        Variational Autoencoder model
-        consisting of an (LSTM+encoder)/(decoder+LSTM) pair.
-        :param dims: x, z and hidden dimensions of the networks
-        """
+        negative_slope=0.2,
+        with_rotation_layer=True,
+    ):
         super(LstmVAE, self).__init__()
+        self.latent_dim = latent_dim
+        self.with_rotation_layer = with_rotation_layer
 
-        self.encoder = LstmEncoder(n_layers=n_layers, input_features=input_features, h_features_loop=h_features_loop, latent_dim=latent_dim)
-        self.decoder = LstmDecoder(n_layers=n_layers, output_features=output_features, h_features_loop=h_features_loop, latent_dim=latent_dim, seq_len=seq_len, negative_slope=negative_slope)
+        self.encoder = LstmEncoder(
+            n_layers=n_layers,
+            input_features=input_features,
+            h_features_loop=h_features_loop,
+            latent_dim=latent_dim,
+        )
+        self.decoder = LstmDecoder(
+            n_layers=n_layers,
+            output_features=output_features,
+            h_features_loop=h_features_loop,
+            latent_dim=latent_dim,
+            seq_len=seq_len,
+            negative_slope=negative_slope,
+        )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
 
+        assert input_features == output_features
+
+        # This initializes the weights and biases
         for m in self.modules():
-            if isinstance(m, nn.Linear):
-                init.xavier_normal(m.weight.data)  # initialize weight W
-                if m.bias is not None:  # initialize b in W*x+b
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal(m.weight.data)
+                if m.bias is not None:
                     m.bias.data.zero_()
 
     def _kld(self, z, q_param, p_param=None):
-        """
-        Computes the KL-divergence of
-        some element z.
+        """Compute KL-divergence.
+
+        The KL is defined as:
         KL(q||p) = -∫ q(z) log [ p(z) / q(z) ]
                   = -E[log p(z) - log q(z)]
-        :param z: sample from q-distribuion
-        :param q_param: (mu, log_var) of the q-distribution
-        :param p_param: (mu, log_var) of the p-distribution
-        :return: KL(q||p)
-        """
+
+        Formula in Keras was:
         # -0.5*K.mean(K.sum(1 + auto_log_var -
         # K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
 
-        (mu, log_var) = q_param
+        Parameters
+        ----------
+        z : array-like
+            Sample from q-distribuion
+        q_param : tuple
+            (mu, log_var) of the q-distribution
+        p_param: tuple
+            (mu, log_var) of the p-distribution
 
-        kl = -(torch.sum(1 + log_var - torch.square(mu) - log_var.exp(), axis=-1))
-
+        Returns
+        -------
+        kl : KL(q||p)
+        """
+        z_mean, z_logvar = q_param
+        kl = -(torch.sum(1 + z_logvar - torch.square(z_mean) - z_logvar.exp(), axis=-1))
         return kl
 
-    def elbo(self, x_in, x_out, z, q_param, p_param=None):
-        # print(
-        #     "x_in has shape {}"
-        #     " and x_out has shape {}".format(x_in.shape, x_out.shape)
-        # )
-        recon_loss = torch.sum(torch.norm((x_in - x_out)) ** 2)
-        # x_out is sequence
+    def elbo(self, x, x_recon, z, q_param, p_param=None):
+        """Compute ELBO.
+
+        Formula in Keras was (reconstrution loss):
         # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
 
+        Parameters
+        ----------
+        x : array-like
+            Input sequence.
+            Shape=[batch_size, seq_len, input_features]
+        x_recon : array-like
+            Output (reconstructed) sequence.
+            Shape=[batch_size, seq_len, output_features]
+        z : array-like
+            Latent variable. Not a sequence.
+            Shape=[batch_size, latent_dim]
+        """
+        assert x.ndim == x_recon.ndim == 3
+        assert z.ndim == 2
+        assert z.shape[-1] == self.latent_dim
+        batch_size, seq_len, _ = x.shape
+        recon_loss = (x - x_recon) ** 2
+        recon_loss = torch.sum(recon_loss, axis=2)
+        assert recon_loss.shape == (batch_size, seq_len)
+
+        recon_loss = torch.sum(recon_loss)
         regul_loss = self._kld(z, q_param, p_param)
-        # -0.5*K.mean(K.sum(
-        # 1 + auto_log_var - K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
-
-        return recon_loss + self.kl_weight*regul_loss
-
-    def add_flow(self, flow):
-        self.flow = flow
+        return recon_loss + self.kl_weight * regul_loss
 
     def forward(self, x, y=None):
-        """
+        """Perform forward pass of the VAE.
+
         Runs a data point through the model in order
         to provide its reconstruction and q distribution
         parameters.
-        :param x: input data, has shape=[batch_size, seqlen, input_features].
-        :return: reconstructed input
+
+        Parameters
+        ----------
+        x : array-like
+            Input data.
+            Shape=[batch_size, seq_len, input_features].
+
+        Returns
+        -------
+        x_mean : array-like
+            reconstructed input
         """
-        z_sample, z_mean, z_log_var = self.encoder(x)
+        if self.with_rotation_layer:
+            theta = np.random.uniform(0, 2 * np.pi)
+            x = x.to(DEVICE)
+            x = RotationLayer(theta)(x)
+        z, z_mean, z_log_var = self.encoder(x)
 
-        self.kl_divergence = self._kld(z_sample, (z_mean, z_log_var))
+        q_param = (z_mean, z_log_var)
 
-        x_mean = self.decoder(z_sample)
+        self.kl_divergence = self._kld(z, q_param)
 
-        return x_mean, z_sample, z_mean, z_log_var
-
-
-# def setup_gpus():
-#     # use tensorflow backend
-#     # set random seeds
-#     # tf.set_random_seed(1)
-#     # np.random.seed(1)
-#     # identify available GPU's
-#     #     gpus = K.tensorflow_backend.
-# _get_available_gpus() # works with TF 1 (?)
-#     #     gpus = tf.config.experimental.list_physical_devices('GPU') # works with TF 2
-
-#     os.environ[
-#         "CUDA_VISIBLE_DEVICES"
-#     ] = "3"  # pick a number < 4 on ML4HEP; < 3 on Voltan
-#     gpu_options = tf.GPUOptions(
-# allow_growth=True, per_process_gpu_memory_fraction=0.5)
-#     sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-#     # allow dynamic GPU memory allocation
-#     config = tf.compat.v1.ConfigProto()
-#     config.gpu_options.allow_growth = True
-#     session = tf.compat.v1.Session(config=config)
-#     #     # print("GPUs found: {}".format(len(gpus)))
-#     return ()
-
-
-def load_data(pattern="data/mariel_*.npy"):
-    # load up the six datasets, performing some minimal preprocessing beforehand
-    datasets = {}
-    ds_all = []
-
-    exclude_points = [26, 53]
-    point_mask = np.ones(55, dtype=bool)
-    point_mask[exclude_points] = 0
-
-    for f in sorted(glob(pattern)):
-        ds_name = os.path.basename(f)[7:-4]
-        # print("loading:", ds_name)
-        ds = np.load(f, encoding='latin1', allow_pickle=True).transpose((1, 0, 2))
-        ds = ds[500:-500, point_mask]
-        # print("\t Shape:", ds.shape)
-
-        ds[:, :, 2] *= -1
-        # print("\t Min:", np.min(ds, axis=(0, 1)))
-        # print("\t Max:", np.max(ds, axis=(0, 1)))
-
-        # ds = filter_points(ds)
-
-        datasets[ds_name] = ds
-        ds_all.append(ds)
-
-    ds_counts = np.array([ds.shape[0] for ds in ds_all])
-    ds_offsets = np.zeros_like(ds_counts)
-    ds_offsets[1:] = np.cumsum(ds_counts[:-1])
-
-    ds_all = np.concatenate(ds_all)
-    # print("Full data shape:", ds_all.shape)
-    # # print("Offsets:", ds_offsets)
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    xy_min = min(low[:2])
-    xy_max = max(hi[:2])
-    xy_range = xy_max - xy_min
-    ds_all[:, :, :2] -= xy_min
-    ds_all *= 2 / xy_range
-    ds_all[:, :, :2] -= 1.0
-
-    # it's also useful to have these datasets centered, i.e. with the x and y offsets
-    # subtracted from each individual frame
-
-    ds_all_centered = ds_all.copy()
-    ds_all_centered[:, :, :2] -= ds_all_centered[:, :, :2].mean(axis=1, keepdims=True)
-
-    datasets_centered = {}
-    for ds in datasets:
-        datasets[ds][:, :, :2] -= xy_min
-        datasets[ds] *= 2 / xy_range
-        datasets[ds][:, :, :2] -= 1.0
-        datasets_centered[ds] = datasets[ds].copy()
-        datasets_centered[ds][:, :, :2] -= datasets[ds][:, :, :2].mean(
-            axis=1, keepdims=True
-        )
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
-
-########################################################################
-#TRAINING FUNCTIONS
-
-def get_loss(model, x, x_recon, z, z_mu, z_logvar):
-    loss = torch.mean(model.elbo(x, x_recon, z, (z_mu, z_logvar)))
-    return loss
-
-
-def run_train(model, data_train_torch, data_valid_torch, data_test_torch, get_loss, optimizer, epochs):
-
-    # Run training and track with wandb
-    example_ct = 0  # number of examples seen
-    batch_ct = 0
-    example_ct_valid = 0  # number of examples seen
-    batch_ct_valid = 0
-    for epoch in range(epochs):
-
-        #Train
-        model = model.train()
-
-        loss_epoch = 0
-        for x in data_train_torch:
-            x = Variable(x)
-            x = x.to(device)
-
-            loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch += loss
-
-            example_ct +=  len(x) #add amount of examples in 1 batch
-            batch_ct += 1
-
-            # Report metrics every 25th batch
-            if ((batch_ct + 1) % 25) == 0:
-                train_log(loss, example_ct, epoch)
-
-        loss_epoch /= batch_ct # get average loss/epoch
-
-        #Run Validation
-        model = model.eval()
-
-        loss_valid_epoch = 0
-        for x in data_valid_torch:
-            x = Variable(x)
-            x = x.to(device)
-
-            loss_valid = valid_batch(x, model, get_loss) #same as before, except no back propogation
-            loss_valid_epoch += loss_valid
-
-            example_ct_valid +=  len(x) #add amount of examples in 1 batch
-            batch_ct_valid += 1
-
-            # Report metrics every 25th batch
-            if ((batch_ct_valid + 1) % 25) == 0:
-                valid_log(loss_valid, example_ct_valid, epoch)            
-        
-        #Run testing
-        #Make and log artifact at the end of each epoch (stick-figure video)
-        index_of_chosen_seq = np.random.randint(0,data_test_torch.dataset.shape[0])
-        print('INDEX OF TESTING SEQUENCE IS {}'.format(index_of_chosen_seq))
-        i = 0
-        for x in data_test_torch:
-            i += 1
-
-            if i == index_of_chosen_seq:
-                print('Found test sequence. Running it through model')
-                x = Variable(x)
-                x = x.to(device)
-                x_input = x
-                x_recon, z, z_mu, z_logvar = model(x.float())
-                print('Ran it through model')
-
-            else:            
-                pass
-
-        x_input_formatted = x_input.reshape((128,53,3))
-        x_recon_formatted = x_recon.reshape((128,53,3))
-
-        anim = animate_stick(x_input_formatted, epoch=epoch, index=index_of_chosen_seq, ghost=x_recon_formatted, dot_alpha=0.7, ghost_shift=0.2, figsize=(12,8))
-        print('Called animation function for epoch {}'.format(epoch+1))
-
-    print("done training")
-
-
-def train_batch(x, model, optimizer, get_loss):    
-    
-    #Forward pass
-    x_recon, z, z_mu, z_logvar = model(x.float())
-    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
-    #Backward pass
-    optimizer.zero_grad()
-    loss.backward()
-
-    #Optimizer takes step
-    optimizer.step()
-
-    return loss
-
-def train_log(loss, example_ct, epoch):
-    # Where the magic happens
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-    print('Loss after {} examples: {}'.format(str(example_ct).zfill(5), loss))
-
-def valid_batch(x, model, get_loss):    
-
-    #Forward pass
-    x_recon, z, z_mu, z_logvar = model(x.float())
-    #x_recon_batch_first=x_recon.reshape((x_recon.shape[1], x_recon.shape[0],x_recon.shape[2]))
-    valid_loss = get_loss(model, x, x_recon, z, z_mu, z_logvar)
-
-    return valid_loss
-
-def valid_log(valid_loss, example_ct, epoch):
-    # Where the magic happens
-    wandb.log({"valid_loss": valid_loss})
+        x_recon = self.decoder(z)
+        if self.with_rotation_layer:
+            x_recon = RotationLayer(-theta)(x_recon)
+        return x_recon, z, z_mean, z_log_var

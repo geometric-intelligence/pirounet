@@ -1,0 +1,55 @@
+name: "Test"
+
+on:
+  push:
+    branches: [main,github-actions-test]
+    paths-ignore:
+    - 'README.md'
+    - '.gitignore'
+
+
+  pull_request:
+    branches: [main]
+    paths-ignore:
+    - 'README.md'
+    - '.gitignore'
+
+
+jobs:
+  build:
+
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        python-version: [3.9]
+        test-folder : ['tests']
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build using Python ${{matrix.python-version}}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.python-version}}
+
+      - name: cache conda
+        uses: actions/cache@v1
+        with:
+          path: $CONDA
+          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+      - name: install dependencies [conda]
+        run:  |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          $CONDA/bin/conda env update --file environment.yml --name base
+          $CONDA/bin/pip install -e .
+
+      - name: test [pytest]
+        env:
+          TEST_TOKEN: ${{ secrets.TEST_TOKEN }}
+        run: |
+          $CONDA/bin/pytest ${{matrix.test-folder}}

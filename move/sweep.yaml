@@ -1,0 +1,10 @@
+method: bayes
+metric:
+  goal: minimize
+  name: valid_loss
+parameters:
+  learning_rate:
+    values: [0.001, 0.0001, 0.00001]
+  batch_size:
+    values: [8, 100, 256]
+program: main.py
