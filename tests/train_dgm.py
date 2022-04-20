@@ -8,6 +8,10 @@ import artifact
 import numpy as np
 import torch
 import wandb
+from torch.autograd import Variable
+from nn import SVI, ImportanceWeightedSampler
+
+
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -40,36 +44,118 @@ def run_train(
 
     loss_epoch = average loss per sequence.
     """
-    batch_ct = 0
-    seq_ct = 0
-    batch_valid_ct = 0
-    seq_valid_ct = 0
+
+    model = model.cuda()
+    elbo = SVI(model, likelihood=binary_cross_entropy, sampler=sampler)
+    sampler = ImportanceWeightedSampler(mc=1, iw=1)
+
+
+    for epoch in range(epochs):
+        model.train()
+    total_loss, accuracy = (0, 0)
+    for (x, y), (u, _) in zip(cycle(labelled_data), unlabelled_data):
+        # Wrap in variables
+        x, y, u = Variable(x), Variable(y), Variable(u)
+        x, y = x.cuda(device=0), y.cuda(device=0)
+        u = u.cuda(device=0)
+
+        L = -elbo(x, y)
+        U = -elbo(u)
+
+        # Add auxiliary classification loss q(y|x)
+        logits = model.classify(x)
+        
+        # Regular cross entropy
+        classication_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+
+        J_alpha = L - alpha * classication_loss + U
+
+        J_alpha.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        total_loss += J_alpha.data[0]
+        accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
+        
+    if epoch % 1 == 0:
+        model.eval()
+        m = len(unlabelled)
+        print("Epoch: {}".format(epoch))
+        print("[Train]\t\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss / m, accuracy / m))
+
+        total_loss, accuracy = (0, 0)
+        for x, y in validation:
+            x, y = Variable(x), Variable(y)
+            x, y = x.cuda(device=0), y.cuda(device=0)
+
+            L = -elbo(x, y)
+            U = -elbo(x)
+
+            logits = model.classify(x)
+            classication_loss = -torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+
+            J_alpha = L + alpha * classication_loss + U
+
+            total_loss += J_alpha.data[0]
+
+            _, pred_idx = torch.max(logits, 1)
+            _, lab_idx = torch.max(y, 1)
+            accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
+
+        m = len(validation)
+        print("[Validation]\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss / m, accuracy / m))
+
+
+
+
+############# ORIGINAL ##########################
     for epoch in range(epochs):
         # Training
         model = model.train()
         seq_ct_in_epoch = 0  # number of examples (sequences) seen
-        loss_epoch_total = 0
-        for i_batch, x in enumerate(data_train_torch):
+        total_loss = 0
+        seq_ct = 0
+        batch_valid_ct = 0
+        seq_valid_ct = 0 
+
+        for i_batch, x in enumerate(data_train_torch): #HOW TO LOOP OVER x,y
             if i_batch == 0:
-                logging.info(f"Train minibatch x of shape: {x.shape}")
-            batch_ct += 1
-            seq_ct += len(x)
+                logging.info(f"Train minibatch x of shape {x.shape} with labels y of shape {y.shape}")
+            
             seq_ct_in_epoch += len(x)
+            seq_ct += len(x)
 
             x = x.to(DEVICE)
-            loss = train_batch(x, model, optimizer, get_loss)
-            loss_epoch_total += loss * len(x)
+            L = -elbo(x, y)
+            U = -elbo(u)
 
+            # Add auxiliary classification loss q(y|x)
+            logits = model.classify(x)
+            
+            # Regular cross entropy
+            classication_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+
+            J_alpha = L - alpha * classication_loss + U
+
+            J_alpha.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            total_loss += J_alpha.data[0]
+            accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
+        
             if i_batch % 50 == 0:
                 batchs_str = str(i_batch).zfill(5)
-                loss_epoch_per_seq = loss_epoch_total / seq_ct_in_epoch
+                loss_epoch_per_seq = total_loss / seq_ct_in_epoch
+                accuracy_epoch_per_seq = accuracy / seq_ct_in_epoch
                 logging.info(
                     f"Train (Epoch {epoch}): "
-                    f"Loss/seq after {batchs_str} batchs: {loss_epoch_per_seq}"
+                    f"Loss/seq after {batchs_str} batches: {loss_epoch_per_seq}"
+                    f"Accuracy/seq after {batchs_str} batches: {accuracy_epoch_per_seq}"
                 )
-                train_log(loss_epoch_per_seq, seq_ct, epoch)
+                train_log(loss, accuracy, epoch, seq_ct)
 
-        # Validations
+        # Validation
         model = model.eval()
         seq_valid_ct_in_epoch = 0  # number of examples (sequences) seen
         loss_valid_epoch_total = 0
@@ -201,9 +287,9 @@ def train_batch(x, model, optimizer, get_loss):
     return loss
 
 
-def train_log(loss, seq_ct, epoch):
+def train_log(loss, accuracy, epoch, seq_ct):
     """Log epoch and train loss into wandb."""
-    wandb.log({"epoch": epoch, "loss": loss}, step=seq_ct)
+    wandb.log({"epoch": epoch, "loss": loss, "accuracy":accuracy}, step=seq_ct)
 
 
 def valid_batch(x, model, get_loss):
