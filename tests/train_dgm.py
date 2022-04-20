@@ -140,6 +140,7 @@ def run_train(
             J_alpha.backward()
             optimizer.step()
             optimizer.zero_grad()
+            loss = J_alpha.data[0]
 
             total_loss += J_alpha.data[0]
             accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
