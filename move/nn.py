@@ -336,236 +336,239 @@ class LstmVAE(torch.nn.Module):
             x_recon = RotationLayer(-theta)(x_recon)
         return x_recon, z, z_mean, z_log_var
 
-class Classifier(nn.Module):
-    def __init__(self, input_features, h_features_loop, label_features):
-        """
-        Single hidden layer classifier
-        with softmax output.
-        """
-        super(Classifier, self).__init__()
-        self.dense = nn.Linear(input_features, h_features_loop)
-        self.logits = nn.Linear(h_features_loop, label_features)
 
-    def forward(self, x):
-        x = F.relu(self.dense(x))
-        x = F.softmax(self.logits(x), dim=-1)
-        return x
+############ NEW ADDITIONS
 
-class DeepGenerativeModel(LstmVAE):
-    def __init__(
-        self,
-        n_layers,
-        input_features,
-        h_features_loop,
-        latent_dim,
-        output_features,
-        seq_len,
-        negative_slope,
-        label_features
-    ):  
+# class Classifier(nn.Module):
+#     def __init__(self, input_features, h_features_loop, label_features):
+#         """
+#         Single hidden layer classifier
+#         with softmax output.
+#         """
+#         super(Classifier, self).__init__()
+#         self.dense = nn.Linear(input_features, h_features_loop)
+#         self.logits = nn.Linear(h_features_loop, label_features)
+
+#     def forward(self, x):
+#         x = F.relu(self.dense(x))
+#         x = F.softmax(self.logits(x), dim=-1)
+#         return x
+
+# class DeepGenerativeModel(LstmVAE):
+#     def __init__(
+#         self,
+#         n_layers,
+#         input_features,
+#         h_features_loop,
+#         latent_dim,
+#         output_features,
+#         seq_len,
+#         negative_slope,
+#         label_features
+#     ):  
     
-        """
-        M2 code replication from the paper
-        'Semi-Supervised Learning with Deep Generative Models'
-        (Kingma 2014) in PyTorch.
-        The "Generative semi-supervised model" is a probabilistic
-        model that incorporates label information in both
-        inference and generation.
-        Initialise a new generative model
-        :param dims: dimensions of x (input_features), 
-        y (label_features), z (latent_dim) and hidden layers 
-        (h_features_loop).
-        """
+#         """
+#         M2 code replication from the paper
+#         'Semi-Supervised Learning with Deep Generative Models'
+#         (Kingma 2014) in PyTorch.
+#         The "Generative semi-supervised model" is a probabilistic
+#         model that incorporates label information in both
+#         inference and generation.
+#         Initialise a new generative model
+#         :param dims: dimensions of x (input_features), 
+#         y (label_features), z (latent_dim) and hidden layers 
+#         (h_features_loop).
+#         """
 
-        #[x_dim, self.y_dim, z_dim, h_dim] = dims
-        #super(DeepGenerativeModel, self).__init__([x_dim, z_dim, h_dim])
-        super(DeepGenerativeModel, self).__init__()
-        self.label_features = label_features
+#         #[x_dim, self.y_dim, z_dim, h_dim] = dims
+#         #super(DeepGenerativeModel, self).__init__([x_dim, z_dim, h_dim])
+#         super(DeepGenerativeModel, self).__init__()
+#         self.label_features = label_features
 
-        self.encoder = LstmEncoder(
-            n_layers=n_layers,
-            input_features=input_features+self.label_features,
-            h_features_loop=h_features_loop,
-            latent_dim=latent_dim,
-        )
+#         self.encoder = LstmEncoder(
+#             n_layers=n_layers,
+#             input_features=input_features+self.label_features,
+#             h_features_loop=h_features_loop,
+#             latent_dim=latent_dim,
+#         )
 
-        self.decoder = LstmDecoder(
-            n_layers=n_layers,
-            output_features=output_features,
-            h_features_loop=h_features_loop,
-            latent_dim=latent_dim+self.label_features,
-            seq_len=seq_len,
-            negative_slope=negative_slope,
-        )
-        self.classifier = Classifier(input_features, h_features_loop, label_features)
+#         self.decoder = LstmDecoder(
+#             n_layers=n_layers,
+#             output_features=output_features,
+#             h_features_loop=h_features_loop,
+#             latent_dim=latent_dim+self.label_features,
+#             seq_len=seq_len,
+#             negative_slope=negative_slope,
+#         )
+#         self.classifier = Classifier(input_features, h_features_loop, label_features)
 
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                init.xavier_normal(m.weight.data)
-                if m.bias is not None:
-                    m.bias.data.zero_()
+#         for m in self.modules():
+#             if isinstance(m, nn.Linear):
+#                 init.xavier_normal(m.weight.data)
+#                 if m.bias is not None:
+#                     m.bias.data.zero_()
 
-    def forward(self, x, y):
-        # Add label and data and generate latent variable
-        z, z_mu, z_log_var = self.encoder(torch.cat([x, y], dim=1))
+#     def forward(self, x, y):
+#         # Add label and data and generate latent variable
+#         z, z_mu, z_log_var = self.encoder(torch.cat([x, y], dim=1))
 
-        self.kl_divergence = self._kld(z, (z_mu, z_log_var))
+#         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
-        # Reconstruct data point from latent data and label
-        x_mu = self.decoder(torch.cat([z, y], dim=1))
+#         # Reconstruct data point from latent data and label
+#         x_mu = self.decoder(torch.cat([z, y], dim=1))
 
-        return x_mu
+#         return x_mu
 
-    def classify(self, x):
-        logits = self.classifier(x)
-        return logits
+#     def classify(self, x):
+#         logits = self.classifier(x)
+#         return logits
 
-    def sample(self, z, y):
-        """
-        Samples from the Decoder to generate an x.
-        :param z: latent normal variable
-        :param y: label (one-hot encoded)
-        :return: x
-        """
-        y = y.float()
-        x = self.decoder(torch.cat([z, y], dim=1))
-        return x
-
-
-class ImportanceWeightedSampler(object):
-    """
-    Importance weighted sampler [Burda 2015] to
-    be used in conjunction with SVI.
-    """
-    def __init__(self, mc=1, iw=1):
-        """
-        Initialise a new sampler.
-        :param mc: number of Monte Carlo samples
-        :param iw: number of Importance Weighted samples
-        """
-        self.mc = mc
-        self.iw = iw
-
-    def resample(self, x):
-        return x.repeat(self.mc * self.iw, 1)
-
-    def __call__(self, elbo):
-        elbo = elbo.view(self.mc, self.iw, -1)
-        elbo = torch.mean(log_sum_exp(elbo, dim=1, sum_op=torch.mean), dim=0)
-        return elbo.view(-1)
+#     def sample(self, z, y):
+#         """
+#         Samples from the Decoder to generate an x.
+#         :param z: latent normal variable
+#         :param y: label (one-hot encoded)
+#         :return: x
+#         """
+#         y = y.float()
+#         x = self.decoder(torch.cat([z, y], dim=1))
+#         return x
 
 
-class SVI(nn.Module):
-    """
-    Stochastic variational inference (SVI).
-    """
-    base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
-    def __init__(self, model, likelihood=F.binary_cross_entropy, beta=repeat(1), sampler=base_sampler):
-        """
-        Initialises a new SVI optimizer for semi-
-        supervised learning.
-        :param model: semi-supervised model to evaluate
-        :param likelihood: p(x|y,z) for example BCE or MSE
-        :param sampler: sampler for x and y, e.g. for Monte Carlo
-        :param beta: warm-up/scaling of KL-term
-        """
-        super(SVI, self).__init__()
-        self.model = model
-        self.likelihood = likelihood
-        self.sampler = sampler
-        self.beta = beta
+# class ImportanceWeightedSampler(object):
+#     """
+#     Importance weighted sampler [Burda 2015] to
+#     be used in conjunction with SVI.
+#     """
+#     def __init__(self, mc=1, iw=1):
+#         """
+#         Initialise a new sampler.
+#         :param mc: number of Monte Carlo samples
+#         :param iw: number of Importance Weighted samples
+#         """
+#         self.mc = mc
+#         self.iw = iw
 
-    def forward(self, x, y=None):
-        is_labelled = False if y is None else True
+#     def resample(self, x):
+#         return x.repeat(self.mc * self.iw, 1)
 
-        # Prepare for sampling
-        xs, ys = (x, y)
-
-        # Enumerate choices of label
-        if not is_labelled:
-            ys = enumerate_discrete(xs, self.model.y_dim)
-            xs = xs.repeat(self.model.y_dim, 1)
-
-        # Increase sampling dimension
-        xs = self.sampler.resample(xs)
-        ys = self.sampler.resample(ys)
-
-        reconstruction = self.model(xs, ys)
-
-        # p(x|y,z)
-        likelihood = -self.likelihood(reconstruction, xs)
-
-        # p(y)
-        prior = -log_standard_categorical(ys)
-
-        # Equivalent to -L(x, y)
-        elbo = likelihood + prior - next(self.beta) * self.model.kl_divergence
-        L = self.sampler(elbo)
-
-        if is_labelled:
-            return torch.mean(L)
-
-        logits = self.model.classify(x)
-
-        L = L.view_as(logits.t()).t()
-
-        # Calculate entropy H(q(y|x)) and sum over all labels
-        H = -torch.sum(torch.mul(logits, torch.log(logits + 1e-8)), dim=-1)
-        L = torch.sum(torch.mul(logits, L), dim=-1)
-
-        # Equivalent to -U(x)
-        U = L + H
-        return torch.mean(U)
-
-def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
-    """
-    Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
-    :param tensor: Tensor to compute LSE over
-    :param dim: dimension to perform operation over
-    :param sum_op: reductive operation to be applied, e.g. torch.sum or torch.mean
-    :return: LSE
-    """
-    max, _ = torch.max(tensor, dim=dim, keepdim=True)
-    return torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
+#     def __call__(self, elbo):
+#         elbo = elbo.view(self.mc, self.iw, -1)
+#         elbo = torch.mean(log_sum_exp(elbo, dim=1, sum_op=torch.mean), dim=0)
+#         return elbo.view(-1)
 
 
-def log_standard_categorical(p):
-    """
-    Calculates the cross entropy between a (one-hot) categorical vector
-    and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution
-    :return: H(p, u)
-    """
-    # Uniform prior over y
-    prior = F.softmax(torch.ones_like(p), dim=1)
-    prior.requires_grad = False
+# class SVI(nn.Module):
+#     """
+#     Stochastic variational inference (SVI).
+#     """
+#     base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
+#     def __init__(self, model, likelihood=F.binary_cross_entropy, beta=repeat(1), sampler=base_sampler):
+#         """
+#         Initialises a new SVI optimizer for semi-
+#         supervised learning.
+#         :param model: semi-supervised model to evaluate
+#         :param likelihood: p(x|y,z) for example BCE or MSE
+#         :param sampler: sampler for x and y, e.g. for Monte Carlo
+#         :param beta: warm-up/scaling of KL-term
+#         """
+#         super(SVI, self).__init__()
+#         self.model = model
+#         self.likelihood = likelihood
+#         self.sampler = sampler
+#         self.beta = beta
 
-    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=1)
+#     def forward(self, x, y=None):
+#         is_labelled = False if y is None else True
 
-    return cross_entropy
+#         # Prepare for sampling
+#         xs, ys = (x, y)
+
+#         # Enumerate choices of label
+#         if not is_labelled:
+#             ys = enumerate_discrete(xs, self.model.y_dim)
+#             xs = xs.repeat(self.model.y_dim, 1)
+
+#         # Increase sampling dimension
+#         xs = self.sampler.resample(xs)
+#         ys = self.sampler.resample(ys)
+
+#         reconstruction = self.model(xs, ys)
+
+#         # p(x|y,z)
+#         likelihood = -self.likelihood(reconstruction, xs)
+
+#         # p(y)
+#         prior = -log_standard_categorical(ys)
+
+#         # Equivalent to -L(x, y)
+#         elbo = likelihood + prior - next(self.beta) * self.model.kl_divergence
+#         L = self.sampler(elbo)
+
+#         if is_labelled:
+#             return torch.mean(L)
+
+#         logits = self.model.classify(x)
+
+#         L = L.view_as(logits.t()).t()
+
+#         # Calculate entropy H(q(y|x)) and sum over all labels
+#         H = -torch.sum(torch.mul(logits, torch.log(logits + 1e-8)), dim=-1)
+#         L = torch.sum(torch.mul(logits, L), dim=-1)
+
+#         # Equivalent to -U(x)
+#         U = L + H
+#         return torch.mean(U)
+
+# def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
+#     """
+#     Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
+#     :param tensor: Tensor to compute LSE over
+#     :param dim: dimension to perform operation over
+#     :param sum_op: reductive operation to be applied, e.g. torch.sum or torch.mean
+#     :return: LSE
+#     """
+#     max, _ = torch.max(tensor, dim=dim, keepdim=True)
+#     return torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
+
+
+# def log_standard_categorical(p):
+#     """
+#     Calculates the cross entropy between a (one-hot) categorical vector
+#     and a standard (uniform) categorical distribution.
+#     :param p: one-hot categorical distribution
+#     :return: H(p, u)
+#     """
+#     # Uniform prior over y
+#     prior = F.softmax(torch.ones_like(p), dim=1)
+#     prior.requires_grad = False
+
+#     cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=1)
+
+#     return cross_entropy
 
 
 
-def enumerate_discrete(x, y_dim):
-    """
-    Generates a `torch.Tensor` of size batch_size x n_labels of
-    the given label.
-    Example: generate_label(2, 1, 3) #=> torch.Tensor([[0, 1, 0],
-                                                       [0, 1, 0]])
-    :param x: tensor with batch size to mimic
-    :param y_dim: number of total labels
-    :return variable
-    """
-    def batch(batch_size, label):
-        labels = (torch.ones(batch_size, 1) * label).type(torch.LongTensor)
-        y = torch.zeros((batch_size, y_dim))
-        y.scatter_(1, labels, 1)
-        return y.type(torch.LongTensor)
+# def enumerate_discrete(x, y_dim):
+#     """
+#     Generates a `torch.Tensor` of size batch_size x n_labels of
+#     the given label.
+#     Example: generate_label(2, 1, 3) #=> torch.Tensor([[0, 1, 0],
+#                                                        [0, 1, 0]])
+#     :param x: tensor with batch size to mimic
+#     :param y_dim: number of total labels
+#     :return variable
+#     """
+#     def batch(batch_size, label):
+#         labels = (torch.ones(batch_size, 1) * label).type(torch.LongTensor)
+#         y = torch.zeros((batch_size, y_dim))
+#         y.scatter_(1, labels, 1)
+#         return y.type(torch.LongTensor)
 
-    batch_size = x.size(0)
-    generated = torch.cat([batch(batch_size, i) for i in range(y_dim)])
+#     batch_size = x.size(0)
+#     generated = torch.cat([batch(batch_size, i) for i in range(y_dim)])
 
-    if x.is_cuda:
-        generated = generated.cuda()
+#     if x.is_cuda:
+#         generated = generated.cuda()
 
-    return Variable(generated.float())
+#     return Variable(generated.float())
