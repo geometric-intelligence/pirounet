@@ -21,8 +21,8 @@ to about 4 seconds of continuous movement.
 """
 
 batch_size = 8
-learning_rate = 3e-4
-epochs = 200
+learning_rate = 3e-5
+epochs = 400
 seq_len = 128
 negative_slope = 0  # LeakyRelu
 kl_weight = 0
