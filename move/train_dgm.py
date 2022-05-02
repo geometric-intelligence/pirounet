@@ -3,6 +3,7 @@
 import logging
 import os
 import time
+from itertools import cycle
 
 import artifact
 import numpy as np
@@ -23,9 +24,12 @@ def binary_cross_entropy(r, x):
 def run_train_dgm(
     model,
     labelled_data_train,
+    labels_train,
     unlabelled_data_train,
     labelled_data_valid,
+    labels_valid,
     labelled_data_test,
+    labels_test,
     unlabelled_data_test,
     optimizer,
     epochs,
@@ -37,9 +41,9 @@ def run_train_dgm(
 
     loss_epoch = average loss per sequence.
     """
-
-    elbo = SVI(model, likelihood=binary_cross_entropy, sampler=sampler)
     sampler = ImportanceWeightedSampler(mc=1, iw=1)
+    elbo = SVI(model, likelihood=binary_cross_entropy, sampler=sampler)
+    
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
     batch_ct = 0
@@ -53,7 +57,7 @@ def run_train_dgm(
         model.train()
         total_loss, accuracy = (0, 0)
         seq_ct_in_epoch = 0
-        for i_batch, (x, y), (u, _) in enumerate(zip(cycle(labelled_data_train), unlabelled_data_train)):
+        for i_batch, (x, y, u) in enumerate(zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)):
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)

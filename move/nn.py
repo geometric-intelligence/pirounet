@@ -24,12 +24,13 @@ if torch.cuda.is_available():
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
 
-    def __init__(self, n_layers, input_features, h_features_loop, latent_dim):
+    def __init__(self, n_layers, input_features, h_features_loop, latent_dim, label_features=None):
         super().__init__()
         self.n_layers = n_layers
         self.input_features = input_features
         self.h_features_loop = h_features_loop
         self.latent_dim = latent_dim
+        self.label_features = label_features
 
         self.lstm1 = torch.nn.LSTM(
             input_size=input_features, hidden_size=h_features_loop, batch_first=True
@@ -69,8 +70,17 @@ class LstmEncoder(torch.nn.Module):
             shape=[batch_size, seq_len, input_features]
             where input_features = 3 * n_body_joints.
         """
-        assert inputs.shape[-1] == self.input_features
+        print('input')
+        print(inputs.shape)
+        print(self.input_features)
+        print(self.label_features)
+        if self.label_features:
+            assert inputs.shape[-1] == self.input_features + self.label_features
+        else:
+            assert inputs.shape[-1] == self.input_features 
+
         batch_size, seq_len, _ = inputs.shape
+        
         logging.debug(f"- Encoder inputs of shape {inputs.shape}")
 
         h, (h_last_t, c_last_t) = self.lstm1(inputs)
@@ -106,6 +116,7 @@ class LstmDecoder(torch.nn.Module):
         latent_dim,
         seq_len,
         negative_slope,
+        label_features
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -113,6 +124,7 @@ class LstmDecoder(torch.nn.Module):
         self.h_features_loop = h_features_loop
         self.latent_dim = latent_dim
         self.seq_len = seq_len
+        self.label_features = label_features
 
         self.linear = torch.nn.Linear(latent_dim, h_features_loop)
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
@@ -214,6 +226,7 @@ class LstmVAE(torch.nn.Module):
         seq_len=128,
         negative_slope=0.2,
         with_rotation_layer=True,
+        label_features=None,
     ):
         super(LstmVAE, self).__init__()
         self.latent_dim = latent_dim
@@ -224,6 +237,7 @@ class LstmVAE(torch.nn.Module):
             input_features=input_features,
             h_features_loop=h_features_loop,
             latent_dim=latent_dim,
+            label_features=label_features
         )
         self.decoder = LstmDecoder(
             n_layers=n_layers,
@@ -232,6 +246,7 @@ class LstmVAE(torch.nn.Module):
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
+            label_features=label_features
         )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
@@ -384,21 +399,24 @@ class DeepGenerativeModel(LstmVAE):
         #super(DeepGenerativeModel, self).__init__([x_dim, z_dim, h_dim])
         super(DeepGenerativeModel, self).__init__()
         self.label_features = label_features
+        self.seq_len = seq_len
 
         self.encoder = LstmEncoder(
             n_layers=n_layers,
-            input_features=input_features+self.label_features,
+            input_features=input_features,
             h_features_loop=h_features_loop,
             latent_dim=latent_dim,
+            label_features=label_features
         )
 
         self.decoder = LstmDecoder(
             n_layers=n_layers,
             output_features=output_features,
             h_features_loop=h_features_loop,
-            latent_dim=latent_dim+self.label_features,
+            latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
+            label_features=label_features
         )
         self.classifier = Classifier(input_features, h_features_loop, label_features)
 
@@ -410,7 +428,11 @@ class DeepGenerativeModel(LstmVAE):
 
     def forward(self, x, y):
         # Add label and data and generate latent variable
-        z, z_mu, z_log_var = self.encoder(torch.cat([x, y], dim=1))
+        print('sending into encoder')
+        y = y.repeat((1, self.seq_len, 1))
+        print('should be (8,40,2)')
+        print(y.shape)
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y], dim=2))
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
@@ -450,7 +472,7 @@ class ImportanceWeightedSampler(object):
         self.iw = iw
 
     def resample(self, x):
-        return x.repeat(self.mc * self.iw, 1)
+        return x.repeat((self.mc * self.iw, 1, 1))
 
     def __call__(self, elbo):
         elbo = elbo.view(self.mc, self.iw, -1)

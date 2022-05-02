@@ -7,6 +7,7 @@ import warnings
 
 import datasets
 import default_config
+import train_dgm
 import nn
 import torch
 import train
@@ -58,17 +59,18 @@ elif SERVER == "pod":
 
 logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
-    n_layers=config.n_layers,
+    n_layers=default_config.n_layers,
     input_features=3 * 53,
-    h_features_loop=config.h_features_loop,
-    latent_dim=config.latent_dim,
+    h_features_loop=default_config.h_features_loop,
+    latent_dim=default_config.latent_dim,
     output_features=3 * 53,
-    seq_len=config.seq_len,
-    negative_slope=config.negative_slope,
-    label_features=config.label_features
+    seq_len=default_config.seq_len,
+    negative_slope=default_config.negative_slope,
+    label_features=default_config.label_features
 ).to(DEVICE)
 
-labelled_data_train,unlabelled_data_train,labelled_data_valid,labelled_data_test,unlabelled_data_test = datasets.get_dgm_data(config)
+labelled_data_train,labels_train,unlabelled_data_train,labelled_data_valid,labels_valid,labelled_data_test,labels_test,unlabelled_data_test = datasets.get_dgm_data(default_config)
+
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
@@ -77,12 +79,15 @@ optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
 train_dgm.run_train_dgm(
     model,
     labelled_data_train,
+    labels_train,
     unlabelled_data_train,
     labelled_data_valid,
+    labels_valid,
     labelled_data_test,
+    labels_test,
     unlabelled_data_test,
     optimizer,
-    config.epochs,
+    default_config.epochs,
 )
 
 wandb.finish()
