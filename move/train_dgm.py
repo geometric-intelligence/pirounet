@@ -42,7 +42,19 @@ def run_train_dgm(
     loss_epoch = average loss per sequence.
     """
     sampler = ImportanceWeightedSampler(mc=1, iw=1)
-    elbo = SVI(model, likelihood=binary_cross_entropy, sampler=sampler)
+
+    def reconstruction_loss(x, x_recon):
+        assert x.ndim == x_recon.ndim == 3
+        batch_size, seq_len, _ = x.shape
+        recon_loss = (x - x_recon) ** 2
+        recon_loss = torch.sum(recon_loss, axis=2)
+        assert recon_loss.shape == (batch_size, seq_len)
+
+        recon_loss = torch.sum(recon_loss)
+        assert recon_loss.shape == (batch_size,)
+        return recon_loss
+
+    elbo = SVI(model)
     
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 

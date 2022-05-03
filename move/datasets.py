@@ -132,12 +132,15 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
 
-def load_labels(filepath="/home/papillon/move/move/data/labels.csv"):
+def load_labels(label_features=1, filepath="/home/papillon/move/move/data/labels.csv"):
 
     file = open(filepath)
     labels_with_index = np.loadtxt(file, delimiter=",")
+    if label_features==2:
+        labels = np.delete(labels_with_index, 0, axis=1)
+    else:
+        labels = np.delete(np.delete(labels_with_index, 0, axis=1),0,axis=1)
 
-    labels = np.delete(labels_with_index, 0, axis=1)
     last_label_index = int(labels_with_index[-1][0])
     labelled_seq_len =  last_label_index - int(labels_with_index[-2][0])
     
