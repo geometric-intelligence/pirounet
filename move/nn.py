@@ -12,9 +12,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import init
 from torch.autograd import Variable
-
+from torch.nn import init
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -24,7 +23,9 @@ if torch.cuda.is_available():
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
 
-    def __init__(self, n_layers, input_features, h_features_loop, latent_dim, label_features=None):
+    def __init__(
+        self, n_layers, input_features, h_features_loop, latent_dim, label_features=None
+    ):
         super().__init__()
         self.n_layers = n_layers
         self.input_features = input_features
@@ -33,12 +34,14 @@ class LstmEncoder(torch.nn.Module):
         self.label_features = label_features
 
         if label_features:
-            total_input_features = input_features + label_features 
+            total_input_features = input_features + label_features
         else:
             total_input_features = input_features
 
         self.lstm1 = torch.nn.LSTM(
-            input_size=total_input_features, hidden_size=h_features_loop, batch_first=True
+            input_size=total_input_features,
+            hidden_size=h_features_loop,
+            batch_first=True,
         )
         self.lstm2 = torch.nn.LSTM(
             input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
@@ -79,12 +82,12 @@ class LstmEncoder(torch.nn.Module):
         if self.label_features:
             assert inputs.shape[-1] == self.input_features + self.label_features
         else:
-            assert inputs.shape[-1] == self.input_features 
+            assert inputs.shape[-1] == self.input_features
 
         batch_size, seq_len, _ = inputs.shape
-        
+
         logging.debug(f"- Encoder inputs of shape {inputs.shape}")
-        
+
         h, (h_last_t, c_last_t) = self.lstm1(inputs)
         logging.debug(
             f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
@@ -118,7 +121,7 @@ class LstmDecoder(torch.nn.Module):
         latent_dim,
         seq_len,
         negative_slope,
-        label_features
+        label_features,
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -136,6 +139,8 @@ class LstmDecoder(torch.nn.Module):
         else:
             input_features_decoder = h_features_loop
             total_latent_dim = latent_dim
+
+        print(f"input_features_decoder: {input_features_decoder}")
 
         self.linear = torch.nn.Linear(total_latent_dim, h_features_loop)
 
@@ -165,7 +170,7 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim
         batch_size, _ = inputs.shape
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-        print('inputs before going into h')
+        print("inputs before going into h")
         print(inputs.shape)
 
         h = self.linear(inputs)
@@ -175,7 +180,7 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
-        print('shape of h')
+        print("shape of h")
         print(h.shape)
 
         # input_zeros = torch.zeros_like(h)
@@ -243,7 +248,7 @@ class LstmVAE(torch.nn.Module):
         seq_len=128,
         negative_slope=0.2,
         with_rotation_layer=True,
-        label_features=None
+        label_features=None,
     ):
         super(LstmVAE, self).__init__()
         self.latent_dim = latent_dim
@@ -254,7 +259,7 @@ class LstmVAE(torch.nn.Module):
             input_features=input_features,
             h_features_loop=h_features_loop,
             latent_dim=latent_dim,
-            label_features=label_features
+            label_features=label_features,
         )
         self.decoder = LstmDecoder(
             n_layers=n_layers,
@@ -263,7 +268,7 @@ class LstmVAE(torch.nn.Module):
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
-            label_features=label_features
+            label_features=label_features,
         )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
@@ -369,8 +374,6 @@ class LstmVAE(torch.nn.Module):
         return x_recon, z, z_mean, z_log_var
 
 
-############ NEW ADDITIONS
-
 class Classifier(nn.Module):
     def __init__(self, input_features, h_features_loop, label_features):
         """
@@ -386,6 +389,7 @@ class Classifier(nn.Module):
         x = F.softmax(self.logits(x), dim=-1)
         return x
 
+
 class DeepGenerativeModel(LstmVAE):
     def __init__(
         self,
@@ -396,9 +400,9 @@ class DeepGenerativeModel(LstmVAE):
         output_features,
         seq_len,
         negative_slope,
-        label_features
-    ):  
-    
+        label_features,
+    ):
+
         """
         M2 code replication from the paper
         'Semi-Supervised Learning with Deep Generative Models'
@@ -407,13 +411,19 @@ class DeepGenerativeModel(LstmVAE):
         model that incorporates label information in both
         inference and generation.
         Initialise a new generative model
-        :param dims: dimensions of x (input_features), 
-        y (label_features), z (latent_dim) and hidden layers 
-        (h_features_loop).
+
+        Parameters
+        ----------
+        n_layers :
+        input_features :
+        h_features_loop :
+        latent_dim :
+        output_features :
+        seq_len :
+        negative_slope :
+        label_features :
         """
 
-        #[x_dim, self.y_dim, z_dim, h_dim] = dims
-        #super(DeepGenerativeModel, self).__init__([x_dim, z_dim, h_dim])
         super(DeepGenerativeModel, self).__init__()
         self.label_features = label_features
         self.seq_len = seq_len
@@ -423,7 +433,7 @@ class DeepGenerativeModel(LstmVAE):
             input_features=input_features,
             h_features_loop=h_features_loop,
             latent_dim=latent_dim,
-            label_features=label_features
+            label_features=label_features,
         )
 
         self.decoder = LstmDecoder(
@@ -433,7 +443,7 @@ class DeepGenerativeModel(LstmVAE):
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
-            label_features=label_features
+            label_features=label_features,
         )
 
         self.classifier = Classifier(input_features, h_features_loop, label_features)
@@ -446,7 +456,7 @@ class DeepGenerativeModel(LstmVAE):
 
     def forward(self, x, y):
         # Add label and data and generate latent variable
-        print('y before repeat')
+        print("y before repeat")
         print(y.shape)
         y_for_encoder = y.repeat((1, self.seq_len, 1))
 
@@ -455,12 +465,12 @@ class DeepGenerativeModel(LstmVAE):
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
         # Reconstruct data point from latent data and label
-        print('z')
+        print("z")
         print(z.shape)
         print(y.shape)
 
-        y_for_decoder = y.reshape((y.shape[0],y.shape[-1]))
-        print('y for dec')
+        y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
+        print("y for dec")
         print(y_for_decoder.shape)
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
 
@@ -487,6 +497,7 @@ class ImportanceWeightedSampler(object):
     Importance weighted sampler [Burda 2015] to
     be used in conjunction with SVI.
     """
+
     def __init__(self, mc=1, iw=1):
         """
         Initialise a new sampler.
@@ -505,12 +516,13 @@ class ImportanceWeightedSampler(object):
         return elbo.view(-1)
 
 
-
 class SVI(nn.Module):
     """
     Stochastic variational inference (SVI).
     """
+
     base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
+
     def __init__(self, model, labels, sampler=base_sampler):
         """
         Initialises a new SVI optimizer for semi-
@@ -546,7 +558,7 @@ class SVI(nn.Module):
         # Enumerate choices of label
         if not is_labelled:
             ys = enumerate_discrete(xs, self.model.label_features)
-            xs = xs.repeat( self.model.label_features, 1)
+            xs = xs.repeat(self.model.label_features, 1)
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
@@ -556,14 +568,14 @@ class SVI(nn.Module):
 
         # p(x|y,z)
         likelihood = -likelihood_func(xs, reconstruction)
-        print('SHAPE OF LIKELIHOOD')
+        print("SHAPE OF LIKELIHOOD")
         print(likelihood.shape)
 
         # p(y)
         prior = -log_standard_categorical(ys)
-        print('SHAPE OF PRIOR')
+        print("SHAPE OF PRIOR")
         print(prior.shape)
-        print('kl divergence')
+        print("kl divergence")
         print(self.model.kl_divergence.shape)
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence
@@ -584,6 +596,7 @@ class SVI(nn.Module):
         U = L + H
         return torch.mean(U)
 
+
 def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     """
     Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
@@ -593,7 +606,9 @@ def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     :return: LSE
     """
     max, _ = torch.max(tensor, dim=dim, keepdim=True)
-    return torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
+    return (
+        torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
+    )
 
 
 def log_standard_categorical(p):
@@ -612,24 +627,37 @@ def log_standard_categorical(p):
     return cross_entropy
 
 
-
 def enumerate_discrete(x, y_dim):
     """
     Generates a `torch.Tensor` of size batch_size x n_labels of
     the given label.
-    Example: generate_label(2, 1, 3) #=> torch.Tensor([[0, 1, 0],
-                                                       [0, 1, 0]])
+    Example:
+    > x = torch.ones((2, 3))
+    > y_dim = 3
+    res = enumerate_discrete(x, y_dim) has shape (2*3, 3) and is:
+    res = [
+    [1, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [0, 0, 1]
+    ]
+    because it assigns both all 3 labels (in one-hot encodings) to
+    each of the batch_size elements of x
+
     :param x: tensor with batch size to mimic
     :param y_dim: number of total labels
     :return variable
     """
+
     def batch(batch_size, label):
         labels = (torch.ones(batch_size, 1) * label).type(torch.LongTensor)
         y = torch.zeros((batch_size, y_dim))
         y.scatter_(1, labels, 1)
         return y.type(torch.LongTensor)
 
-    batch_size = x.size(0)
+    batch_size = x.shape[0]
     generated = torch.cat([batch(batch_size, i) for i in range(y_dim)])
 
     if x.is_cuda:
