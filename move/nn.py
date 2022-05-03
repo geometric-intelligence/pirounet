@@ -511,7 +511,7 @@ class SVI(nn.Module):
     Stochastic variational inference (SVI).
     """
     base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
-    def __init__(self, model, sampler=base_sampler):
+    def __init__(self, model, labels, sampler=base_sampler):
         """
         Initialises a new SVI optimizer for semi-
         supervised learning.
@@ -523,6 +523,7 @@ class SVI(nn.Module):
         super(SVI, self).__init__()
         self.model = model
         self.sampler = sampler
+        self.labels = labels
 
     def reconstruction_loss(x, x_recon):
         assert x.ndim == x_recon.ndim == 3
@@ -535,7 +536,8 @@ class SVI(nn.Module):
         assert recon_loss.shape == (batch_size,)
         return recon_loss
 
-    def forward(self, x, reconstruction_loss, y=None):
+    def forward(self, x, y=None, likelihood_func=reconstruction_loss):
+        y = self.labels
         is_labelled = False if y is None else True
 
         # Prepare for sampling
@@ -544,7 +546,7 @@ class SVI(nn.Module):
         # Enumerate choices of label
         if not is_labelled:
             ys = enumerate_discrete(xs, self.model.label_features)
-            xs = xs.repeat(self.model.label_features, 1)
+            xs = xs.repeat( self.model.label_features, 1)
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
@@ -553,7 +555,7 @@ class SVI(nn.Module):
         reconstruction = self.model(xs, ys)
 
         # p(x|y,z)
-        likelihood = -reconstruction_loss(xs, reconstruction)
+        likelihood = -likelihood_func(xs, reconstruction)
         print('SHAPE OF LIKELIHOOD')
         print(likelihood.shape)
 
