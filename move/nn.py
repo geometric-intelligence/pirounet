@@ -523,7 +523,7 @@ class SVI(nn.Module):
 
     base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
 
-    def __init__(self, model, labels, sampler=base_sampler):
+    def __init__(self, model, sampler=base_sampler):
         """
         Initialises a new SVI optimizer for semi-
         supervised learning.
@@ -535,7 +535,6 @@ class SVI(nn.Module):
         super(SVI, self).__init__()
         self.model = model
         self.sampler = sampler
-        self.labels = labels
 
     def reconstruction_loss(x, x_recon):
         assert x.ndim == x_recon.ndim == 3
@@ -544,12 +543,11 @@ class SVI(nn.Module):
         recon_loss = torch.sum(recon_loss, axis=2)
         assert recon_loss.shape == (batch_size, seq_len)
 
-        recon_loss = torch.sum(recon_loss)
+        recon_loss = torch.sum(recon_loss, axis=1)
         assert recon_loss.shape == (batch_size,)
         return recon_loss
 
     def forward(self, x, y=None, likelihood_func=reconstruction_loss):
-        y = self.labels
         is_labelled = False if y is None else True
 
         # Prepare for sampling
