@@ -32,8 +32,13 @@ class LstmEncoder(torch.nn.Module):
         self.latent_dim = latent_dim
         self.label_features = label_features
 
+        if label_features:
+            total_input_features = input_features + label_features 
+        else:
+            total_input_features = input_features
+
         self.lstm1 = torch.nn.LSTM(
-            input_size=input_features, hidden_size=h_features_loop, batch_first=True
+            input_size=total_input_features, hidden_size=h_features_loop, batch_first=True
         )
         self.lstm2 = torch.nn.LSTM(
             input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
@@ -70,10 +75,7 @@ class LstmEncoder(torch.nn.Module):
             shape=[batch_size, seq_len, input_features]
             where input_features = 3 * n_body_joints.
         """
-        print('input')
-        print(inputs.shape)
-        print(self.input_features)
-        print(self.label_features)
+
         if self.label_features:
             assert inputs.shape[-1] == self.input_features + self.label_features
         else:
@@ -82,7 +84,7 @@ class LstmEncoder(torch.nn.Module):
         batch_size, seq_len, _ = inputs.shape
         
         logging.debug(f"- Encoder inputs of shape {inputs.shape}")
-
+        
         h, (h_last_t, c_last_t) = self.lstm1(inputs)
         logging.debug(
             f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
@@ -126,8 +128,16 @@ class LstmDecoder(torch.nn.Module):
         self.seq_len = seq_len
         self.label_features = label_features
 
-        self.linear = torch.nn.Linear(latent_dim, h_features_loop)
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
+
+        if label_features:
+            input_features_decoder = h_features_loop + label_features
+            total_latent_dim = latent_dim + label_features
+        else:
+            input_features_decoder = h_features_loop
+            total_latent_dim = latent_dim
+
+        self.linear = torch.nn.Linear(total_latent_dim, h_features_loop)
 
         self.lstm_loop = torch.nn.LSTM(
             input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
@@ -149,9 +159,14 @@ class LstmDecoder(torch.nn.Module):
         inputs : array-like
             Shape=[batch_size, latent_dim]
         """
-        assert inputs.shape[-1] == self.latent_dim
+        if self.label_features:
+            assert inputs.shape[-1] == self.latent_dim + self.label_features
+        else:
+            assert inputs.shape[-1] == self.latent_dim
         batch_size, _ = inputs.shape
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
+        print('inputs before going into h')
+        print(inputs.shape)
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)
@@ -160,6 +175,8 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+        print('shape of h')
+        print(h.shape)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]
@@ -226,7 +243,7 @@ class LstmVAE(torch.nn.Module):
         seq_len=128,
         negative_slope=0.2,
         with_rotation_layer=True,
-        label_features=None,
+        label_features=None
     ):
         super(LstmVAE, self).__init__()
         self.latent_dim = latent_dim
@@ -291,7 +308,7 @@ class LstmVAE(torch.nn.Module):
     def elbo(self, x, x_recon, z, q_param, p_param=None):
         """Compute ELBO.
 
-        Formula in Keras was (reconstrution loss):
+        Formula in Keras was (reconstruction loss):
         # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
 
         Parameters
@@ -418,6 +435,7 @@ class DeepGenerativeModel(LstmVAE):
             negative_slope=negative_slope,
             label_features=label_features
         )
+
         self.classifier = Classifier(input_features, h_features_loop, label_features)
 
         for m in self.modules():
@@ -428,16 +446,23 @@ class DeepGenerativeModel(LstmVAE):
 
     def forward(self, x, y):
         # Add label and data and generate latent variable
-        print('sending into encoder')
-        y = y.repeat((1, self.seq_len, 1))
-        print('should be (8,40,2)')
+        print('y before repeat')
         print(y.shape)
-        z, z_mu, z_log_var = self.encoder(torch.cat([x, y], dim=2))
+        y_for_encoder = y.repeat((1, self.seq_len, 1))
+
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
         # Reconstruct data point from latent data and label
-        x_mu = self.decoder(torch.cat([z, y], dim=1))
+        print('z')
+        print(z.shape)
+        print(y.shape)
+
+        y_for_decoder = y.reshape((y.shape[0],y.shape[-1]))
+        print('y for dec')
+        print(y_for_decoder.shape)
+        x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
 
         return x_mu
 
@@ -480,12 +505,13 @@ class ImportanceWeightedSampler(object):
         return elbo.view(-1)
 
 
+
 class SVI(nn.Module):
     """
     Stochastic variational inference (SVI).
     """
     base_sampler = ImportanceWeightedSampler(mc=1, iw=1)
-    def __init__(self, model, likelihood=F.binary_cross_entropy, sampler=base_sampler):
+    def __init__(self, model, labels, sampler=base_sampler):
         """
         Initialises a new SVI optimizer for semi-
         supervised learning.
@@ -496,10 +522,22 @@ class SVI(nn.Module):
         """
         super(SVI, self).__init__()
         self.model = model
-        self.likelihood = likelihood
         self.sampler = sampler
+        self.labels = labels
 
-    def forward(self, x, y=None):
+    def reconstruction_loss(x, x_recon):
+        assert x.ndim == x_recon.ndim == 3
+        batch_size, seq_len, _ = x.shape
+        recon_loss = (x - x_recon) ** 2
+        recon_loss = torch.sum(recon_loss, axis=2)
+        assert recon_loss.shape == (batch_size, seq_len)
+
+        recon_loss = torch.sum(recon_loss)
+        assert recon_loss.shape == (batch_size,)
+        return recon_loss
+
+    def forward(self, x, y=None, likelihood_func=reconstruction_loss):
+        y = self.labels
         is_labelled = False if y is None else True
 
         # Prepare for sampling
@@ -507,8 +545,8 @@ class SVI(nn.Module):
 
         # Enumerate choices of label
         if not is_labelled:
-            ys = enumerate_discrete(xs, self.model.y_dim)
-            xs = xs.repeat(self.model.y_dim, 1)
+            ys = enumerate_discrete(xs, self.model.label_features)
+            xs = xs.repeat( self.model.label_features, 1)
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
@@ -517,11 +555,16 @@ class SVI(nn.Module):
         reconstruction = self.model(xs, ys)
 
         # p(x|y,z)
-        likelihood = -self.likelihood(reconstruction, xs)
+        likelihood = -likelihood_func(xs, reconstruction)
+        print('SHAPE OF LIKELIHOOD')
+        print(likelihood.shape)
 
         # p(y)
         prior = -log_standard_categorical(ys)
-
+        print('SHAPE OF PRIOR')
+        print(prior.shape)
+        print('kl divergence')
+        print(self.model.kl_divergence.shape)
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence
         L = self.sampler(elbo)

@@ -42,7 +42,8 @@ def run_train_dgm(
     loss_epoch = average loss per sequence.
     """
     sampler = ImportanceWeightedSampler(mc=1, iw=1)
-    elbo = SVI(model, likelihood=binary_cross_entropy, sampler=sampler)
+
+    elbo = SVI(model)
     
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
