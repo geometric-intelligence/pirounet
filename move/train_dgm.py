@@ -12,7 +12,19 @@ import wandb
 from torch.autograd import Variable
 from nn import SVI, ImportanceWeightedSampler
 
-
+def make_onehot_encoder(amount_of_labels):
+    """
+    Converts a number to its one-hot or 1-of-amount_of_labels representation
+    vector.
+    :param amount_of_labels: (int) length of vector
+    :return: onehot function
+    """
+    def onehot_encode(label):
+        y = torch.zeros(amount_of_labels)
+        if label < amount_of_labels:
+            y[int(label)] = 1
+        return y
+    return onehot_encode
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -63,6 +75,17 @@ def run_train_dgm(
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)
             u = u.to(DEVICE)
+
+            label_features = 4
+            onehot_encoder = make_onehot_encoder(label_features)
+
+            batch_one_hot = torch.zeros((1,1,label_features))
+            for y_i in y:
+                y_i_enc = onehot_encoder(y_i.item())
+                y_i_enc = y_i_enc.reshape((1,1,label_features))
+                batch_one_hot = torch.cat((batch_one_hot,y_i_enc), dim=0)
+            batch_one_hot = batch_one_hot[1:, :, :]
+            y = batch_one_hot.to(DEVICE)
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")

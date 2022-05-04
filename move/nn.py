@@ -375,17 +375,19 @@ class LstmVAE(torch.nn.Module):
 
 
 class Classifier(nn.Module):
-    def __init__(self, input_features, h_features_loop, label_features):
+    def __init__(self, input_features, h_features_loop, label_features, seq_len):
         """
         Single hidden layer classifier
         with softmax output.
         """
         super(Classifier, self).__init__()
-        self.dense = nn.Linear(input_features, h_features_loop)
+        self.dense = nn.Linear(seq_len*input_features, h_features_loop)
         self.logits = nn.Linear(h_features_loop, label_features)
 
+    
     def forward(self, x):
-        x = F.relu(self.dense(x))
+        batch_size = x.shape[0]
+        x = F.relu(self.dense(x.reshape((batch_size, -1))))
         x = F.softmax(self.logits(x), dim=-1)
         return x
 
@@ -446,7 +448,7 @@ class DeepGenerativeModel(LstmVAE):
             label_features=label_features,
         )
 
-        self.classifier = Classifier(input_features, h_features_loop, label_features)
+        self.classifier = Classifier(input_features, h_features_loop, label_features, seq_len)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -456,9 +458,20 @@ class DeepGenerativeModel(LstmVAE):
 
     def forward(self, x, y):
         # Add label and data and generate latent variable
+        """
+            Parameters
+            ---
+            x : input sequence with shape [batchsize, seq_len, 3*keypoints]
+            y : input label with shape [batchsize, 1,label_features]
+        """
         print("y before repeat")
         print(y.shape)
         y_for_encoder = y.repeat((1, self.seq_len, 1))
+
+        print('SHAPE OF x')
+        print(x.shape)
+        print('SHAPE OF Y')
+        print(y.shape)
 
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
@@ -556,7 +569,7 @@ class SVI(nn.Module):
         # Enumerate choices of label
         if not is_labelled:
             ys = enumerate_discrete(xs, self.model.label_features)
-            xs = xs.repeat(self.model.label_features, 1)
+            xs = xs.repeat(self.model.label_features, 1, 1)
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
