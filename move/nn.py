@@ -140,8 +140,6 @@ class LstmDecoder(torch.nn.Module):
             input_features_decoder = h_features_loop
             total_latent_dim = latent_dim
 
-        print(f"input_features_decoder: {input_features_decoder}")
-
         self.linear = torch.nn.Linear(total_latent_dim, h_features_loop)
 
         self.lstm_loop = torch.nn.LSTM(
@@ -170,8 +168,6 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim
         batch_size, _ = inputs.shape
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-        print("inputs before going into h")
-        print(inputs.shape)
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)
@@ -180,8 +176,6 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
-        print("shape of h")
-        print(h.shape)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]
@@ -390,6 +384,7 @@ class Classifier(nn.Module):
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
         x = F.softmax(self.logits(x), dim=-1)
+
         return x
 
 
@@ -465,27 +460,14 @@ class DeepGenerativeModel(LstmVAE):
             x : input sequence with shape [batchsize, seq_len, 3*keypoints]
             y : input label with shape [batchsize, 1,label_features]
         """
-        print("y before repeat")
-        print(y.shape)
-        y_for_encoder = y.repeat((1, self.seq_len, 1))
 
-        print('SHAPE OF x')
-        print(x.shape)
-        print('SHAPE OF Y')
-        print(y.shape)
+        y_for_encoder = y.repeat((1, self.seq_len, 1))
 
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
-        # Reconstruct data point from latent data and label
-        print("z")
-        print(z.shape)
-        print(y.shape)
-
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
-        print("y for dec")
-        print(y_for_decoder.shape)
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
 
         return x_mu
@@ -571,8 +553,6 @@ class SVI(nn.Module):
         if not is_labelled:
             ys = enumerate_discrete(xs, self.model.label_features)
             ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
-            print("FAKE Y HAS SHAPE")
-            print(ys.shape)
             xs = xs.repeat(self.model.label_features, 1, 1)
 
         # Increase sampling dimension
@@ -583,21 +563,12 @@ class SVI(nn.Module):
 
         # p(x|y,z)
         likelihood = -likelihood_func(xs, reconstruction)
-        print("SHAPE OF LIKELIHOOD")
-        print(likelihood.shape)
 
         # p(y)
-        print('WHAT WE GIVE LOG STAND')
-        print(ys.shape)
-        prior = -log_standard_categorical(ys)
-        print("SHAPE OF PRIOR")
-        print(prior.shape)
-        print("kl divergence")
-        print(self.model.kl_divergence.shape)
+        prior = -torch.squeeze(log_standard_categorical(ys))
+
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence
-# we want prior to be (8,)
-#so we need log standard categorical to give us back (8,1) when we give it (8,4)
 
         L = self.sampler(elbo)
 

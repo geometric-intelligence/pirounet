@@ -63,6 +63,8 @@ def run_train_dgm(
     seq_ct = 0
     batch_valid_ct = 0
     seq_valid_ct = 0
+    label_features = 4
+    onehot_encoder = make_onehot_encoder(label_features)
 
     for epoch in range(epochs):
 
@@ -70,14 +72,12 @@ def run_train_dgm(
         model.train()
         total_loss, accuracy = (0, 0)
         seq_ct_in_epoch = 0
+
         for i_batch, (x, y, u) in enumerate(zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)):
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)
             u = u.to(DEVICE)
-
-            label_features = 4
-            onehot_encoder = make_onehot_encoder(label_features)
 
             batch_one_hot = torch.zeros((1,1,label_features))
             for y_i in y:
@@ -86,25 +86,18 @@ def run_train_dgm(
                 batch_one_hot = torch.cat((batch_one_hot,y_i_enc), dim=0)
             batch_one_hot = batch_one_hot[1:, :, :]
             y = batch_one_hot.to(DEVICE)
-            print('y in ONEHOT')
-            print(y.shape)
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
             batch_ct += 1
             seq_ct += len(x)
             seq_ct_in_epoch += len(x)
-            print('what we send to elbo')
-            print(y.shape)
             L = -elbo(x, y) #loss associated to data x with label y
-            print('DONE FIRST ELBO')
             U = -elbo(u) #loss associated to unlabelled data (why does SVI work here?)
-            print('DONE SECOND ELBO')
 
             # Add auxiliary classification loss q(y|x)
             #pushes useful gradients to lower layers in order to reduce vanishing gradients
             logits = model.classify(x)
-            print('DONE CLASSIFY')
             
             # Regular cross entropy
             #comes from given probability that the data x has label y
@@ -113,31 +106,36 @@ def run_train_dgm(
             J_alpha = L - alpha * classication_loss + U #loss for this "batch" (?)
             
                  #accounts for if auxiliary classification is good 
-            print("DONE LOSS")
             J_alpha.backward()
-            print("WENT BACK")
             optimizer.step()
-            print("TOOK STEP")
             optimizer.zero_grad()
             
 
-            total_loss += J_alpha.data[0]
-            accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
+            total_loss += J_alpha.item()
+            accuracy += torch.mean((torch.max(logits.t(), 1)[1].data == torch.max(y, 1)[1].data).float())
                 
             if epoch % 1 == 0:
-                m = len(unlabelled)
-                print("Epoch: {}".format(epoch))
-                print("[Train]\t\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss / m, accuracy / m))
+                m = len(unlabelled_data_train)
+                logging.info(f"Epoch: {epoch}")
+                logging.info("[Train]\t\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss / m, accuracy / m))
                 wandb.log({"epoch": epoch, "loss": total_loss}, step=epoch)
                 wandb.log({"epoch": epoch, "accuracy": accuracy}, step=epoch)
 
         #Validation
         total_loss_valid, accuracy_valid = (0, 0)
         model.eval()
-        for i_batch, (x, y) in enumerate(zip(cycle(labelled_data_valid))):
+        for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
             x, y = Variable(x), Variable(y)
             x, y = x.to(DEVICE), y.to(DEVICE)
+
+            batch_one_hot = torch.zeros((1,1,label_features))
+            for y_i in y:
+                y_i_enc = onehot_encoder(y_i.item())
+                y_i_enc = y_i_enc.reshape((1,1,label_features))
+                batch_one_hot = torch.cat((batch_one_hot,y_i_enc), dim=0)
+            batch_one_hot = batch_one_hot[1:, :, :]
+            y = batch_one_hot.to(DEVICE)
 
             L = -elbo(x, y)
             U = -elbo(x)
@@ -147,14 +145,14 @@ def run_train_dgm(
 
             J_alpha_v = L - alpha * classication_loss_v + U  
 
-            total_loss_valid += J_alpha_v.data[0]
+            total_loss_valid += J_alpha_v.item()
 
             _, pred_idx = torch.max(logits_v, 1)
             _, lab_idx = torch.max(y, 1)
-            accuracy_valid += torch.mean((torch.max(logits_v, 1)[1].data == torch.max(y, 1)[1].data).float())
+            accuracy_valid += torch.mean((torch.max(logits_v.t(), 1)[1].data == torch.max(y, 1)[1].data).float())
 
-            m = len(validation)
-            print("[Validation]\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss_valid / m, accuracy_valid / m))
+            m = len(labelled_data_valid)
+            logging.info("[Validation]\t J_a: {:.2f}, accuracy: {:.2f}".format(total_loss_valid / m, accuracy_valid / m))
             wandb.log({"epoch": epoch, "valid_loss": total_loss_valid}, step=epoch)
             wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid}, step=epoch)
         

@@ -17,7 +17,7 @@ print('TORCH')
 print(torch. __version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
 
 DEVICE = torch.device("cpu")
