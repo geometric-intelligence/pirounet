@@ -387,7 +387,8 @@ class Classifier(nn.Module):
     
     def forward(self, x):
         batch_size = x.shape[0]
-        x = F.relu(self.dense(x.reshape((batch_size, -1))))
+        x = x.reshape((batch_size, -1)).float()
+        x = F.relu(self.dense(x))
         x = F.softmax(self.logits(x), dim=-1)
         return x
 
@@ -569,6 +570,9 @@ class SVI(nn.Module):
         # Enumerate choices of label
         if not is_labelled:
             ys = enumerate_discrete(xs, self.model.label_features)
+            ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
+            print("FAKE Y HAS SHAPE")
+            print(ys.shape)
             xs = xs.repeat(self.model.label_features, 1, 1)
 
         # Increase sampling dimension
@@ -583,6 +587,8 @@ class SVI(nn.Module):
         print(likelihood.shape)
 
         # p(y)
+        print('WHAT WE GIVE LOG STAND')
+        print(ys.shape)
         prior = -log_standard_categorical(ys)
         print("SHAPE OF PRIOR")
         print(prior.shape)
@@ -590,6 +596,9 @@ class SVI(nn.Module):
         print(self.model.kl_divergence.shape)
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence
+# we want prior to be (8,)
+#so we need log standard categorical to give us back (8,1) when we give it (8,4)
+
         L = self.sampler(elbo)
 
         if is_labelled:
@@ -626,14 +635,14 @@ def log_standard_categorical(p):
     """
     Calculates the cross entropy between a (one-hot) categorical vector
     and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution
+    :param p: one-hot categorical distribution with shape [batch_size, 1, label_features]
     :return: H(p, u)
     """
     # Uniform prior over y
-    prior = F.softmax(torch.ones_like(p), dim=1)
+    prior = F.softmax(torch.ones_like(p), dim=2)
     prior.requires_grad = False
 
-    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=1)
+    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=2)
 
     return cross_entropy
 

@@ -86,19 +86,25 @@ def run_train_dgm(
                 batch_one_hot = torch.cat((batch_one_hot,y_i_enc), dim=0)
             batch_one_hot = batch_one_hot[1:, :, :]
             y = batch_one_hot.to(DEVICE)
+            print('y in ONEHOT')
+            print(y.shape)
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
             batch_ct += 1
             seq_ct += len(x)
             seq_ct_in_epoch += len(x)
-
+            print('what we send to elbo')
+            print(y.shape)
             L = -elbo(x, y) #loss associated to data x with label y
+            print('DONE FIRST ELBO')
             U = -elbo(u) #loss associated to unlabelled data (why does SVI work here?)
+            print('DONE SECOND ELBO')
 
             # Add auxiliary classification loss q(y|x)
             #pushes useful gradients to lower layers in order to reduce vanishing gradients
             logits = model.classify(x)
+            print('DONE CLASSIFY')
             
             # Regular cross entropy
             #comes from given probability that the data x has label y
@@ -107,10 +113,13 @@ def run_train_dgm(
             J_alpha = L - alpha * classication_loss + U #loss for this "batch" (?)
             
                  #accounts for if auxiliary classification is good 
-
+            print("DONE LOSS")
             J_alpha.backward()
+            print("WENT BACK")
             optimizer.step()
+            print("TOOK STEP")
             optimizer.zero_grad()
+            
 
             total_loss += J_alpha.data[0]
             accuracy += torch.mean((torch.max(logits, 1)[1].data == torch.max(y, 1)[1].data).float())
