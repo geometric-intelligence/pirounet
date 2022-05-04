@@ -29,4 +29,4 @@ kl_weight = 0
 n_layers = 3
 h_features_loop = 384
 latent_dim = 256
-label_features = 1
+label_features = 4
