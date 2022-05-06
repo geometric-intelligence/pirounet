@@ -19,9 +19,9 @@ The VAE maps:
 We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
-
+which_device = "1"
 batch_size = 8
-learning_rate = 3e-4
+learning_rate = 6e-5
 epochs = 400
 seq_len = 40
 negative_slope = 0  # LeakyRelu

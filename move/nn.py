@@ -7,6 +7,7 @@ implementation-differences-in-lstm-layers-tensorflow
 """
 
 import logging
+import os
 
 import numpy as np
 import torch
@@ -15,9 +16,15 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
 
+
+import default_config
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
+logging.info(f"Using device {DEVICE}")
 
 
 class LstmEncoder(torch.nn.Module):
@@ -272,7 +279,7 @@ class LstmVAE(torch.nn.Module):
         # This initializes the weights and biases
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
-                torch.nn.init.xavier_normal(m.weight.data)
+                torch.nn.init.xavier_normal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
 
@@ -448,7 +455,7 @@ class DeepGenerativeModel(LstmVAE):
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                init.xavier_normal(m.weight.data)
+                init.xavier_normal_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
 
@@ -484,6 +491,13 @@ class DeepGenerativeModel(LstmVAE):
         :return: x
         """
         y = y.float()
+        print('Z HAS SHAPE')
+        print(z.shape)
+        print('z is on device')
+        print(z.get_device())
+        print('Y HAS SHAPE')
+        print(y.shape)
+        print(y.get_device())
         x = self.decoder(torch.cat([z, y], dim=1))
         return x
 
