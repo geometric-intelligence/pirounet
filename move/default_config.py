@@ -21,7 +21,7 @@ to about 4 seconds of continuous movement.
 """
 
 batch_size = 8
-learning_rate = 3e-5
+learning_rate = 3e-4
 epochs = 400
 seq_len = 40
 negative_slope = 0  # LeakyRelu
@@ -30,3 +30,4 @@ n_layers = 3
 h_features_loop = 384
 latent_dim = 256
 label_features = 4
+amount_of_labels = 1
