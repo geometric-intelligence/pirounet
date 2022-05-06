@@ -1,23 +1,29 @@
 """Main file performing training with labels (semi-supervised)."""
 
 import logging
+
+logging.basicConfig(level=logging.INFO)
 import os
 import sys
 import warnings
 
-import datasets
 import default_config
-import train_dgm
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
+import datasets
+import generate
 import nn
 import torch
 import train
+import train_dgm
 import wandb
 
 print('TORCH')
 print(torch. __version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
-logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
 
 DEVICE = torch.device("cpu")
@@ -66,15 +72,16 @@ model = nn.DeepGenerativeModel(
     output_features=3 * 53,
     seq_len=default_config.seq_len,
     negative_slope=default_config.negative_slope,
-    label_features=default_config.label_features
+    label_features=default_config.label_features,
 ).to(DEVICE)
 
-labelled_data_train,labels_train,unlabelled_data_train,labelled_data_valid,labels_valid,labelled_data_test,labels_test,unlabelled_data_test = datasets.get_dgm_data(default_config)
+labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
+    labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
+    datasets.get_dgm_data(default_config)
 
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
-
 
 train_dgm.run_train_dgm(
     model,
@@ -88,6 +95,13 @@ train_dgm.run_train_dgm(
     unlabelled_data_test,
     optimizer,
     default_config.epochs,
+    default_config.label_features,
+    checkpoint=False
 )
+
+# generate
+artifact_maker = generate.Artifact(model)
+for label in range(1, default_config.label_features + 1):
+    artifact_maker.generatecond(y_given=label)
 
 wandb.finish()

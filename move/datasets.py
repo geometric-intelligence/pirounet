@@ -2,11 +2,11 @@
 
 import logging
 import os
+import pickle
 from glob import glob
 
 import numpy as np
 import torch
-import pickle
 
 
 def augment_by_rotations(seq_data, augmentation_factor):
@@ -86,9 +86,6 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
         logging.info(f"- {f} of shape {ds.shape}")
 
         ds[:, :, 2] *= -1
-        # print("\t Min:", np.min(ds, axis=(0, 1)))
-        # print("\t Max:", np.max(ds, axis=(0, 1)))
-
         # ds = filter_points(ds)
 
         datasets[ds_name] = ds
@@ -99,10 +96,7 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     ds_offsets[1:] = np.cumsum(ds_counts[:-1])
 
     ds_all = np.concatenate(ds_all)
-    # print("Full data shape:", ds_all.shape)
-    # # print("Offsets:", ds_offsets)
 
-    # # print(ds_all.min(axis=(0,1)))
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     xy_min = min(low[:2])
     xy_max = max(hi[:2])
@@ -128,22 +122,25 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
             axis=1, keepdims=True
         )
 
-    # # print(ds_all.min(axis=(0,1)))
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
 
-def load_labels(label_features=1, filepath="/home/papillon/move/move/data/labels.csv"):
+
+def load_labels(
+    amount_of_labels=1,
+    filepath="/home/papillon/move/move/data/labels.csv"
+):
 
     file = open(filepath)
     labels_with_index = np.loadtxt(file, delimiter=",")
-    if label_features==2:
+    if amount_of_labels == 2:
         labels = np.delete(labels_with_index, 0, axis=1)
     else:
-        labels = np.delete(np.delete(labels_with_index, 0, axis=1),0,axis=1)
+        labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
 
     last_label_index = int(labels_with_index[-1][0])
     labelled_seq_len =  last_label_index - int(labels_with_index[-2][0])
-    
+
     return labels, last_label_index, labelled_seq_len
 
 
@@ -163,12 +160,10 @@ def load_aist_raw(pattern="data/aist/*.pkl"):
     logging.info("Loading raw datasets:")
     for f in sorted(glob(pattern)):
         ds_name = os.path.basename(f)[7:-4]
-        #WITH PICKLE
         data = pickle.load(open(f, "rb"))
 
         kp3d = data["keypoints3d"]
         kp3d_optim = data["keypoints3d_optim"]
-        #ds = ds[500:-500, point_mask]
         logging.info(f"- {f} of shape {kp3d.shape}")
 
         datasets[ds_name] = kp3d
@@ -256,49 +251,6 @@ def get_mariel_data(config, augmentation_factor=1):
     return data_train_torch, data_valid_torch, data_test_torch
 
 
-def get_aist_data(config, augmentation_factor=1):
-    """Transform AIST++ data into train/val/test torch loaders.
-    """
-
-    ds_all, ds_all_centered, _, _, _ = load_aist_raw()
-    my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
-    logging.info(f"Preprocessing: Concatenated centered data has shape {my_data.shape}")
-
-    seq_data = np.zeros(
-        (my_data.shape[0] - config.seq_len, config.seq_len, my_data.shape[1])
-    )
-    for i in range((ds_all.shape[0] - config.seq_len)):
-        seq_data[i] = my_data[i : i + config.seq_len]
-    logging.info(f"Preprocessing: Load seq_data of shape {seq_data.shape}")
-
-    if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
-        seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
-
-    five_perc = int(round(seq_data.shape[0] * 0.05))
-    ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    train_ds = seq_data[:ninety_perc, :, :]
-    valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
-    test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
-    logging.info(f">> Train ds has shape {train_ds.shape}")
-    logging.info(f">> Valid ds has shape {valid_ds.shape}")
-    logging.info(f">> Test ds has shape {test_ds.shape}")
-
-    logging.info("Preprocessing: Convert into torch dataloader")
-    data_train_torch = torch.utils.data.DataLoader(
-        train_ds, batch_size=config.batch_size
-    )
-    data_valid_torch = torch.utils.data.DataLoader(
-        valid_ds, batch_size=config.batch_size
-    )
-    data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
-    return data_train_torch, data_valid_torch, data_test_torch
-
-
 def sequify_all_data(pose_data, seq_len, augmentation_factor):
     seq_data = np.zeros(
         (pose_data.shape[0] - seq_len, seq_len, pose_data.shape[1])
@@ -321,7 +273,7 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
 
 def sequify_lab_data(pose_data, seq_len, augmentation_factor):
     seq_data = np.zeros(
-        (int(pose_data.shape[0]/seq_len), seq_len, pose_data.shape[1])
+        (int(pose_data.shape[0] / seq_len), seq_len, pose_data.shape[1])
     )
 
     for i in range(int(pose_data.shape[0]/seq_len)):
@@ -347,22 +299,19 @@ def get_dgm_data(config, augmentation_factor=1):
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-
-    
     labels, last_label_index, labelled_seq_len = load_labels()
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
-     
-    #divide into labelled and unlabelled
-    
+
+    # divide into labelled and unlabelled
+
     pose_data_lab = pose_data[0:last_label_index]
-    pose_data_unlab = pose_data[last_label_index:pose_data.shape[0]]
+    # pose_data_unlab = pose_data[last_label_index:pose_data.shape[0]]
 
-
-    #sequify both sets of data
+    # sequify both sets of data
     seq_data_lab = sequify_lab_data(pose_data_lab, labelled_seq_len, augmentation_factor=1)
     seq_data_unlab = sequify_all_data(pose_data, labelled_seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
 
-    #divide labelled data into 90% training, 5% validating, and 5% testing sets
+    # divide labelled data into 90% training, 5% validating, and 5% testing sets
     five_perc_lab = int(round(seq_data_lab.shape[0] * 0.05))
     ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
     labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
@@ -374,7 +323,7 @@ def get_dgm_data(config, augmentation_factor=1):
     labels_valid_ds = labels[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :]
     labels_test_ds = labels[(ninety_perc_lab + five_perc_lab) :, :]
 
-    #divide unlabelled data into 95% training and 5% testing sets (associated labels?)
+    # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
     ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
     unlabelled_data_train_ds = seq_data_unlab[:(ninety_perc_unlab + five_perc_unlab), :, :]
@@ -417,8 +366,9 @@ def get_dgm_data(config, augmentation_factor=1):
         )
 
 
-    return labelled_data_train,labels_train,unlabelled_data_train,labelled_data_valid,labels_valid,labelled_data_test,labels_test,unlabelled_data_test
-
+    return labelled_data_train, labels_train, unlabelled_data_train, \
+            labelled_data_valid, labels_valid, labelled_data_test, labels_test,\
+            unlabelled_data_test
 
 
 def get_aist_data(config, augmentation_factor=1):
@@ -462,4 +412,3 @@ def get_aist_data(config, augmentation_factor=1):
     )
     data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
     return data_train_torch, data_valid_torch, data_test_torch
-
