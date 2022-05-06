@@ -1,27 +1,29 @@
 """Training functions."""
-
 import logging
+import os
 from itertools import cycle
 
+import default_config
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
+import generate_f
 import torch
-from torch.autograd import Variable
 import utils
 import wandb
-
 from nn import SVI
-import default_config
-# import generate
+from torch.autograd import Variable
 
+CUDA_VISIBLE_DEVICES=0,1
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
-
 
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
 
     return -torch.sum(in_sum, dim=-1)
-
 
 def run_train_dgm(
     model,
@@ -54,8 +56,9 @@ def run_train_dgm(
     seq_ct = 0
     onehot_encoder = utils.make_onehot_encoder(label_features)
 
+    checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/latest_checkpoint.pt")
     if checkpoint is True:
-        checkpoint = torch.load('~/move/move/saved/latest_checkpoint.pt')
+        checkpoint = torch.load(checkpoint_filepath)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         latest_epoch = checkpoint['epoch']
@@ -153,21 +156,20 @@ def run_train_dgm(
             wandb.log({"epoch": epoch, "valid_loss": total_loss_valid}, step=epoch)
             wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid}, step=epoch)
 
-        # # Save artifact
-        # logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
-        # artifact_maker = generate.Artifact(model, epoch=epoch)
-        # artifact_maker.recongeneral(labelled_data_valid, labels_valid)
-        # artifact_maker.recongeneral(labelled_data_test, labels_test)
+        logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
+        generate_f.recongeneral(model, epoch, labelled_data_test, labels_test)
+        generate_f.recongeneral(model, epoch, labelled_data_test, labels_test)
         # for label in range(1, default_config.label_features + 1):
         #     artifact_maker.generatecond(y_given=label)
 
-        # Save a checkpoint
+        logging.info('Save a checkpoint.')
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': total_loss
-        }, '~/move/move/saved/latest_checkpoint.pt')
+        }, checkpoint_filepath)
 
-    # Save the model
-    torch.save(model, '~/move/move/saved/latest_model.pt')
+    logging.info('Save the model.')
+    model_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/latest_model.pt")
+    torch.save(model, model_filepath)

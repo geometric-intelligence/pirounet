@@ -1,12 +1,18 @@
 """Main file performing training with labels (semi-supervised)."""
 
 import logging
+
+logging.basicConfig(level=logging.INFO)
 import os
 import sys
 import warnings
 
-import datasets
 import default_config
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
+import datasets
 import generate
 import nn
 import torch
@@ -18,7 +24,6 @@ print('TORCH')
 print(torch. __version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
-logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
 
 DEVICE = torch.device("cpu")
