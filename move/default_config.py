@@ -20,14 +20,16 @@ We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
 which_device = "1"
-batch_size = 8
-learning_rate = 6e-5
+run_name = "batch_20_nl5"
+label_features = 4
+amount_of_labels = 1
+
+batch_size = 20
+learning_rate = 3e-6
 epochs = 400
 seq_len = 40
 negative_slope = 0  # LeakyRelu
 kl_weight = 0
-n_layers = 3
+n_layers = 5
 h_features_loop = 384
 latent_dim = 256
-label_features = 4
-amount_of_labels = 1

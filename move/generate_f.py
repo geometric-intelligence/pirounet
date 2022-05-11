@@ -190,10 +190,7 @@ for g1, g2 in skeleton_lines:
 def getlinesegments(seq, zcolor=None, cmap=None):
     """Calculate coordinates for the lines."""
     xline = np.zeros((seq.shape[0], len(skeleton_idxs), 3, 2))
-    print('shape of sequence')
-    print(seq.shape)
-    print('xline')
-    print(xline.shape)
+
     if cmap:
         colors = np.zeros((len(skeleton_idxs), 4))
     for i, (g1, g2) in enumerate(skeleton_idxs):
@@ -246,10 +243,13 @@ def animatestick(
     """Create skeleton animation."""
     # Put data on CPU and convert to numpy array
     seq = seq.cpu().data.numpy()
-    ghost = ghost.cpu().data.numpy()
+    if ghost is not None:
+        ghost = ghost.cpu().data.numpy()
 
     if zcolor is None:
         zcolor = np.zeros(seq.shape[1])
+
+    
     fig = plt.figure(figsize=figsize)
     ax = p3.Axes3D(fig)
 
@@ -294,6 +294,7 @@ def animatestick(
         ax.set_ylim(*ax_lims)
         ax.set_zlim(0, ax_lims[1] - ax_lims[0])
     plt.close(fig)
+
     xline, colors = getlinesegments(seq, zcolor, cm)
     lines = putlines(ax, xline[0], colors, lw=lw, alpha=0.9)
 
@@ -313,9 +314,11 @@ def animatestick(
 
     if condition is not None:
         title = str('Generated for label ' + str(condition))
-        ax.set_title(title)
+        
 
     def update(t):
+        if condition is not None:
+            plt.title(title)
         pts._offsets3d = juggle_axes(seq[t, :, 0], seq[t, :, 1], seq[t, :, 2], "z")
         for i, l in enumerate(lines):
             l.set_data(xline[t, i, :2])
@@ -348,8 +351,10 @@ def recongeneral(
     epoch,
     input_data,
     input_label,
+    purpose,
     label_features=default_config.label_features,
     seq_len=default_config.seq_len,
+    run_name=default_config.run_name
 
 ):
     """
@@ -379,9 +384,9 @@ def recongeneral(
     x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"recon_epoch_{epoch}_on_{now}.gif"
+        name = f"recon_epoch_{epoch}_{purpose}_{now}_{run_name}.gif"
     else:
-        name = f"recon_trained_on_{now}.gif"
+        name = f"recon_trained_{purpose}_{now}_{run_name}.gif"
 
     fname = os.path.join(filepath, name)
     fname = animatestick(
@@ -406,20 +411,22 @@ def get_sample(
     if y_given is not None:
         y_onehot = onehot_encoder(y_given)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+        y_onehot = y_onehot.to(DEVICE)
         y_title = y_given
 
     else:
         y_rand = random.randint(1, label_features)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+        y_onehot = y_onehot.to(DEVICE)
         y_title = y_rand
 
     z_create = torch.randn(size=(1, latent_dim))
-    y_onehot.to(DEVICE)
-    z_create.to(DEVICE)
+    z_create = z_create.to(DEVICE)
+
     x_create = model.sample(z_create, y_onehot)
 
-    return x_create
+    return x_create, y_title
 
 def generatecond(
     model,
@@ -427,22 +434,24 @@ def generatecond(
     y_given=None,
     batch_size=default_config.batch_size,
     latent_dim=default_config.latent_dim,
-    label_features=default_config.label_features
+    label_features=default_config.label_features,
+    seq_len=default_config.seq_len,
+    run_name=default_config.run_name
 ):
     now = time.strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
-    x_create = get_sample(model, y_given)
+    x_create, y_title = get_sample(model, y_given)
+    x_create_formatted = x_create[0].reshape((seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"gen_lab{y_title}_epoch_{epoch}_on_{now}.gif"
+        name = f"gen_label{y_title}_epoch_{epoch}_{now}_{run_name}.gif"
     else:
-        name = f"gen_lab{y_title}_trained_on_{now}.gif"
+        name = f"gen_label{y_title}_trained_{now}_{run_name}.gif"
 
     fname = os.path.join(filepath, name)
-
     fname = animatestick(
-        x_create,
+        x_create_formatted,
         fname=fname,
         ghost=None,
         dot_alpha=0.7,
