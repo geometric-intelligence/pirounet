@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 import datasets
 import default_config
@@ -59,7 +60,7 @@ epoch = 0
 
 # Save artifact
 logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
-generate_f.recongeneral(model, epoch, labelled_data_test, labels_test)
-generate_f.recongeneral(model, epoch, labelled_data_test, labels_test)
-#for label in range(1, default_config.label_features + 1):
-#    generate_f.generatecond(model, epoch=epoch, y_given=label)
+generate_f.recongeneral(model, epoch, labelled_data_valid, labels_valid, "valid")
+generate_f.recongeneral(model, epoch, labelled_data_test, labels_test, "test")
+for label in range(1, default_config.label_features + 1):
+   generate_f.generatecond(model, epoch=epoch, y_given=label)

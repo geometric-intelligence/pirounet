@@ -20,8 +20,8 @@ import train
 import train_dgm
 import wandb
 
-print('TORCH')
-print(torch. __version__)
+logging.info('TORCH')
+logging.info(torch. __version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
 warnings.filterwarnings("ignore")
@@ -58,7 +58,7 @@ if SERVER == "colab":
 
     drive.mount("/content/drive")
     # %cd /content/drive/MyDrive/colab-github/move/dance
-    sys.path.append(os.path.dirname(os.getcwd()))
+    syspath.append(os.path.dirname(os.getcwd()))
 
 elif SERVER == "pod":
     sys.path.append(os.path.dirname(os.getcwd()))
