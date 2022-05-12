@@ -82,14 +82,13 @@ def run_train_dgm(
 
         batches_seen = 0
 
-        for i_batch, (x, y, u) in enumerate(
-            zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)
-        ):
+        for i_batch, (x, y, u) in enumerate(zip(cycle(labelled_data_train),
+                cycle(labels_train), unlabelled_data_train)):
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)
             u = u.to(DEVICE)
-
+            
             batches_seen += 1
 
             batch_one_hot = torch.zeros((1, 1, label_features))
@@ -120,24 +119,18 @@ def run_train_dgm(
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()
-
+            
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy += torch.mean(
-                (
-                    torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices
-                ).float()
-            )
+                (torch.max(logits, 1).indices
+                    == torch.max(y_like_logits, 1).indices).float())
 
-            if i_batch % 50 == 0 and i_batch != 0:
-                logging.info(
-                    f"Batch {i_batch} at loss {total_loss / batches_seen},acc {accuracy / batches_seen}")
+            if i_batch % 50 == 0 and i_batch != 0 :
+                logging.info(f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}")
 
         logging.info(f"Epoch: {epoch}")
-        logging.info(
-            "[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
-                total_loss / batches_seen, accuracy / batches_seen
-            )
-        )
+        logging.info("[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
+                format(total_loss / batches_seen, accuracy / batches_seen))
 
         wandb.log({"epoch": epoch, "loss": total_loss / batches_seen}, step=epoch)
         wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
@@ -148,7 +141,7 @@ def run_train_dgm(
 
         batches_v_seen = 0
         total_v_batches = len(labelled_data_valid)
-
+        
         for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
             x, y = Variable(x), Variable(y)
@@ -177,46 +170,32 @@ def run_train_dgm(
             _, pred_idx = torch.max(logits_v, 1)
             _, lab_idx = torch.max(y, 1)
             accuracy_valid += torch.mean(
-                (torch.max(logits_v, 1).indices == torch.max(y, 1).indices).float()
-            )
+                (torch.max(logits_v.t(), 1).indices
+                    == torch.max(y, 1).indices).float())
 
-            if i_batch % 50 == 0 and i_batch != 0:
-                logging.info(
-                    f"Batch {i_batch}/total at VALID loss {total_loss_valid / batches_v_seen},accuracy {accuracy_valid / batches_v_seen}"
-                )
+            if i_batch % 50 == 0 and i_batch != 0 :
+                logging.info(f"Batch {i_batch}/total at VALID loss \
+                    {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}")
 
         logging.info(f"Epoch: {epoch}")
-        logging.info(
-            "[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
-                total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen
-            )
-        )
+        logging.info("[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
+                format(total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen))
 
-        wandb.log(
-            {"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen},
-            step=epoch,
-        )
-        wandb.log(
-            {"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
-            step=epoch,
-        )
+        wandb.log({"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen}, step=epoch)
+        wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen}, step=epoch)
 
         logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
-        generate_f.recongeneral(
-            model, epoch, labelled_data_valid, labels_valid, "valid"
-        )
-        generate_f.recongeneral(model, epoch, labelled_data_test, labels_test, "test")
+        generate_f.recongeneral(model, epoch, labelled_data_valid, labels_valid, 'valid')
+        generate_f.recongeneral(model, epoch, labelled_data_test, labels_test, 'test')
         for label in range(1, default_config.label_features + 1):
             generate_f.generatecond(model, epoch=epoch, y_given=label)
 
-        logging.info("Save a checkpoint.")
-        torch.save(
-            {
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "loss": total_loss,
-                "accuracy": accuracy,
-            },
-            checkpoint_filepath,
-        )
+        logging.info('Save a checkpoint.')
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': total_loss,
+            'accuracy': accuracy
+        }, checkpoint_filepath)
+
