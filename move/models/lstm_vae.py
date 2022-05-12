@@ -1,3 +1,4 @@
+import os
 import logging
 
 import numpy as np
@@ -7,9 +8,13 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
+logging.info(f"Using device {DEVICE}")
 
 
 class LstmEncoder(torch.nn.Module):
