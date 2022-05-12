@@ -16,8 +16,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
 
-import lstm_vae
-import classifier
+import models.lstm_vae as lstm_vae
+import models.classifier as classifier
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -83,7 +83,7 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
             label_features=label_features,
         )
 
-        self.classifier = Classifier(input_features, h_features_loop, label_features, seq_len)
+        self.classifier = classifier.LinearClassifier(input_features, h_features_loop, label_features, seq_len)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):

@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
 
+import default_config
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
@@ -104,6 +106,8 @@ class LstmEncoder(torch.nn.Module):
         z_sample = self.reparametrize(z_mean, z_logvar)
 
         logging.debug("Encoder done.")
+        print("z sample norm is")
+        print(torch.linalg.norm(z_sample, dim=1))
         return z_sample, z_mean, z_logvar
 
 

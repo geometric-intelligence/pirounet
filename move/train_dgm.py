@@ -14,7 +14,7 @@ import generate_f
 import torch
 import utils
 import wandb
-from nn import SVI
+from models.dgm import SVI
 from torch.autograd import Variable
 
 CUDA_VISIBLE_DEVICES=0,1
@@ -171,7 +171,7 @@ def run_train_dgm(
             _, pred_idx = torch.max(logits_v, 1)
             _, lab_idx = torch.max(y, 1)
             accuracy_valid += torch.mean(
-                (torch.max(logits_v.t(), 1).indices
+                (torch.max(logits_v, 1).indices
                     == torch.max(y, 1).indices).float())
 
             if i_batch % 50 == 0 and i_batch != 0 :

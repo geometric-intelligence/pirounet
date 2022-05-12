@@ -14,10 +14,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
 import generate
-import nn
-import torch
+import models.dgm 
 import train
 import train_dgm
+
+import torch
 import wandb
 
 logging.info('TORCH')
@@ -64,7 +65,7 @@ elif SERVER == "pod":
     sys.path.append(os.path.dirname(os.getcwd()))
 
 logging.info("Initialize model")
-model = nn.DeepGenerativeModel(
+model = models.dgm.DeepGenerativeModel(
     n_layers=default_config.n_layers,
     input_features=3 * 53,
     h_features_loop=default_config.h_features_loop,
