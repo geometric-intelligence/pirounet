@@ -122,13 +122,6 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
         :return: x
         """
         y = y.float()
-        print('Z HAS SHAPE')
-        print(z.shape)
-        print('z is on device')
-        print(z.get_device())
-        print('Y HAS SHAPE')
-        print(y.shape)
-        print(y.get_device())
         x = self.decoder(torch.cat([z, y], dim=1))
         return x
 

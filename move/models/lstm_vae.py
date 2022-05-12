@@ -105,8 +105,7 @@ class LstmEncoder(torch.nn.Module):
         z_sample = self.reparametrize(z_mean, z_logvar)
 
         logging.debug("Encoder done.")
-        print("z sample norm is")
-        print(torch.linalg.norm(z_sample, dim=1))
+
         return z_sample, z_mean, z_logvar
 
 
@@ -140,8 +139,6 @@ class LstmDecoder(torch.nn.Module):
             input_features_decoder = h_features_loop
             total_latent_dim = latent_dim
 
-        print(f"input_features_decoder: {input_features_decoder}")
-
         self.linear = torch.nn.Linear(total_latent_dim, h_features_loop)
 
         self.lstm_loop = torch.nn.LSTM(
@@ -170,8 +167,6 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim
         batch_size, _ = inputs.shape
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-        print("inputs before going into h")
-        print(inputs.shape)
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)
@@ -180,8 +175,6 @@ class LstmDecoder(torch.nn.Module):
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
         assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
-        print("shape of h")
-        print(h.shape)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]

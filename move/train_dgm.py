@@ -81,8 +81,6 @@ def run_train_dgm(
         total_loss, accuracy = (0, 0)
 
         batches_seen = 0
-        print("LENGTH OF LABELLED")
-        print(len(labelled_data_train))
 
         for i_batch, (x, y, u) in enumerate(
             zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)
@@ -105,10 +103,7 @@ def run_train_dgm(
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
-            print('INCOMING x')
-            print(x.shape)
-            print('INCOMING y')
-            print(y.shape)
+
             L = -elbo(x, y)  # check that averaged on minibatch
             U = -elbo(u)
 
@@ -153,8 +148,6 @@ def run_train_dgm(
 
         batches_v_seen = 0
         total_v_batches = len(labelled_data_valid)
-        print("TOTAL V BATCH")
-        print(total_v_batches)
 
         for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
