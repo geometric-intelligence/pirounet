@@ -135,8 +135,7 @@ def run_train_dgm(
 
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch} at loss {total_loss / batches_seen},
-                        acc {accuracy / batches_seen}")
+                    f"Batch {i_batch} at loss {total_loss / batches_seen},acc {accuracy / batches_seen}")
 
         logging.info(f"Epoch: {epoch}")
         logging.info(
@@ -190,9 +189,7 @@ def run_train_dgm(
 
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch}/total at VALID loss \
-                    {total_loss_valid / batches_v_seen},
-                        accuracy {accuracy_valid / batches_v_seen}"
+                    f"Batch {i_batch}/total at VALID loss {total_loss_valid / batches_v_seen},accuracy {accuracy_valid / batches_v_seen}"
                 )
 
         logging.info(f"Epoch: {epoch}")
