@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -9,7 +8,7 @@ class LinearClassifier(nn.Module):
         Single hidden layer classifier
         with softmax output.
         """
-        super(Classifier, self).__init__()
+        super(LinearClassifier, self).__init__()
         self.dense = nn.Linear(input_features, h_features_loop)
         self.logits = nn.Linear(h_features_loop, label_features)
 
@@ -20,7 +19,8 @@ class LinearClassifier(nn.Module):
 
 
 # class TransformerClassifier(PositionalEncoding):
-#     def __init__(self, input_features, h_features_loop, label_features, n_t_class_layers, latent_dim, dropout):
+#     def __init__(self, input_features, h_features_loop, label_features,
+# n_t_class_layers, latent_dim, dropout):
 #         """
 #         Transformer classifier
 #         with softmax output.
@@ -55,7 +55,8 @@ class LinearClassifier(nn.Module):
 
 #         pe = torch.zeros(max_len, d_model)
 #         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-#         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
+#         div_term = torch.exp(torch.arange(0, d_model, 2).float()
+# * (-np.log(10000.0) / d_model))
 #         pe[:, 0::2] = torch.sin(position * div_term)
 #         pe[:, 1::2] = torch.cos(position * div_term)
 #         pe = pe.unsqueeze(0).transpose(0, 1)

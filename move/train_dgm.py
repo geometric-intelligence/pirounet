@@ -5,7 +5,6 @@ import time
 from itertools import cycle
 
 import default_config
-import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -57,7 +56,6 @@ def run_train_dgm(
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
-    seq_ct = 0
     onehot_encoder = utils.make_onehot_encoder(label_features)
 
     now = time.strftime("%Y%m%d_%H%M%S")
@@ -65,7 +63,6 @@ def run_train_dgm(
         os.path.abspath(os.getcwd()),
         "saved/checkpoint_{}_{}.pt".format(now, default_config.run_name),
     )
-    f = open(checkpoint_filepath, "w")
 
     if checkpoint is True:
         checkpoint = torch.load(checkpoint_filepath)
@@ -108,7 +105,10 @@ def run_train_dgm(
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
-
+            print('INCOMING x')
+            print(x.shape)
+            print('INCOMING y')
+            print(y.shape)
             L = -elbo(x, y)  # check that averaged on minibatch
             U = -elbo(u)
 
@@ -135,8 +135,8 @@ def run_train_dgm(
 
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
-                )
+                    f"Batch {i_batch} at loss {total_loss / batches_seen},
+                        acc {accuracy / batches_seen}")
 
         logging.info(f"Epoch: {epoch}")
         logging.info(
@@ -191,7 +191,8 @@ def run_train_dgm(
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
                     f"Batch {i_batch}/total at VALID loss \
-                    {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
+                    {total_loss_valid / batches_v_seen},
+                        accuracy {accuracy_valid / batches_v_seen}"
                 )
 
         logging.info(f"Epoch: {epoch}")

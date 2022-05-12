@@ -14,8 +14,7 @@ import models.classifier as classifier
 import models.lstm_vae as lstm_vae
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
+import utils
 from torch.nn import init
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -48,7 +47,6 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
         model that incorporates label information in both
         inference and generation.
         Initialise a new generative model
-
         Parameters
         ----------
         n_layers :
@@ -84,8 +82,7 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
         )
 
         self.classifier = classifier.LinearClassifier(
-            input_features, h_features_loop, label_features, seq_len
-        )
+            input_features, h_features_loop, label_features, seq_len)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -96,10 +93,10 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
     def forward(self, x, y):
         # Add label and data and generate latent variable
         """
-        Parameters
-        ---
-        x : input sequence with shape [batchsize, seq_len, 3*keypoints]
-        y : input label with shape [batchsize, 1,label_features]
+            Parameters
+            ---
+            x : input sequence with shape [batchsize, seq_len, 3*keypoints]
+            y : input label with shape [batchsize, 1,label_features]
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
@@ -125,7 +122,13 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
         :return: x
         """
         y = y.float()
-
+        print('Z HAS SHAPE')
+        print(z.shape)
+        print('z is on device')
+        print(z.get_device())
+        print('Y HAS SHAPE')
+        print(y.shape)
+        print(y.get_device())
         x = self.decoder(torch.cat([z, y], dim=1))
         return x
 
@@ -193,7 +196,7 @@ class SVI(nn.Module):
 
         # Enumerate choices of label
         if not is_labelled:
-            ys = enumerate_discrete(xs, self.model.label_features)
+            ys = utils.enumerate_discrete(xs, self.model.label_features)
             ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
             xs = xs.repeat(self.model.label_features, 1, 1)
 
@@ -228,33 +231,3 @@ class SVI(nn.Module):
         # Equivalent to -U(x)
         U = L + H
         return torch.mean(U)
-
-
-def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
-    """
-    Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
-    :param tensor: Tensor to compute LSE over
-    :param dim: dimension to perform operation over
-    :param sum_op: reductive operation to be applied, e.g. torch.sum or torch.mean
-    :return: LSE
-    """
-    max, _ = torch.max(tensor, dim=dim, keepdim=True)
-    return (
-        torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
-    )
-
-
-def log_standard_categorical(p):
-    """
-    Calculates the cross entropy between a (one-hot) categorical vector
-    and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution with shape [batch_size, 1, label_features]
-    :return: H(p, u)
-    """
-    # Uniform prior over y
-    prior = F.softmax(torch.ones_like(p), dim=2)
-    prior.requires_grad = False
-
-    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=2)
-
-    return cross_entropy

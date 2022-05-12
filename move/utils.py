@@ -38,14 +38,15 @@ def log_standard_categorical(p):
     """
     Calculates the cross entropy between a (one-hot) categorical vector
     and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution
+    :param p: one-hot categorical distribution with shape [batch_size,
+              1, label_features]
     :return: H(p, u)
     """
     # Uniform prior over y
-    prior = F.softmax(torch.ones_like(p), dim=1)
+    prior = F.softmax(torch.ones_like(p), dim=2)
     prior.requires_grad = False
 
-    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=1)
+    cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=2)
 
     return cross_entropy
 
