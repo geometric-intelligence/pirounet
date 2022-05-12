@@ -16,6 +16,9 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
 
+import lstm_vae
+import classifier
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
@@ -24,7 +27,7 @@ if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
-class DeepGenerativeModel(LstmVAE):
+class DeepGenerativeModel(lstm_vae.LstmVAE):
     def __init__(
         self,
         n_layers,
@@ -62,7 +65,7 @@ class DeepGenerativeModel(LstmVAE):
         self.label_features = label_features
         self.seq_len = seq_len
 
-        self.encoder = LstmEncoder(
+        self.encoder = lstm_vae.LstmEncoder(
             n_layers=n_layers,
             input_features=input_features,
             h_features_loop=h_features_loop,
@@ -70,7 +73,7 @@ class DeepGenerativeModel(LstmVAE):
             label_features=label_features,
         )
 
-        self.decoder = LstmDecoder(
+        self.decoder = lstm_vae.LstmDecoder(
             n_layers=n_layers,
             output_features=output_features,
             h_features_loop=h_features_loop,
