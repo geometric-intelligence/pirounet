@@ -10,14 +10,13 @@ import logging
 import os
 
 import default_config
+import models.classifier as classifier
+import models.lstm_vae as lstm_vae
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
-
-import models.lstm_vae as lstm_vae
-import models.classifier as classifier
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -26,6 +25,7 @@ DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
+
 
 class DeepGenerativeModel(lstm_vae.LstmVAE):
     def __init__(
@@ -83,7 +83,9 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
             label_features=label_features,
         )
 
-        self.classifier = classifier.LinearClassifier(input_features, h_features_loop, label_features, seq_len)
+        self.classifier = classifier.LinearClassifier(
+            input_features, h_features_loop, label_features, seq_len
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -94,10 +96,10 @@ class DeepGenerativeModel(lstm_vae.LstmVAE):
     def forward(self, x, y):
         # Add label and data and generate latent variable
         """
-            Parameters
-            ---
-            x : input sequence with shape [batchsize, seq_len, 3*keypoints]
-            y : input label with shape [batchsize, 1,label_features]
+        Parameters
+        ---
+        x : input sequence with shape [batchsize, seq_len, 3*keypoints]
+        y : input label with shape [batchsize, 1,label_features]
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
@@ -256,4 +258,3 @@ def log_standard_categorical(p):
     cross_entropy = -torch.sum(p * torch.log(prior + 1e-8), dim=2)
 
     return cross_entropy
-

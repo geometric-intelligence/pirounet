@@ -14,15 +14,15 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
 import generate
-import models.dgm 
+import models.dgm
+import torch
 import train
 import train_dgm
 
-import torch
 import wandb
 
-logging.info('TORCH')
-logging.info(torch. __version__)
+logging.info("TORCH")
+logging.info(torch.__version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
 warnings.filterwarnings("ignore")
@@ -76,9 +76,16 @@ model = models.dgm.DeepGenerativeModel(
     label_features=default_config.label_features,
 ).to(DEVICE)
 
-labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
-    labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(default_config)
+(
+    labelled_data_train,
+    labels_train,
+    unlabelled_data_train,
+    labelled_data_valid,
+    labels_valid,
+    labelled_data_test,
+    labels_test,
+    unlabelled_data_test,
+) = datasets.get_dgm_data(default_config)
 
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
@@ -97,7 +104,7 @@ train_dgm.run_train_dgm(
     optimizer,
     default_config.epochs,
     default_config.label_features,
-    checkpoint=False
+    checkpoint=False,
 )
 
 # generate

@@ -127,8 +127,7 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 
 def load_labels(
-    amount_of_labels=1,
-    filepath="/home/papillon/move/move/data/labels.csv"
+    amount_of_labels=1, filepath="/home/papillon/move/move/data/labels.csv"
 ):
 
     file = open(filepath)
@@ -139,7 +138,7 @@ def load_labels(
         labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
 
     last_label_index = int(labels_with_index[-1][0])
-    labelled_seq_len =  last_label_index - int(labels_with_index[-2][0])
+    labelled_seq_len = last_label_index - int(labels_with_index[-2][0])
 
     return labels, last_label_index, labelled_seq_len
 
@@ -252,9 +251,7 @@ def get_mariel_data(config, augmentation_factor=1):
 
 
 def sequify_all_data(pose_data, seq_len, augmentation_factor):
-    seq_data = np.zeros(
-        (pose_data.shape[0] - seq_len, seq_len, pose_data.shape[1])
-    )
+    seq_data = np.zeros((pose_data.shape[0] - seq_len, seq_len, pose_data.shape[1]))
 
     for i in range((pose_data.shape[0] - seq_len)):
         seq_data[i] = pose_data[i : i + seq_len]
@@ -276,8 +273,8 @@ def sequify_lab_data(pose_data, seq_len, augmentation_factor):
         (int(pose_data.shape[0] / seq_len), seq_len, pose_data.shape[1])
     )
 
-    for i in range(int(pose_data.shape[0]/seq_len)):
-        j = i*seq_len
+    for i in range(int(pose_data.shape[0] / seq_len)):
+        j = i * seq_len
         seq_data[i] = pose_data[j : j + seq_len]
     logging.info(f"Preprocessing: Load labelled data of shape {seq_data.shape}")
 
@@ -290,6 +287,7 @@ def sequify_lab_data(pose_data, seq_len, augmentation_factor):
         logging.info(f">> Augmented labelled data has shape: {seq_data.shape}")
 
     return seq_data
+
 
 def get_dgm_data(config, augmentation_factor=1):
     """Transform mariel data into train/val/test torch loaders.
@@ -308,17 +306,23 @@ def get_dgm_data(config, augmentation_factor=1):
     # pose_data_unlab = pose_data[last_label_index:pose_data.shape[0]]
 
     # sequify both sets of data
-    seq_data_lab = sequify_lab_data(pose_data_lab, labelled_seq_len, augmentation_factor=1)
-    seq_data_unlab = sequify_all_data(pose_data, labelled_seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
+    seq_data_lab = sequify_lab_data(
+        pose_data_lab, labelled_seq_len, augmentation_factor=1
+    )
+    seq_data_unlab = sequify_all_data(
+        pose_data, labelled_seq_len, augmentation_factor=1
+    )  # WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     five_perc_lab = int(round(seq_data_lab.shape[0] * 0.05))
     ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
     labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
-    labelled_data_valid_ds = seq_data_lab[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :]
+    labelled_data_valid_ds = seq_data_lab[
+        ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :
+    ]
     labelled_data_test_ds = seq_data_lab[(ninety_perc_lab + five_perc_lab) :, :, :]
 
-    #divide labels into 90% training, 5% validating, and 5% testing sets
+    # divide labels into 90% training, 5% validating, and 5% testing sets
     labels_train_ds = labels[:ninety_perc_lab, :]
     labels_valid_ds = labels[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :]
     labels_test_ds = labels[(ninety_perc_lab + five_perc_lab) :, :]
@@ -326,8 +330,12 @@ def get_dgm_data(config, augmentation_factor=1):
     # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
     ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
-    unlabelled_data_train_ds = seq_data_unlab[:(ninety_perc_unlab + five_perc_unlab), :, :]
-    unlabelled_data_test_ds = seq_data_unlab[(ninety_perc_unlab + five_perc_unlab) :, :, :]
+    unlabelled_data_train_ds = seq_data_unlab[
+        : (ninety_perc_unlab + five_perc_unlab), :, :
+    ]
+    unlabelled_data_test_ds = seq_data_unlab[
+        (ninety_perc_unlab + five_perc_unlab) :, :, :
+    ]
 
     print(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
     print(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
@@ -342,38 +350,43 @@ def get_dgm_data(config, augmentation_factor=1):
 
     labelled_data_train = torch.utils.data.DataLoader(
         labelled_data_train_ds, batch_size=config.batch_size
-        )
+    )
     labels_train = torch.utils.data.DataLoader(
         labels_train_ds, batch_size=config.batch_size
-        )
+    )
     unlabelled_data_train = torch.utils.data.DataLoader(
         unlabelled_data_train_ds, batch_size=config.batch_size
-        )
+    )
     labelled_data_valid = torch.utils.data.DataLoader(
         labelled_data_valid_ds, batch_size=config.batch_size
-        )
+    )
     labels_valid = torch.utils.data.DataLoader(
         labels_valid_ds, batch_size=config.batch_size
-        )
+    )
     labelled_data_test = torch.utils.data.DataLoader(
         labelled_data_test_ds, batch_size=1
-        )
+    )
     labels_test = torch.utils.data.DataLoader(
         labels_test_ds, batch_size=config.batch_size
-        )
+    )
     unlabelled_data_test = torch.utils.data.DataLoader(
         unlabelled_data_test_ds, batch_size=1
-        )
+    )
 
-
-    return labelled_data_train, labels_train, unlabelled_data_train, \
-            labelled_data_valid, labels_valid, labelled_data_test, labels_test,\
-            unlabelled_data_test
+    return (
+        labelled_data_train,
+        labels_train,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    )
 
 
 def get_aist_data(config, augmentation_factor=1):
-    """Transform AIST++ data into train/val/test torch loaders.
-    """
+    """Transform AIST++ data into train/val/test torch loaders."""
 
     ds_all, ds_all_centered, _, _, _ = load_aist_raw()
     my_data = ds_all_centered.reshape((ds_all.shape[0], -1))

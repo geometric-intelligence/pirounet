@@ -10,23 +10,24 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 import torch
 import utils
-import wandb
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
+
+import wandb
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 
 
-class Artifact():
+class Artifact:
     def __init__(
         self,
         model,
         epoch=None,
         batch_size=default_config.batch_size,
         latent_dim=default_config.latent_dim,
-        label_features=default_config.label_features
+        label_features=default_config.label_features,
     ):
 
         """
@@ -54,7 +55,6 @@ class Artifact():
         self.now = time.strftime("%Y%m%d_%H%M%S")
         if epoch is not None:
             self.epoch = epoch
-
 
     def getlinesegments(self, seq, zcolor=None, cmap=None):
         """Calculate coordinates for the lines."""
@@ -224,11 +224,10 @@ class Artifact():
             entry.append([point_labels.index(line) for line in g2])
             skeleton_idxs.append(entry)
 
-
         xline = np.zeros((seq.shape[0], len(skeleton_idxs), 3, 2))
-        print('shape of sequence')
+        print("shape of sequence")
         print(seq.shape)
-        print('xline')
+        print("xline")
         print(xline.shape)
         if cmap:
             colors = np.zeros((len(skeleton_idxs), 4))
@@ -277,7 +276,7 @@ class Artifact():
         lw=2.5,
         cmap="inferno",
         pointer_color="black",
-        condition=None
+        condition=None,
     ):
         """Create skeleton animation."""
         # Put data on CPU and convert to numpy array
@@ -348,7 +347,7 @@ class Artifact():
             ax.quiv = quiv
 
         if condition is not None:
-            title = str('Generated for label ' + str(condition))
+            title = str("Generated for label " + str(condition))
             ax.set_title(title)
 
         def update(t):
@@ -367,8 +366,9 @@ class Artifact():
 
             if pointer is not None:
                 ax.quiv.remove()
-                ax.quiv = ax.quiver(X[t], Y[t], Z[t],
-                        dX[t], dY[t], 0, color=pointer_color)
+                ax.quiv = ax.quiver(
+                    X[t], Y[t], Z[t], dX[t], dY[t], 0, color=pointer_color
+                )
 
         anim = animation.FuncAnimation(
             fig, update, len(seq), interval=speed, blit=False, save_count=200
@@ -384,11 +384,11 @@ class Artifact():
         Make and save stick video on seq from input_data dataset.
         No conditions on output.
         """
-        for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
+        for i_batch, (x, y) in enumerate(zip(input_data, input_label)):
             x_good = x[0]
             x_good = x_good.reshape((1, x.shape[1], x.shape[-1]))
             y_good = y[0]
-            y_good = y_good.reshape((1,1,1))
+            y_good = y_good.reshape((1, 1, 1))
             x_good = x_good.to(DEVICE)
             y_good = y_good.to(DEVICE)
 
@@ -453,7 +453,7 @@ class Artifact():
             ghost=None,
             dot_alpha=0.7,
             ghost_shift=0.2,
-            condition=y_title
+            condition=y_title,
         )
 
         animation_artifact = wandb.Artifact("animation", type="video")

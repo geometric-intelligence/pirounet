@@ -7,6 +7,7 @@ import time
 import artifact
 import numpy as np
 import torch
+
 import wandb
 
 DEVICE = torch.device("cpu")

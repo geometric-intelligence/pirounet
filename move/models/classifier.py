@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class LinearClassifier(nn.Module):
     def __init__(self, input_features, h_features_loop, label_features, seq_len):
         """
@@ -17,6 +18,7 @@ class LinearClassifier(nn.Module):
         x = F.softmax(self.logits(x), dim=-1)
         return x
 
+
 # class TransformerClassifier(PositionalEncoding):
 #     def __init__(self, input_features, h_features_loop, label_features, n_t_class_layers, latent_dim, dropout):
 #         """
@@ -30,12 +32,12 @@ class LinearClassifier(nn.Module):
 #         self.embed = nn.Embedding(input_vocab_size, d_model)
 
 #         encoder_layer = nn.TransformerEncoderLayer(
-#             d_model=512, 
-#             nhead=8, 
+#             d_model=512,
+#             nhead=8,
 #             batch_first=True
 #         )
 #         self.logits = nn.TransformerEncoder(
-#             encoder_layer, 
+#             encoder_layer,
 #             num_layers = n_t_class_layers,
 
 #         )
@@ -57,7 +59,7 @@ class LinearClassifier(nn.Module):
 #         pe[:, 0::2] = torch.sin(position * div_term)
 #         pe[:, 1::2] = torch.cos(position * div_term)
 #         pe = pe.unsqueeze(0).transpose(0, 1)
-        
+
 #         self.register_buffer('pe', pe)
 
 #     def forward(self, x):

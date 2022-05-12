@@ -10,9 +10,10 @@ import nn
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
+
 import wandb
 
-CUDA_VISIBLE_DEVICES=0,1
+CUDA_VISIBLE_DEVICES = 0, 1
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -35,9 +36,16 @@ wandb.init(
     },
 )
 
-labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
-    labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(default_config)
+(
+    labelled_data_train,
+    labels_train,
+    unlabelled_data_train,
+    labelled_data_valid,
+    labels_valid,
+    labelled_data_test,
+    labels_test,
+    unlabelled_data_test,
+) = datasets.get_dgm_data(default_config)
 
 logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
@@ -63,4 +71,4 @@ logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
 generate_f.recongeneral(model, epoch, labelled_data_valid, labels_valid, "valid")
 generate_f.recongeneral(model, epoch, labelled_data_test, labels_test, "test")
 for label in range(1, default_config.label_features + 1):
-   generate_f.generatecond(model, epoch=epoch, y_given=label)
+    generate_f.generatecond(model, epoch=epoch, y_given=label)
