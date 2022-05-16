@@ -9,9 +9,8 @@ implementation-differences-in-lstm-layers-tensorflow
 import logging
 import os
 
-import default_config
 import classifiers
-
+import default_config
 import numpy as np
 import torch
 import torch.nn as nn

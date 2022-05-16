@@ -24,7 +24,7 @@ import numpy as np
 #         time = labels_with_index[j][2]
 #         bspace = labels_with_index[j-1][1]
 #         btime = labels_with_index[j-1][2]
-        
+
 
 #         if space == bspace and time == btime:
 #             similarities += 1
@@ -61,7 +61,7 @@ import numpy as np
 #             to_add = np.append(to_add, extra_label, axis=0)
 
 #         augmented_labels = np.append(augmented_labels, to_add, axis=0)
-    
+
 #     if index_labelled != 0:
 #         for i in range(extra_frames + 1):
 #             i_rev = extra_frames - i
@@ -70,9 +70,9 @@ import numpy as np
 
 #         to_add = np.append(to_add, list(labels_with_index[j]), axis=0)
 
-#         for i in range(extra_frames + 1):        
-#             extra_label_pos = [index_labelled + (i + 1), space, time] 
-#             to_add = np.append(to_add, extra_label_pos, axis=0)       
+#         for i in range(extra_frames + 1):
+#             extra_label_pos = [index_labelled + (i + 1), space, time]
+#             to_add = np.append(to_add, extra_label_pos, axis=0)
 
 #         augmented_labels = np.append(augmented_labels, to_add, axis=0)
 
