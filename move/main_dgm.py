@@ -1,14 +1,13 @@
 """Main file performing training with labels (semi-supervised)."""
 
 import logging
-
 logging.basicConfig(level=logging.INFO)
+
 import os
 import sys
 import warnings
 
 import default_config
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 

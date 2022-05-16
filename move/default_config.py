@@ -19,8 +19,8 @@ The VAE maps:
 We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
-which_device = "1"
-run_name = "FIXEDvalid"
+which_device = "0"
+run_name = "newlabels_nl4_ld450"
 label_features = 4
 amount_of_labels = 1
 
@@ -32,4 +32,4 @@ negative_slope = 0  # LeakyRelu
 kl_weight = 0
 n_layers = 4
 h_features_loop = 384
-latent_dim = 256
+latent_dim = 450
