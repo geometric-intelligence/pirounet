@@ -128,7 +128,8 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 def load_labels(
     amount_of_labels=1,
-    filepath="/home/papillon/move/move/data/labels.csv"
+    filepath="/home/papillon/move/move/data/labels.csv",
+
 ):
 
     file = open(filepath)
@@ -138,10 +139,9 @@ def load_labels(
     else:
         labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
 
-    last_label_index = int(labels_with_index[-1][0])
-    labelled_seq_len =  last_label_index - int(labels_with_index[-2][0])
+    labels_ind = labels[:,0]
 
-    return labels, last_label_index, labelled_seq_len
+    return labels, labels_ind
 
 
 def load_aist_raw(pattern="data/aist/*.pkl"):
@@ -271,14 +271,17 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
     return seq_data
 
 
-def sequify_lab_data(pose_data, seq_len, augmentation_factor):
+def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
     seq_data = np.zeros(
-        (int(pose_data.shape[0] / seq_len), seq_len, pose_data.shape[1])
+        (len(labels_ind), seq_len, pose_data.shape[1])
     )
+    for i in range(len(labels_ind)):
+        start_ind = int(labels_ind[i])
+        seq_data[i] = pose_data[start_ind : start_ind + int(seq_len)]
 
-    for i in range(int(pose_data.shape[0]/seq_len)):
-        j = i*seq_len
-        seq_data[i] = pose_data[j : j + seq_len]
+    # for i in range(int(pose_data.shape[0]/seq_len)):
+    #     j = i*seq_len
+    #     seq_data[i] = pose_data[j : j + seq_len]
     logging.info(f"Preprocessing: Load labelled data of shape {seq_data.shape}")
 
     if augmentation_factor > 1:
@@ -299,17 +302,17 @@ def get_dgm_data(config, augmentation_factor=1):
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    labels, last_label_index, labelled_seq_len = load_labels()
+    labels, labels_ind = load_labels()
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
 
     # divide into labelled and unlabelled
 
-    pose_data_lab = pose_data[0:last_label_index]
+    # pose_data_lab = pose_data[0:last_label_index]
     # pose_data_unlab = pose_data[last_label_index:pose_data.shape[0]]
 
     # sequify both sets of data
-    seq_data_lab = sequify_lab_data(pose_data_lab, labelled_seq_len, augmentation_factor=1)
-    seq_data_unlab = sequify_all_data(pose_data, labelled_seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
+    seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
+    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     five_perc_lab = int(round(seq_data_lab.shape[0] * 0.05))

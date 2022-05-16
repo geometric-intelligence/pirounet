@@ -166,9 +166,11 @@ def run_train_dgm(
 
             _, pred_idx = torch.max(logits_v, 1)
             _, lab_idx = torch.max(y, 1)
+
+            y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy_valid += torch.mean(
-                (torch.max(logits_v.t(), 1).indices
-                    == torch.max(y, 1).indices).float())
+                (torch.max(logits_v, 1).indices
+                    == torch.max(y_like_logits, 1).indices).float())
 
             if i_batch % 50 == 0 and i_batch != 0 :
                 logging.info(f"Batch {i_batch}/total at VALID loss \

@@ -9,6 +9,7 @@ implementation-differences-in-lstm-layers-tensorflow
 import logging
 import os
 
+import classifiers
 import default_config
 import numpy as np
 import torch
@@ -374,26 +375,6 @@ class LstmVAE(torch.nn.Module):
         return x_recon, z, z_mean, z_log_var
 
 
-class Classifier(nn.Module):
-    def __init__(self, input_features, h_features_loop, label_features, seq_len):
-        """
-        Single hidden layer classifier
-        with softmax output.
-        """
-        super(Classifier, self).__init__()
-        self.dense = nn.Linear(seq_len*input_features, h_features_loop)
-        self.logits = nn.Linear(h_features_loop, label_features)
-
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        x = x.reshape((batch_size, -1)).float()
-        x = F.relu(self.dense(x))
-        x = F.softmax(self.logits(x), dim=-1)
-
-        return x
-
-
 class DeepGenerativeModel(LstmVAE):
     def __init__(
         self,
@@ -450,7 +431,7 @@ class DeepGenerativeModel(LstmVAE):
             label_features=label_features,
         )
 
-        self.classifier = Classifier(input_features, h_features_loop, label_features, seq_len)
+        self.classifier = classifiers.LinearClassifier(input_features, h_features_loop, label_features, seq_len)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):

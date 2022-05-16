@@ -3,6 +3,7 @@
 import logging
 
 logging.basicConfig(level=logging.INFO)
+
 import os
 import sys
 import warnings
@@ -18,6 +19,7 @@ import nn
 import torch
 import train
 import train_dgm
+
 import wandb
 
 logging.info('TORCH')
