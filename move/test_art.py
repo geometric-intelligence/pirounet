@@ -11,6 +11,8 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
 import wandb
+from torch.autograd import Variable
+
 
 CUDA_VISIBLE_DEVICES=0,1
 
@@ -49,6 +51,7 @@ model = nn.DeepGenerativeModel(
     seq_len=default_config.seq_len,
     negative_slope=default_config.negative_slope,
     label_features=default_config.label_features,
+    batch_size=default_config.batch_size
 ).to(DEVICE)
 epoch = 0
 

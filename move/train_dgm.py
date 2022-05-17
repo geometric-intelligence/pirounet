@@ -172,9 +172,11 @@ def run_train_dgm(
                 (torch.max(logits_v, 1).indices
                     == torch.max(y_like_logits, 1).indices).float())
 
-            if i_batch % 50 == 0 and i_batch != 0 :
+            if i_batch % 5 == 0 and i_batch != 0 :
                 logging.info(f"Batch {i_batch}/total at VALID loss \
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}")
+                logging.info(f"Artifacts for epoch {epoch}")
+                generate_f.recongeneral(model, epoch, x, y, 'valid')
 
         logging.info(f"Epoch: {epoch}")
         logging.info("[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
@@ -183,10 +185,8 @@ def run_train_dgm(
         wandb.log({"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen}, step=epoch)
         wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen}, step=epoch)
 
-        logging.info(f"Artifacts: Make stick videos for epoch {epoch}")
-        generate_f.recongeneral(model, epoch, labelled_data_valid, labels_valid, 'valid')
-        generate_f.recongeneral(model, epoch, labelled_data_test, labels_test, 'test')
-        for label in range(1, default_config.label_features + 1):
+
+        for label in range(default_config.label_features):
             generate_f.generatecond(model, epoch=epoch, y_given=label)
 
         logging.info('Save a checkpoint.')

@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 import torch
+from torch.autograd import Variable
+
 import utils
 import wandb
 from matplotlib import animation
@@ -362,26 +364,36 @@ def recongeneral(
     No conditions on output.
     """
     now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/test")
 
-    for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
-        x_good = x[0]
-        x_good = x_good.reshape((1, x.shape[1], x.shape[-1]))
-        y_good = y[0]
-        y_good = y_good.reshape((1,1,1))
-        x_good = x_good.to(DEVICE)
-        y_good = y_good.to(DEVICE)
+    # for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
+    #     x, y = Variable(x), Variable(y)
 
-        onehot_encoder = utils.make_onehot_encoder(label_features)
-        y_good = onehot_encoder(y_good.item()).to(DEVICE)
-        y_good = y_good.reshape((1, 1, y_good.shape[0]))
+    #     x_good = x[0]
+    #     x_good = torch.unsqueeze(x_good, 0) #.reshape((1, x.shape[1], x.shape[-1]))
+    #     y_good = y[0]
+    #     y_good = y_good.reshape((1,1,1))
+    #     x_good = x_good.to(DEVICE)
+    #     y_good = y_good.to(DEVICE)
 
-        x_recon = model(x_good.float(), y_good.float())
-        break
+    #     onehot_encoder = utils.make_onehot_encoder(label_features)
+    #     y_good = onehot_encoder(y_good.item()).to(DEVICE)
+    #     y_good = torch.unsqueeze(torch.unsqueeze(y_good, 0), 0)
 
+    #     x_recon = model(x_good.float(), y_good.float())
+    x = input_data
+    y = input_label
+    x_recon = model(x,y) # has shape [batch_size, seq_len, 159]
+    logging.info('xrecon has')
+    logging.info(x_recon.shape)
     _, seq_len, _ = x.shape
+
     x_formatted = x[0].reshape((seq_len, -1, 3))
     x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
+
+        # random_integer = random.randint(0, 10)
+        # if random_integer == 5:
+        #     break 
 
     if epoch is not None:
         name = f"recon_epoch_{epoch}_{purpose}_{now}_{run_name}.gif"
@@ -415,7 +427,7 @@ def get_sample(
         y_title = y_given
 
     else:
-        y_rand = random.randint(1, label_features)
+        y_rand = random.randint(0, label_features-1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(DEVICE)

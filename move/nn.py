@@ -129,6 +129,7 @@ class LstmDecoder(torch.nn.Module):
         seq_len,
         negative_slope,
         label_features,
+        batch_size,
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -137,6 +138,7 @@ class LstmDecoder(torch.nn.Module):
         self.latent_dim = latent_dim
         self.seq_len = seq_len
         self.label_features = label_features
+        self.batch_size = batch_size
 
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
 
@@ -173,16 +175,19 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim + self.label_features
         else:
             assert inputs.shape[-1] == self.latent_dim
-        batch_size, _ = inputs.shape
+        
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-
+        logging.debug('SHAPE OF inputs')
+        logging.debug(inputs.shape)
         h = self.linear(inputs)
         h = self.leakyrelu(h)
-
-        assert h.shape == (batch_size, self.h_features_loop)
+        logging.debug("SHAPE OF h")
+        logging.debug(h.shape)
+        # assert h.shape == (self.batch_size, self.h_features_loop)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
         h = h.repeat(1, self.seq_len, 1)
-        assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+
+        #assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]
@@ -194,11 +199,11 @@ class LstmDecoder(torch.nn.Module):
         for i in range(self.n_layers - 1):
             logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm_loop(h)
-            assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+            #assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
         h, _ = self.lstm2(h)
-        assert h.shape == (batch_size, self.seq_len, self.output_features)
+        #assert h.shape == (batch_size, self.seq_len, self.output_features)
         logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
         logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
@@ -248,6 +253,7 @@ class LstmVAE(torch.nn.Module):
         output_features=3 * 53,
         seq_len=128,
         negative_slope=0.2,
+        batch_size=8,
         with_rotation_layer=True,
         label_features=None,
     ):
@@ -270,6 +276,7 @@ class LstmVAE(torch.nn.Module):
             seq_len=seq_len,
             negative_slope=negative_slope,
             label_features=label_features,
+            batch_size=batch_size
         )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
@@ -386,6 +393,9 @@ class DeepGenerativeModel(LstmVAE):
         seq_len,
         negative_slope,
         label_features,
+        batch_size,
+        class_neg_slope, 
+        class_loops
     ):
 
         """
@@ -429,9 +439,11 @@ class DeepGenerativeModel(LstmVAE):
             seq_len=seq_len,
             negative_slope=negative_slope,
             label_features=label_features,
+            batch_size=batch_size
         )
 
-        self.classifier = classifiers.LinearClassifier(input_features, h_features_loop, label_features, seq_len)
+        self.classifier = classifiers.LinearClassifier(input_features, h_features_loop, label_features, seq_len, class_neg_slope, class_loops)
+        #self.classifier = classifiers.TransformerClassifier(input_features, label_features)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -447,16 +459,24 @@ class DeepGenerativeModel(LstmVAE):
             x : input sequence with shape [batchsize, seq_len, 3*keypoints]
             y : input label with shape [batchsize, 1,label_features]
         """
-
+        logging.debug('shape of before anything')
+        logging.debug(x.shape)
         y_for_encoder = y.repeat((1, self.seq_len, 1))
+        logging.debug('what we send to encoder')
+        logging.debug(torch.cat([x, y_for_encoder], dim=2).shape)
 
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+        logging.debug('encoded z')
+        logging.debug(z.shape)
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
+        logging.debug('what we send to decoder')
+        logging.debug(torch.cat([z, y_for_decoder], dim=1).shape)
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
-
+        logging.debug('x recon')
+        logging.debug(x_mu.shape)
         return x_mu
 
     def classify(self, x):
