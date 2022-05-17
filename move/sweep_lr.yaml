@@ -1,8 +1,0 @@
-method: bayes
-metric:
-  goal: minimize
-  name: valid_loss
-parameters:
-  learning_rate:
-    values: [3e-6, 6r-6, 1e-5, 3e-5]
-program: main.py

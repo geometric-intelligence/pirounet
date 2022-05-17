@@ -49,6 +49,8 @@ wandb.init(
         "h_features_loop": default_config.h_features_loop,
         "latent_dim": default_config.latent_dim,
         "label_features": default_config.label_features,
+        "class_neg_slope": default_config.class_neg_slope,
+        "class_loops": default_config.class_loops
     },
 )
 
@@ -68,13 +70,16 @@ elif SERVER == "pod":
 logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
     n_layers=default_config.n_layers,
-    input_features=3 * 53,
+    input_features=default_config.input_features,
     h_features_loop=default_config.h_features_loop,
     latent_dim=default_config.latent_dim,
     output_features=3 * 53,
     seq_len=default_config.seq_len,
     negative_slope=default_config.negative_slope,
     label_features=default_config.label_features,
+    batch_size=default_config.batch_size,
+    class_neg_slope=default_config.class_neg_slope,
+    class_loops=default_config.class_loops
 ).to(DEVICE)
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \

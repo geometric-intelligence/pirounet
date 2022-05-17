@@ -134,12 +134,14 @@ def load_labels(
 
     file = open(filepath)
     labels_with_index = np.loadtxt(file, delimiter=",")
+
+    labels_ind = labels_with_index[:,0]
+    labelsprint = labels_ind.reshape((labels_ind.shape[0], 1))
+
     if amount_of_labels == 2:
         labels = np.delete(labels_with_index, 0, axis=1)
     else:
         labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
-
-    labels_ind = labels[:,0]
 
     return labels, labels_ind
 
@@ -231,11 +233,17 @@ def get_mariel_data(config, augmentation_factor=1):
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
 
+    # five_perc = int(round(seq_data.shape[0] * 0.05))
+    # ninety_perc = seq_data.shape[0] - (2 * five_perc)
+    # train_ds = seq_data[:ninety_perc, :, :]
+    # valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
+    # test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
     five_perc = int(round(seq_data.shape[0] * 0.05))
     ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    train_ds = seq_data[:ninety_perc, :, :]
-    valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
-    test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
+    valid_ds = seq_data[:five_perc, :, :]
+    test_ds = seq_data[five_perc:(five_perc + five_perc), :, :]
+    train_ds = seq_data[(five_perc + five_perc):, :, :]
+
     logging.info(f">> Train ds has shape {train_ds.shape}")
     logging.info(f">> Valid ds has shape {valid_ds.shape}")
     logging.info(f">> Test ds has shape {test_ds.shape}")

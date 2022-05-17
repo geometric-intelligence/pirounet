@@ -19,17 +19,20 @@ The VAE maps:
 We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
-which_device = "0"
-run_name = "newlabels_nl4_ld450"
+which_device = "1"
+run_name = "labdata2_256ldim"
 label_features = 4
 amount_of_labels = 1
 
 batch_size = 20
-learning_rate = 3e-6
-epochs = 400
+learning_rate = 3e-6 #6e-6
+epochs = 200 
 seq_len = 40
-negative_slope = 0  # LeakyRelu
+negative_slope = 0  # 0.1,0.5 LeakyRelu
 kl_weight = 0
-n_layers = 4
+n_layers = 3 #4,5,6
 h_features_loop = 384
-latent_dim = 450
+latent_dim = 256
+input_features = 159
+class_neg_slope = 0 #0.1, 0.05
+class_loops = 1
