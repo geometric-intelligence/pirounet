@@ -8,6 +8,7 @@ implementation-differences-in-lstm-layers-tensorflow
 
 import logging
 import os
+import csv
 
 import classifiers
 import default_config
@@ -185,7 +186,19 @@ class LstmDecoder(torch.nn.Module):
         logging.debug(h.shape)
         # assert h.shape == (self.batch_size, self.h_features_loop)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
+
+        #normalize h over the sequence
+        # h = F.normalize(h, dim=3)
+
+        # norm_h = torch.norm(h, dim=(2,3))
+        # with open('norm_hklwt1_2leakyclass.csv', 'w', newline='') as file:
+        #     writer = csv.writer(file, delimiter=',')
+        #     writer.writerows(norm_h)
+        # file.close()
+
         h = h.repeat(1, self.seq_len, 1)
+        
+
 
         #assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
 
@@ -348,6 +361,50 @@ class LstmVAE(torch.nn.Module):
         regul_loss = self._kld(z, q_param, p_param)
         return recon_loss + self.kl_weight * regul_loss
 
+    def get_recon_loss(self, x, y=None):
+        """Perform forward pass of the VAE.
+
+        Runs a data point through the model in order
+        to provide its reconstruction and q distribution
+        parameters. Records the reconstruction loss of 
+        this point.
+
+        Parameters
+        ----------
+        x : array-like
+            Input data.
+            Shape=[batch_size, seq_len, input_features].
+
+        y : one hot encoder for Laban effort.
+
+        Returns
+        -------
+        recon_loss : sum over each absolute distance between
+                     each given point in x versus x_recon
+        """
+        if self.with_rotation_layer:
+            theta = np.random.uniform(0, 2 * np.pi)
+            x = x.to(DEVICE)
+            x = RotationLayer(theta)(x)
+        z, z_mean, z_log_var = self.encoder(x)
+
+        q_param = (z_mean, z_log_var)
+
+        self.kl_divergence = self._kld(z, q_param)
+
+        x_recon = self.decoder(z)
+        if self.with_rotation_layer:
+            x_recon = RotationLayer(-theta)(x_recon)
+
+        batch_size, seq_len, _ = x.shape
+        recon_loss = (x - x_recon) ** 2
+        recon_loss = torch.sum(recon_loss, axis=2)
+        assert recon_loss.shape == (batch_size, seq_len)
+
+        recon_loss = torch.sum(recon_loss)
+
+        return recon_loss
+
     def forward(self, x, y=None):
         """Perform forward pass of the VAE.
 
@@ -494,6 +551,42 @@ class DeepGenerativeModel(LstmVAE):
 
         x = self.decoder(torch.cat([z, y], dim=1))
         return x
+    
+    def get_recon_loss(self, x, y=None):
+        """Perform forward pass of the VAE.
+
+        Runs a data point through the model in order
+        to provide its reconstruction and q distribution
+        parameters. Records the reconstruction loss of 
+        this point.
+
+        Parameters
+        ----------
+        x : array-like
+            Input data.
+            Shape=[batch_size, seq_len, input_features].
+
+        y : one hot encoder for Laban effort.
+
+        Returns
+        -------
+        recon_loss : sum over each absolute distance between
+                     each given point in x versus x_recon
+        """
+        y_for_encoder = y.repeat((1, self.seq_len, 1))
+
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+
+        y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
+
+        x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
+
+        recon_loss = (x - x_mu) ** 2
+        recon_loss = torch.sum(recon_loss, axis=2)
+
+        recon_loss = torch.sum(recon_loss)
+
+        return recon_loss    
 
 
 class ImportanceWeightedSampler(object):

@@ -1,0 +1,822 @@
+nohup: ignoring input
+INFO:root:Using device cuda
+INFO:root:Using device cuda
+INFO:root:TORCH
+INFO:root:1.11.0
+INFO:root:Using device cuda
+wandb: Currently logged in as: mathildepapillon (use `wandb login --relogin` to force relogin)
+3
+wandb: wandb version 0.12.16 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.12.14
+wandb: Run data is saved locally in /home/papillon/move/move/wandb/run-20220518_181837-1y2fjc34
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run decent-thunder-140
+wandb: ⭐️ View project at https://wandb.ai/bioshape-lab/move_labelled
+wandb: 🚀 View run at https://wandb.ai/bioshape-lab/move_labelled/runs/1y2fjc34
+INFO:root:Run server specific commands
+INFO:root:Initialize model
+INFO:root:Loading raw datasets:
+INFO:root:- data/mariel_betternot_and_retrograde.npy of shape (9925, 53, 3)
+INFO:root:- data/mariel_beyond.npy of shape (5803, 53, 3)
+INFO:root:- data/mariel_chunli.npy of shape (3866, 53, 3)
+INFO:root:- data/mariel_honey.npy of shape (5309, 53, 3)
+INFO:root:- data/mariel_knownbetter.npy of shape (6649, 53, 3)
+INFO:root:- data/mariel_penelope.npy of shape (6757, 53, 3)
+INFO:root:Preprocessing: Load labelled data of shape (5908, 40, 159)
+INFO:root:Preprocessing: Load seq_data_lab of shape (38269, 40, 159)
+INFO:root:Preprocessing: Convert into torch dataloader
+INFO:root:Train minibatch x of shape: torch.Size([8, 40, 159])
+INFO:root:Batch 50/total at loss 226.7700795740028, accuracy 0.375
+INFO:root:Batch 100/total at loss 216.12563704047653, accuracy 0.3056930601596832
+INFO:root:Batch 150/total at loss 196.8072589230694, accuracy 0.3129138946533203
+INFO:root:Batch 200/total at loss 199.2153924717516, accuracy 0.29415422677993774
+INFO:root:Batch 250/total at loss 195.58257916349103, accuracy 0.3027888536453247
+INFO:root:Batch 300/total at loss 206.18248443876644, accuracy 0.369601309299469
+INFO:root:Batch 350/total at loss 197.11520246615058, accuracy 0.3839031457901001
+INFO:root:Batch 400/total at loss 208.08638441027745, accuracy 0.39682045578956604
+INFO:root:Batch 450/total at loss 205.64148842452468, accuracy 0.4210088551044464
+INFO:root:Batch 500/total at loss 198.1394367627342, accuracy 0.4338822364807129
+INFO:root:Batch 550/total at loss 194.733397661357, accuracy 0.4405626058578491
+INFO:root:Batch 600/total at loss 193.09755126650606, accuracy 0.45049914717674255
+INFO:root:Batch 650/total at loss 197.85037709759956, accuracy 0.44950076937675476
+INFO:root:Batch 700/total at loss 201.90993638493694, accuracy 0.43170472979545593
+INFO:root:Batch 750/total at loss 201.03277634389914, accuracy 0.4167776107788086
+INFO:root:Batch 800/total at loss 201.12895781412902, accuracy 0.41292133927345276
+INFO:root:Batch 850/total at loss 197.04451724593292, accuracy 0.4023208022117615
+INFO:root:Batch 900/total at loss 193.4293101259962, accuracy 0.40885129570961
+INFO:root:Batch 950/total at loss 196.79839308505484, accuracy 0.42652469873428345
+INFO:root:Batch 1000/total at loss 196.50351634206373, accuracy 0.41683316230773926
+INFO:root:Batch 1050/total at loss 193.97191294188733, accuracy 0.41448619961738586
+INFO:root:Batch 1100/total at loss 196.22141383205874, accuracy 0.4143960177898407
+INFO:root:Batch 1150/total at loss 191.51779121135507, accuracy 0.4237619638442993
+INFO:root:Batch 1200/total at loss 187.89744754405953, accuracy 0.4206910729408264
+INFO:root:Batch 1250/total at loss 187.86551225376175, accuracy 0.42296162247657776
+INFO:root:Batch 1300/total at loss 189.31115217804944, accuracy 0.41785165667533875
+INFO:root:Batch 1350/total at loss 188.70962600461445, accuracy 0.4178386330604553
+INFO:root:Batch 1400/total at loss 190.26406459801302, accuracy 0.4135438799858093
+INFO:root:Batch 1450/total at loss 191.15351969924274, accuracy 0.41919365525245667
+INFO:root:Batch 1500/total at loss 189.83346537086283, accuracy 0.415389746427536
+INFO:root:Batch 1550/total at loss 187.9035193068841, accuracy 0.41134750843048096
+INFO:root:Batch 1600/total at loss 187.99638806324788, accuracy 0.42457839846611023
+INFO:root:Batch 1650/total at loss 189.21426847587637, accuracy 0.4279981553554535
+INFO:root:Batch 1700/total at loss 187.53758712258525, accuracy 0.4301881194114685
+INFO:root:Batch 1750/total at loss 189.27928934630472, accuracy 0.4313249886035919
+INFO:root:Batch 1800/total at loss 187.46841982055588, accuracy 0.433162122964859
+INFO:root:Batch 1850/total at loss 184.50807554855257, accuracy 0.4313884377479553
+INFO:root:Batch 1900/total at loss 184.75314441636365, accuracy 0.42911624908447266
+INFO:root:Batch 1950/total at loss 185.48606272419704, accuracy 0.42811381816864014
+INFO:root:Batch 2000/total at loss 184.31214391669994, accuracy 0.42335084080696106
+INFO:root:Batch 2050/total at loss 183.05642282474824, accuracy 0.4243052303791046
+INFO:root:Batch 2100/total at loss 182.28497084204284, accuracy 0.4221799373626709
+INFO:root:Batch 2150/total at loss 181.15811398784828, accuracy 0.4218967854976654
+INFO:root:Batch 2200/total at loss 179.2404207849403, accuracy 0.42014992237091064
+INFO:root:Batch 2250/total at loss 178.17191211640136, accuracy 0.42103511095046997
+INFO:root:Batch 2300/total at loss 180.44518952678828, accuracy 0.42313122749328613
+INFO:root:Batch 2350/total at loss 180.36509130040406, accuracy 0.41976818442344666
+INFO:root:Batch 2400/total at loss 181.5234189112485, accuracy 0.4168575704097748
+INFO:root:Batch 2450/total at loss 180.46028682544554, accuracy 0.4213586151599884
+INFO:root:Batch 2500/total at loss 178.0824630957385, accuracy 0.4223310649394989
+INFO:root:Batch 2550/total at loss 177.12645738457815, accuracy 0.42292237281799316
+INFO:root:Batch 2600/total at loss 177.97277370560857, accuracy 0.42079970240592957
+INFO:root:Batch 2650/total at loss 177.2221568244325, accuracy 0.418851375579834
+INFO:root:Batch 2700/total at loss 176.63187569944031, accuracy 0.41558682918548584
+INFO:root:Batch 2750/total at loss 177.78087273693055, accuracy 0.4147128462791443
+INFO:root:Batch 2800/total at loss 178.12769550043092, accuracy 0.41614601016044617
+INFO:root:Batch 2850/total at loss 177.43303497418114, accuracy 0.4172658622264862
+INFO:root:Batch 2900/total at loss 176.57380719767102, accuracy 0.41455531120300293
+INFO:root:Batch 2950/total at loss 178.29814059748702, accuracy 0.4161301255226135
+INFO:root:Batch 3000/total at loss 178.4987179772016, accuracy 0.4129873514175415
+INFO:root:Batch 3050/total at loss 178.68417512170575, accuracy 0.41150444746017456
+INFO:root:Batch 3100/total at loss 179.8763792197569, accuracy 0.4095049798488617
+INFO:root:Batch 3150/total at loss 180.45282026704416, accuracy 0.4133608341217041
+INFO:root:Batch 3200/total at loss 181.1971826024526, accuracy 0.41237112879753113
+INFO:root:Batch 3250/total at loss 180.78411690525277, accuracy 0.4147954285144806
+INFO:root:Batch 3300/total at loss 181.24560427026012, accuracy 0.4140033423900604
+INFO:root:Batch 3350/total at loss 181.0610846534478, accuracy 0.41133245825767517
+INFO:root:Batch 3400/total at loss 180.34480682327649, accuracy 0.40969568490982056
+INFO:root:Batch 3450/total at loss 179.42739499955064, accuracy 0.41194581985473633
+INFO:root:Batch 3500/total at loss 179.2552951857621, accuracy 0.41127535700798035
+INFO:root:Batch 3550/total at loss 178.18070466236736, accuracy 0.4110814034938812
+INFO:root:Batch 3600/total at loss 179.18387750724298, accuracy 0.4162038266658783
+INFO:root:Batch 3650/total at loss 179.7315026123968, accuracy 0.4163927733898163
+INFO:root:Batch 3700/total at loss 179.06221740951796, accuracy 0.4157322645187378
+INFO:root:Batch 3750/total at loss 180.11838756431445, accuracy 0.41565582156181335
+INFO:root:Batch 3800/total at loss 179.17707141665156, accuracy 0.41735729575157166
+INFO:root:Batch 3850/total at loss 177.98529896378773, accuracy 0.41628798842430115
+INFO:root:Batch 3900/total at loss 179.0442817766415, accuracy 0.4171046018600464
+INFO:root:Batch 3950/total at loss 180.03481350311588, accuracy 0.4160655438899994
+INFO:root:Batch 4000/total at loss 179.92121697153166, accuracy 0.4138652980327606
+INFO:root:Batch 4050/total at loss 179.29570573402884, accuracy 0.41378673911094666
+INFO:root:Batch 4100/total at loss 178.96054167725777, accuracy 0.41435015201568604
+INFO:root:Batch 4150/total at loss 178.43861976719103, accuracy 0.413785845041275
+INFO:root:Batch 4200/total at loss 177.52929021204673, accuracy 0.4126695990562439
+INFO:root:Batch 4250/total at loss 177.08217268225565, accuracy 0.4148729741573334
+INFO:root:Batch 4300/total at loss 178.22856568806736, accuracy 0.4167054295539856
+INFO:root:Batch 4350/total at loss 177.95218609471775, accuracy 0.416628360748291
+INFO:root:Batch 4400/total at loss 179.15794563269938, accuracy 0.41575777530670166
+INFO:root:Batch 4450/total at loss 178.42589663967644, accuracy 0.41681644320487976
+INFO:root:Batch 4500/total at loss 177.32345994036888, accuracy 0.4170739948749542
+INFO:root:Epoch: 0
+INFO:root:[Train]		 J_a: 177.01, mean accuracy on epoch: 0.42
+INFO:root:Batch 5/total at VALID loss                     137.49490135997473, accuracy 0.5416666865348816
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182530_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 10/total at VALID loss                     115.8201502141124, accuracy 0.6704545617103577
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182533_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 15/total at VALID loss                     105.4803715100343, accuracy 0.671875
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182535_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 20/total at VALID loss                     96.01584169086448, accuracy 0.511904776096344
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182537_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 25/total at VALID loss                     91.28653883582236, accuracy 0.4134615659713745
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182539_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 30/total at VALID loss                     90.65985097809943, accuracy 0.3467741906642914
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182542_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 35/total at VALID loss                     87.8556899083408, accuracy 0.3333333432674408
+INFO:root:Artifacts for epoch 0
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_0_valid_20220518_182545_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Epoch: 0
+INFO:root:[Validate]		 J_a: 87.56, mean accuracy on epoch: 0.35
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label0_epoch_0_20220518_182547_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label1_epoch_0_20220518_182549_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label2_epoch_0_20220518_182550_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label3_epoch_0_20220518_182552_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:root:Save a checkpoint.
+INFO:root:Train minibatch x of shape: torch.Size([8, 40, 159])
+INFO:root:Batch 50/total at loss 185.3916974449116, accuracy 0.3799019753932953
+INFO:root:Batch 100/total at loss 198.3599114518034, accuracy 0.3836633563041687
+INFO:root:Batch 150/total at loss 184.4412370321612, accuracy 0.41059601306915283
+INFO:root:Batch 200/total at loss 188.12080748181668, accuracy 0.41604477167129517
+INFO:root:Batch 250/total at loss 184.55420780465218, accuracy 0.3784860670566559
+INFO:root:Batch 300/total at loss 198.59832011711796, accuracy 0.4231727421283722
+INFO:root:Batch 350/total at loss 193.03239009398538, accuracy 0.4373219311237335
+INFO:root:Batch 400/total at loss 204.5380855073466, accuracy 0.4329800605773926
+INFO:root:Batch 450/total at loss 201.14873368198747, accuracy 0.45620840787887573
+INFO:root:Batch 500/total at loss 195.38528465457776, accuracy 0.4658183753490448
+INFO:root:Batch 550/total at loss 190.71281071866818, accuracy 0.44850271940231323
+INFO:root:Batch 600/total at loss 190.21283778873917, accuracy 0.46048250794410706
+INFO:root:Batch 650/total at loss 195.40156489726454, accuracy 0.4423963129520416
+INFO:root:Batch 700/total at loss 200.8154096993575, accuracy 0.4383024275302887
+INFO:root:Batch 750/total at loss 200.29837596920964, accuracy 0.4345872104167938
+INFO:root:Batch 800/total at loss 201.79487994682313, accuracy 0.43039947748184204
+INFO:root:Batch 850/total at loss 197.41080741320906, accuracy 0.42876026034355164
+INFO:root:Batch 900/total at loss 193.9769569408964, accuracy 0.42827415466308594
+INFO:root:Batch 950/total at loss 202.0903850026497, accuracy 0.4422975480556488
+INFO:root:Batch 1000/total at loss 203.85609182892588, accuracy 0.4360639154911041
+INFO:root:Batch 1050/total at loss 201.40816334157327, accuracy 0.43565651774406433
+INFO:root:Batch 1100/total at loss 203.25834978324139, accuracy 0.4296094477176666
+INFO:root:Batch 1150/total at loss 198.2912392395852, accuracy 0.4361425042152405
+INFO:root:Batch 1200/total at loss 194.30649423655944, accuracy 0.4398418068885803
+INFO:root:Batch 1250/total at loss 193.45825184831222, accuracy 0.44524380564689636
+INFO:root:Batch 1300/total at loss 194.6615888857476, accuracy 0.4444657862186432
+INFO:root:Batch 1350/total at loss 194.0499386773085, accuracy 0.44430050253868103
+INFO:root:Batch 1400/total at loss 195.22420725483875, accuracy 0.438972145318985
+INFO:root:Batch 1450/total at loss 196.4184388911279, accuracy 0.4413335621356964
+INFO:root:Batch 1500/total at loss 195.2137958688847, accuracy 0.4399566948413849
+INFO:root:Batch 1550/total at loss 193.12353379075503, accuracy 0.43745967745780945
+INFO:root:Batch 1600/total at loss 193.02895993061853, accuracy 0.4475328028202057
+INFO:root:Batch 1650/total at loss 194.0353181960492, accuracy 0.4482888877391815
+INFO:root:Batch 1700/total at loss 192.3248365225037, accuracy 0.45105817914009094
+INFO:root:Batch 1750/total at loss 193.86211193845563, accuracy 0.44888636469841003
+INFO:root:Batch 1800/total at loss 192.02746073214638, accuracy 0.45328983664512634
+INFO:root:Batch 1850/total at loss 188.98908857099036, accuracy 0.4516477584838867
+INFO:root:Batch 1900/total at loss 189.07146123491202, accuracy 0.4499605596065521
+INFO:root:Batch 1950/total at loss 189.68259468832656, accuracy 0.44893646240234375
+INFO:root:Batch 2000/total at loss 188.42083441461628, accuracy 0.44496503472328186
+INFO:root:Batch 2050/total at loss 187.07261666629128, accuracy 0.4469161331653595
+INFO:root:Batch 2100/total at loss 186.20341415930918, accuracy 0.44657307863235474
+INFO:root:Batch 2150/total at loss 184.992658060787, accuracy 0.4471757411956787
+INFO:root:Batch 2200/total at loss 182.99408443839263, accuracy 0.4456497132778168
+INFO:root:Batch 2250/total at loss 181.84907112788417, accuracy 0.4451355040073395
+INFO:root:Batch 2300/total at loss 184.15508318818215, accuracy 0.44779443740844727
+INFO:root:Batch 2350/total at loss 183.8838860380409, accuracy 0.44901105761528015
+INFO:root:Batch 2400/total at loss 184.9067379256546, accuracy 0.44710537791252136
+INFO:root:Batch 2450/total at loss 183.78769828710463, accuracy 0.4509384036064148
+INFO:root:Batch 2500/total at loss 181.399520422443, accuracy 0.4513694643974304
+INFO:root:Batch 2550/total at loss 180.32165850683973, accuracy 0.45222461223602295
+INFO:root:Batch 2600/total at loss 181.11282361939035, accuracy 0.45511341094970703
+INFO:root:Batch 2650/total at loss 180.3495908841445, accuracy 0.45327234268188477
+INFO:root:Batch 2700/total at loss 179.70089506806067, accuracy 0.4524713158607483
+INFO:root:Batch 2750/total at loss 180.75121480958694, accuracy 0.45269903540611267
+INFO:root:Batch 2800/total at loss 181.0337745085741, accuracy 0.4534987509250641
+INFO:root:Batch 2850/total at loss 180.3133734333646, accuracy 0.45277974009513855
+INFO:root:Batch 2900/total at loss 179.3861862535905, accuracy 0.45100826025009155
+INFO:root:Batch 2950/total at loss 181.03051547294183, accuracy 0.4564130902290344
+INFO:root:Batch 3000/total at loss 181.16124571264655, accuracy 0.4557647705078125
+INFO:root:Batch 3050/total at loss 181.31069620217355, accuracy 0.4556293189525604
+INFO:root:Batch 3100/total at loss 182.48404448581272, accuracy 0.45670750737190247
+INFO:root:Batch 3150/total at loss 183.43499814985535, accuracy 0.4580688774585724
+INFO:root:Batch 3200/total at loss 184.21512084823857, accuracy 0.45825523138046265
+INFO:root:Batch 3250/total at loss 184.43368673022687, accuracy 0.4615887403488159
+INFO:root:Batch 3300/total at loss 185.11941665823952, accuracy 0.45970919728279114
+INFO:root:Batch 3350/total at loss 185.17805273731108, accuracy 0.45926591753959656
+INFO:root:Batch 3400/total at loss 184.51182841010902, accuracy 0.4577697813510895
+INFO:root:Batch 3450/total at loss 183.58529991338452, accuracy 0.459794282913208
+INFO:root:Batch 3500/total at loss 183.35962027348208, accuracy 0.4597257971763611
+INFO:root:Batch 3550/total at loss 182.26295894078442, accuracy 0.4583919942378998
+INFO:root:Batch 3600/total at loss 183.1792503082462, accuracy 0.4633435010910034
+INFO:root:Batch 3650/total at loss 183.64428509098386, accuracy 0.46288689970970154
+INFO:root:Batch 3700/total at loss 182.95089458601606, accuracy 0.46419888734817505
+INFO:root:Batch 3750/total at loss 183.8987919991485, accuracy 0.46470940113067627
+INFO:root:Batch 3800/total at loss 182.93449200242878, accuracy 0.4666864275932312
+INFO:root:Batch 3850/total at loss 181.73061991129845, accuracy 0.4660153388977051
+INFO:root:Batch 3900/total at loss 182.7413003061998, accuracy 0.4686618745326996
+INFO:root:Batch 3950/total at loss 183.6966838847508, accuracy 0.4676031172275543
+INFO:root:Batch 4000/total at loss 183.52036716558402, accuracy 0.46728944778442383
+INFO:root:Batch 4050/total at loss 182.91362579280394, accuracy 0.4669526219367981
+INFO:root:Batch 4100/total at loss 182.60798870974764, accuracy 0.46772128343582153
+INFO:root:Batch 4150/total at loss 182.0833533083336, accuracy 0.46645388007164
+INFO:root:Batch 4200/total at loss 181.15494867084004, accuracy 0.46542489528656006
+INFO:root:Batch 4250/total at loss 180.66870255207618, accuracy 0.4675370454788208
+INFO:root:Batch 4300/total at loss 181.81911518171185, accuracy 0.4688444435596466
+INFO:root:Batch 4350/total at loss 181.46903694560572, accuracy 0.46880027651786804
+INFO:root:Batch 4400/total at loss 182.58958779483885, accuracy 0.46730855107307434
+INFO:root:Batch 4450/total at loss 181.79164183245817, accuracy 0.46966975927352905
+INFO:root:Batch 4500/total at loss 180.66390298860168, accuracy 0.4695623219013214
+INFO:root:Epoch: 1
+INFO:root:[Train]		 J_a: 180.31, mean accuracy on epoch: 0.47
+INFO:root:Batch 5/total at VALID loss                     139.11000433929848, accuracy 0.5208333730697632
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183218_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 10/total at VALID loss                     117.51885356146998, accuracy 0.6590909361839294
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183221_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 15/total at VALID loss                     107.04536543658728, accuracy 0.609375
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183223_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 20/total at VALID loss                     97.4426729500854, accuracy 0.4642857313156128
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183225_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 25/total at VALID loss                     92.60512733511976, accuracy 0.375
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183227_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 30/total at VALID loss                     91.84105775987926, accuracy 0.3145161271095276
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183230_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 35/total at VALID loss                     89.0839099119948, accuracy 0.3055555522441864
+INFO:root:Artifacts for epoch 1
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_1_valid_20220518_183232_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Epoch: 1
+INFO:root:[Validate]		 J_a: 88.85, mean accuracy on epoch: 0.32
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label0_epoch_1_20220518_183234_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label1_epoch_1_20220518_183235_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label2_epoch_1_20220518_183237_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label3_epoch_1_20220518_183238_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:root:Save a checkpoint.
+INFO:root:Train minibatch x of shape: torch.Size([8, 40, 159])
+INFO:root:Batch 50/total at loss 186.15844244344524, accuracy 0.4705882668495178
+INFO:root:Batch 100/total at loss 198.86483176279353, accuracy 0.4616336524486542
+INFO:root:Batch 150/total at loss 184.06060492611397, accuracy 0.4776490032672882
+INFO:root:Batch 200/total at loss 187.90692913370282, accuracy 0.4726368188858032
+INFO:root:Batch 250/total at loss 184.1571378316206, accuracy 0.4531872570514679
+INFO:root:Batch 300/total at loss 198.52197593816766, accuracy 0.48588037490844727
+INFO:root:Batch 350/total at loss 192.69252453071098, accuracy 0.48682335019111633
+INFO:root:Batch 400/total at loss 203.9197056382505, accuracy 0.4728803038597107
+INFO:root:Batch 450/total at loss 200.36461944371354, accuracy 0.5005543231964111
+INFO:root:Batch 500/total at loss 194.7293251467901, accuracy 0.5087325572967529
+INFO:root:Batch 550/total at loss 190.10858986323834, accuracy 0.4972776770591736
+INFO:root:Batch 600/total at loss 189.67756772478967, accuracy 0.5162229537963867
+INFO:root:Batch 650/total at loss 194.97247972234575, accuracy 0.5032641887664795
+INFO:root:Batch 700/total at loss 200.7737347280812, accuracy 0.4967903196811676
+INFO:root:Batch 750/total at loss 200.53611210388902, accuracy 0.4905126392841339
+INFO:root:Batch 800/total at loss 201.48453808912686, accuracy 0.48735955357551575
+INFO:root:Batch 850/total at loss 197.30837001218586, accuracy 0.4878084659576416
+INFO:root:Batch 900/total at loss 193.87882881357916, accuracy 0.48626527190208435
+INFO:root:Batch 950/total at loss 201.49525841975043, accuracy 0.5026288032531738
+INFO:root:Batch 1000/total at loss 202.65683050223433, accuracy 0.4916333556175232
+INFO:root:Batch 1050/total at loss 199.82367023410845, accuracy 0.4935775399208069
+INFO:root:Batch 1100/total at loss 201.29674027226443, accuracy 0.49296095967292786
+INFO:root:Batch 1150/total at loss 196.80102466050337, accuracy 0.49815380573272705
+INFO:root:Batch 1200/total at loss 193.1823789861273, accuracy 0.49573272466659546
+INFO:root:Batch 1250/total at loss 192.39307875980944, accuracy 0.5052957534790039
+INFO:root:Batch 1300/total at loss 193.51689822432306, accuracy 0.5024020075798035
+INFO:root:Batch 1350/total at loss 192.86597430760227, accuracy 0.5018504858016968
+INFO:root:Batch 1400/total at loss 194.13050119339613, accuracy 0.4948251247406006
+INFO:root:Batch 1450/total at loss 195.06144474614706, accuracy 0.4986216425895691
+INFO:root:Batch 1500/total at loss 194.0440256515901, accuracy 0.4980013370513916
+INFO:root:Batch 1550/total at loss 192.00724512355913, accuracy 0.4954867660999298
+INFO:root:Batch 1600/total at loss 191.98529722355406, accuracy 0.5028888583183289
+INFO:root:Batch 1650/total at loss 193.07543826453346, accuracy 0.5037855505943298
+INFO:root:Batch 1700/total at loss 191.35409258006834, accuracy 0.5060993432998657
+INFO:root:Batch 1750/total at loss 192.81708690608818, accuracy 0.5116362571716309
+INFO:root:Batch 1800/total at loss 190.9144627320838, accuracy 0.5179761052131653
+INFO:root:Batch 1850/total at loss 187.9684852811447, accuracy 0.5141815543174744
+INFO:root:Batch 1900/total at loss 188.07767302859963, accuracy 0.5147948265075684
+INFO:root:Batch 1950/total at loss 188.7192076206986, accuracy 0.515312671661377
+INFO:root:Batch 2000/total at loss 187.45864736518072, accuracy 0.5140554904937744
+INFO:root:Batch 2050/total at loss 186.11971717718234, accuracy 0.5140784978866577
+INFO:root:Batch 2100/total at loss 185.24734050971935, accuracy 0.5125535726547241
+INFO:root:Batch 2150/total at loss 184.05083975168455, accuracy 0.5099372267723083
+INFO:root:Batch 2200/total at loss 182.06303357048486, accuracy 0.5092003345489502
+INFO:root:Batch 2250/total at loss 180.96320867741582, accuracy 0.5129386782646179
+INFO:root:Batch 2300/total at loss 183.57491270059063, accuracy 0.5172750949859619
+INFO:root:Batch 2350/total at loss 183.1082664970727, accuracy 0.5173330307006836
+INFO:root:Batch 2400/total at loss 184.0986222902803, accuracy 0.5199916958808899
+INFO:root:Batch 2450/total at loss 182.96642156424463, accuracy 0.5242248177528381
+INFO:root:Batch 2500/total at loss 180.61260757346972, accuracy 0.5252898931503296
+INFO:root:Batch 2550/total at loss 179.5333123040439, accuracy 0.5237162113189697
+INFO:root:Batch 2600/total at loss 180.36654739056675, accuracy 0.5286428332328796
+INFO:root:Batch 2650/total at loss 179.58357620395228, accuracy 0.5272067189216614
+INFO:root:Batch 2700/total at loss 178.9579611001165, accuracy 0.5265642404556274
+INFO:root:Batch 2750/total at loss 180.0361641441648, accuracy 0.5244002342224121
+INFO:root:Batch 2800/total at loss 180.34157079875357, accuracy 0.523563027381897
+INFO:root:Batch 2850/total at loss 179.6151826374938, accuracy 0.5236320495605469
+INFO:root:Batch 2900/total at loss 178.69938067200192, accuracy 0.5243450403213501
+INFO:root:Batch 2950/total at loss 180.35254959455958, accuracy 0.5288037657737732
+INFO:root:Batch 3000/total at loss 180.45594225119643, accuracy 0.5283655524253845
+INFO:root:Batch 3050/total at loss 180.59493084435735, accuracy 0.528556227684021
+INFO:root:Batch 3100/total at loss 181.79846420828315, accuracy 0.5310786962509155
+INFO:root:Batch 3150/total at loss 182.82594687708274, accuracy 0.5332831144332886
+INFO:root:Batch 3200/total at loss 183.65098550637737, accuracy 0.5321774482727051
+INFO:root:Batch 3250/total at loss 183.8150424394525, accuracy 0.5356813073158264
+INFO:root:Batch 3300/total at loss 184.29485823967383, accuracy 0.5329445600509644
+INFO:root:Batch 3350/total at loss 184.14041390161034, accuracy 0.5346538424491882
+INFO:root:Batch 3400/total at loss 183.35536283593908, accuracy 0.5319391489028931
+INFO:root:Batch 3450/total at loss 182.45168983612604, accuracy 0.5331788063049316
+INFO:root:Batch 3500/total at loss 182.2891595856379, accuracy 0.5319908857345581
+INFO:root:Batch 3550/total at loss 181.20273502680644, accuracy 0.5308364033699036
+INFO:root:Batch 3600/total at loss 182.07308816354342, accuracy 0.5346431136131287
+INFO:root:Batch 3650/total at loss 182.51148939262282, accuracy 0.5343399047851562
+INFO:root:Batch 3700/total at loss 181.87574566106176, accuracy 0.5358687043190002
+INFO:root:Batch 3750/total at loss 182.88263594432343, accuracy 0.5372233986854553
+INFO:root:Batch 3800/total at loss 181.9523226178687, accuracy 0.5391673445701599
+INFO:root:Batch 3850/total at loss 180.72288111892604, accuracy 0.5377499461174011
+INFO:root:Batch 3900/total at loss 181.5530109056496, accuracy 0.5400217771530151
+INFO:root:Batch 3950/total at loss 182.4081226646531, accuracy 0.5406542420387268
+INFO:root:Batch 4000/total at loss 182.32999373863018, accuracy 0.5403336882591248
+INFO:root:Batch 4050/total at loss 181.7419529073646, accuracy 0.539465606212616
+INFO:root:Batch 4100/total at loss 181.4283440287614, accuracy 0.5391672849655151
+INFO:root:Batch 4150/total at loss 180.9133835521764, accuracy 0.5387256145477295
+INFO:root:Batch 4200/total at loss 180.0153434842124, accuracy 0.5381456613540649
+INFO:root:Batch 4250/total at loss 179.53942365240437, accuracy 0.5401670336723328
+INFO:root:Batch 4300/total at loss 180.5983706883595, accuracy 0.5415601134300232
+INFO:root:Batch 4350/total at loss 180.34046890508571, accuracy 0.5402493476867676
+INFO:root:Batch 4400/total at loss 181.43829506176323, accuracy 0.5412690043449402
+INFO:root:Batch 4450/total at loss 180.71067685996832, accuracy 0.5434452891349792
+INFO:root:Batch 4500/total at loss 179.59444557029354, accuracy 0.5436291694641113
+INFO:root:Epoch: 2
+INFO:root:[Train]		 J_a: 179.26, mean accuracy on epoch: 0.54
+INFO:root:Batch 5/total at VALID loss                     140.92183690755775, accuracy 0.3333333432674408
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183912_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 10/total at VALID loss                     119.8854956264835, accuracy 0.40909093618392944
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183914_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 15/total at VALID loss                     109.05305146285268, accuracy 0.4609375
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183917_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 20/total at VALID loss                     99.64200468819313, accuracy 0.3511904776096344
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183919_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 25/total at VALID loss                     95.02783626698934, accuracy 0.2836538553237915
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183921_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 30/total at VALID loss                     94.12618061768043, accuracy 0.23790322244167328
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183923_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 35/total at VALID loss                     91.44854024075998, accuracy 0.2395833283662796
+INFO:root:Artifacts for epoch 2
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_2_valid_20220518_183926_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Epoch: 2
+INFO:root:[Validate]		 J_a: 91.24, mean accuracy on epoch: 0.26
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label0_epoch_2_20220518_183928_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label1_epoch_2_20220518_183929_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label2_epoch_2_20220518_183931_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label3_epoch_2_20220518_183932_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:root:Save a checkpoint.
+INFO:root:Train minibatch x of shape: torch.Size([8, 40, 159])
+INFO:root:Batch 50/total at loss 186.26193737321503, accuracy 0.44117647409439087
+INFO:root:Batch 100/total at loss 198.2106258081777, accuracy 0.4368811845779419
+INFO:root:Batch 150/total at loss 184.59943957097482, accuracy 0.4486754834651947
+INFO:root:Batch 200/total at loss 188.07536248618615, accuracy 0.4807213842868805
+INFO:root:Batch 250/total at loss 184.30125018615803, accuracy 0.4945219159126282
+INFO:root:Batch 300/total at loss 198.23447011777228, accuracy 0.5290697813034058
+INFO:root:Batch 350/total at loss 192.70856293242178, accuracy 0.5320512652397156
+INFO:root:Batch 400/total at loss 203.8590638192709, accuracy 0.5430174469947815
+INFO:root:Batch 450/total at loss 200.5627086580353, accuracy 0.5712305903434753
+INFO:root:Batch 500/total at loss 194.96198652811847, accuracy 0.5828343033790588
+INFO:root:Batch 550/total at loss 190.36223712737913, accuracy 0.5651088953018188
+INFO:root:Batch 600/total at loss 189.7679774407136, accuracy 0.582362711429596
+INFO:root:Batch 650/total at loss 194.89136321225237, accuracy 0.5741167664527893
+INFO:root:Batch 700/total at loss 200.3836361482519, accuracy 0.5681169629096985
+INFO:root:Batch 750/total at loss 200.0877583231219, accuracy 0.5559254288673401
+INFO:root:Batch 800/total at loss 201.55300830777261, accuracy 0.5521223545074463
+INFO:root:Batch 850/total at loss 197.4467828846145, accuracy 0.5499412417411804
+INFO:root:Batch 900/total at loss 193.93050651318214, accuracy 0.5428690314292908
+INFO:root:Batch 950/total at loss 201.89034814964404, accuracy 0.5492901802062988
+INFO:root:Batch 1000/total at loss 206.0552103611247, accuracy 0.5387112498283386
+INFO:root:Batch 1050/total at loss 204.4988078180128, accuracy 0.542935311794281
+INFO:root:Batch 1100/total at loss 206.0974814110904, accuracy 0.5414395928382874
+INFO:root:Batch 1150/total at loss 201.53435315574777, accuracy 0.541377067565918
+INFO:root:Batch 1200/total at loss 198.03385501723736, accuracy 0.5377810001373291
+INFO:root:Batch 1250/total at loss 197.34931962437628, accuracy 0.5462629795074463
+INFO:root:Batch 1300/total at loss 198.4204639075566, accuracy 0.546694815158844
+INFO:root:Batch 1350/total at loss 197.5471553404004, accuracy 0.5452442169189453
+INFO:root:Batch 1400/total at loss 198.7311030975227, accuracy 0.5402390956878662
+INFO:root:Batch 1450/total at loss 199.76289419723287, accuracy 0.5410923361778259
+INFO:root:Batch 1500/total at loss 198.75071663308856, accuracy 0.5429713726043701
+INFO:root:Batch 1550/total at loss 196.65162407566947, accuracy 0.5415860414505005
+INFO:root:Batch 1600/total at loss 196.4582386429739, accuracy 0.5477045774459839
+INFO:root:Batch 1650/total at loss 197.41569945246073, accuracy 0.5495911240577698
+INFO:root:Batch 1700/total at loss 195.54705707638414, accuracy 0.552763044834137
+INFO:root:Batch 1750/total at loss 196.85305424478764, accuracy 0.559180498123169
+INFO:root:Batch 1800/total at loss 194.848973094134, accuracy 0.5646862983703613
+INFO:root:Batch 1850/total at loss 191.79675330517188, accuracy 0.561926007270813
+INFO:root:Batch 1900/total at loss 191.77651323108523, accuracy 0.5641767382621765
+INFO:root:Batch 1950/total at loss 192.2923384679152, accuracy 0.5670810341835022
+INFO:root:Batch 2000/total at loss 190.96906928444685, accuracy 0.5669665336608887
+INFO:root:Batch 2050/total at loss 189.54773262474203, accuracy 0.5661872029304504
+INFO:root:Batch 2100/total at loss 188.59664828881154, accuracy 0.5630057454109192
+INFO:root:Batch 2150/total at loss 187.3359532751873, accuracy 0.5613667964935303
+INFO:root:Batch 2200/total at loss 185.2844865512127, accuracy 0.5605406761169434
+INFO:root:Batch 2250/total at loss 184.09671502965082, accuracy 0.5635273456573486
+INFO:root:Batch 2300/total at loss 186.45459090399726, accuracy 0.5676879286766052
+INFO:root:Batch 2350/total at loss 185.99066250272608, accuracy 0.5684283375740051
+INFO:root:Batch 2400/total at loss 186.90203550540778, accuracy 0.571220338344574
+INFO:root:Batch 2450/total at loss 185.76650608534237, accuracy 0.5752754211425781
+INFO:root:Batch 2500/total at loss 183.4091650823699, accuracy 0.5756197571754456
+INFO:root:Batch 2550/total at loss 182.29254535579872, accuracy 0.5746765732765198
+INFO:root:Batch 2600/total at loss 183.06222778951397, accuracy 0.5797770023345947
+INFO:root:Batch 2650/total at loss 182.2434000782399, accuracy 0.5779423117637634
+INFO:root:Batch 2700/total at loss 181.58147671732175, accuracy 0.5766845941543579
+INFO:root:Batch 2750/total at loss 182.60153229449438, accuracy 0.574472963809967
+INFO:root:Batch 2800/total at loss 182.8537380168368, accuracy 0.5715369582176208
+INFO:root:Batch 2850/total at loss 182.11614585893724, accuracy 0.5729129910469055
+INFO:root:Batch 2900/total at loss 181.17273917136407, accuracy 0.5724749565124512
+INFO:root:Batch 2950/total at loss 182.7463198070988, accuracy 0.5771348476409912
+INFO:root:Batch 3000/total at loss 182.8283063444911, accuracy 0.5765161514282227
+INFO:root:Batch 3050/total at loss 182.93077404631845, accuracy 0.576819121837616
+INFO:root:Batch 3100/total at loss 184.00793703781224, accuracy 0.5797322988510132
+INFO:root:Batch 3150/total at loss 184.31414227114138, accuracy 0.5827515125274658
+INFO:root:Batch 3200/total at loss 184.01972891642, accuracy 0.5814589262008667
+INFO:root:Batch 3250/total at loss 183.65914852779255, accuracy 0.5846662521362305
+INFO:root:Batch 3300/total at loss 183.29087332318142, accuracy 0.5829672813415527
+INFO:root:Batch 3350/total at loss 183.11447692125142, accuracy 0.5839301943778992
+INFO:root:Batch 3400/total at loss 182.40609375564586, accuracy 0.580049991607666
+INFO:root:Batch 3450/total at loss 181.46669711844612, accuracy 0.5803752541542053
+INFO:root:Batch 3500/total at loss 181.31192142802286, accuracy 0.5789417028427124
+INFO:root:Batch 3550/total at loss 180.2313392412027, accuracy 0.5779005885124207
+INFO:root:Batch 3600/total at loss 181.16064760545726, accuracy 0.5815051198005676
+INFO:root:Batch 3650/total at loss 181.62156249514888, accuracy 0.5815187692642212
+INFO:root:Batch 3700/total at loss 180.95430568763229, accuracy 0.5806201100349426
+INFO:root:Batch 3750/total at loss 181.91483890341433, accuracy 0.5797120928764343
+INFO:root:Batch 3800/total at loss 180.96665922755892, accuracy 0.5805380344390869
+INFO:root:Batch 3850/total at loss 179.75069795247566, accuracy 0.5790379047393799
+INFO:root:Batch 3900/total at loss 180.65206716423862, accuracy 0.5825749635696411
+INFO:root:Batch 3950/total at loss 181.47061300080927, accuracy 0.5809605121612549
+INFO:root:Batch 4000/total at loss 181.14601955285744, accuracy 0.5804173946380615
+INFO:root:Batch 4050/total at loss 180.51145075047268, accuracy 0.5785300135612488
+INFO:root:Batch 4100/total at loss 180.18523747631636, accuracy 0.5779078006744385
+INFO:root:Batch 4150/total at loss 179.6734032310514, accuracy 0.577451229095459
+INFO:root:Batch 4200/total at loss 178.76629260787723, accuracy 0.574833333492279
+INFO:root:Batch 4250/total at loss 178.30758189605004, accuracy 0.5762467384338379
+INFO:root:Batch 4300/total at loss 179.40336987932113, accuracy 0.5778598189353943
+INFO:root:Batch 4350/total at loss 179.13242985244037, accuracy 0.5782578587532043
+INFO:root:Batch 4400/total at loss 180.27365671097073, accuracy 0.5800954103469849
+INFO:root:Batch 4450/total at loss 179.51666346021685, accuracy 0.5812739133834839
+INFO:root:Batch 4500/total at loss 178.39988801621726, accuracy 0.5808987021446228
+INFO:root:Epoch: 3
+INFO:root:[Train]		 J_a: 178.07, mean accuracy on epoch: 0.58
+INFO:root:Batch 5/total at VALID loss                     142.1691590660391, accuracy 0.125
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184602_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 10/total at VALID loss                     119.44893515911463, accuracy 0.39772728085517883
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184605_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 15/total at VALID loss                     108.89236172754313, accuracy 0.46875
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184607_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 20/total at VALID loss                     99.3206933280036, accuracy 0.3571428656578064
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184609_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 25/total at VALID loss                     94.34413534782269, accuracy 0.2884615361690521
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184611_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 30/total at VALID loss                     93.61705783054381, accuracy 0.2782258093357086
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184614_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 35/total at VALID loss                     91.09467960549226, accuracy 0.2569444477558136
+INFO:root:Artifacts for epoch 3
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_3_valid_20220518_184616_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Epoch: 3
+INFO:root:[Validate]		 J_a: 90.92, mean accuracy on epoch: 0.28
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label0_epoch_3_20220518_184618_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label1_epoch_3_20220518_184619_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label2_epoch_3_20220518_184621_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/gen_label3_epoch_3_20220518_184622_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged conditional generation to wandb.
+INFO:root:Save a checkpoint.
+INFO:root:Train minibatch x of shape: torch.Size([8, 40, 159])
+INFO:root:Batch 50/total at loss 186.15402729594047, accuracy 0.49754902720451355
+INFO:root:Batch 100/total at loss 194.94783547520203, accuracy 0.46658414602279663
+INFO:root:Batch 150/total at loss 179.0837482487826, accuracy 0.4776490032672882
+INFO:root:Batch 200/total at loss 172.89123518314207, accuracy 0.4689054489135742
+INFO:root:Batch 250/total at loss 165.81841159291235, accuracy 0.4930278956890106
+INFO:root:Batch 300/total at loss 163.45198481570492, accuracy 0.5253322124481201
+INFO:root:Batch 350/total at loss 154.8981751154029, accuracy 0.5010683536529541
+INFO:root:Batch 400/total at loss 161.20967428366814, accuracy 0.4996882975101471
+INFO:root:Batch 450/total at loss 156.38365987669823, accuracy 0.5141352415084839
+INFO:root:Batch 500/total at loss 153.71094737506684, accuracy 0.5212075710296631
+INFO:root:Batch 550/total at loss 149.18867434123106, accuracy 0.524954617023468
+INFO:root:Batch 600/total at loss 148.40250769685136, accuracy 0.5424292683601379
+INFO:root:Batch 650/total at loss 150.24188261921083, accuracy 0.5332181453704834
+INFO:root:Batch 700/total at loss 150.79224274952026, accuracy 0.515691876411438
+INFO:root:Batch 750/total at loss 153.3543305254552, accuracy 0.5029959678649902
+INFO:root:Batch 800/total at loss 154.417544561359, accuracy 0.4984394311904907
+INFO:root:Batch 850/total at loss 153.0429938134953, accuracy 0.4820798933506012
+INFO:root:Batch 900/total at loss 151.5177190400987, accuracy 0.47627636790275574
+INFO:root:Batch 950/total at loss 157.19584937724878, accuracy 0.4956624209880829
+INFO:root:Batch 1000/total at loss 158.35126971013452, accuracy 0.48588910698890686
+INFO:root:Batch 1050/total at loss 156.98966581974744, accuracy 0.48251664638519287
+INFO:root:Batch 1100/total at loss 158.29121639743278, accuracy 0.47502273321151733
+INFO:root:Batch 1150/total at loss 155.5491617127269, accuracy 0.47502174973487854
+INFO:root:Batch 1200/total at loss 153.44140488239435, accuracy 0.47699832916259766
+INFO:root:Batch 1250/total at loss 152.4617505644902, accuracy 0.4857114255428314
+INFO:root:Batch 1300/total at loss 152.55571489175955, accuracy 0.48578014969825745
+INFO:root:Batch 1350/total at loss 151.1385129225357, accuracy 0.4816802144050598
+INFO:root:Batch 1400/total at loss 152.24284625945697, accuracy 0.4760884940624237
+INFO:root:Batch 1450/total at loss 151.43156402494648, accuracy 0.480358362197876
+INFO:root:Batch 1500/total at loss 150.39971926118886, accuracy 0.48167890310287476
+INFO:root:Batch 1550/total at loss 149.07176300781802, accuracy 0.4725983142852783
+INFO:root:Batch 1600/total at loss 147.8607334093541, accuracy 0.47790446877479553
+INFO:root:Batch 1650/total at loss 147.64938934252453, accuracy 0.4821320176124573
+INFO:root:Batch 1700/total at loss 146.28870997533147, accuracy 0.47758668661117554
+INFO:root:Batch 1750/total at loss 146.42017962335083, accuracy 0.4793689548969269
+INFO:root:Batch 1800/total at loss 145.51500815013478, accuracy 0.48598000407218933
+INFO:root:Batch 1850/total at loss 143.74523131167234, accuracy 0.48588600754737854
+INFO:root:Batch 1900/total at loss 142.92471272030633, accuracy 0.4913203716278076
+INFO:root:Batch 1950/total at loss 142.71296820996474, accuracy 0.493208646774292
+INFO:root:Batch 2000/total at loss 141.67331779267317, accuracy 0.48888057470321655
+INFO:root:Batch 2050/total at loss 140.80109901697858, accuracy 0.48768892884254456
+INFO:root:Batch 2100/total at loss 140.20968947055493, accuracy 0.4855426251888275
+INFO:root:Batch 2150/total at loss 139.30228232448044, accuracy 0.48308926820755005
+INFO:root:Batch 2200/total at loss 137.9829285672597, accuracy 0.47887325286865234
+INFO:root:Batch 2250/total at loss 137.05971555552017, accuracy 0.47678810358047485
+INFO:root:Batch 2300/total at loss 137.73543541806498, accuracy 0.48299652338027954
+INFO:root:Batch 2350/total at loss 137.0229781442628, accuracy 0.48091238737106323
+INFO:root:Batch 2400/total at loss 137.26128328053747, accuracy 0.4855789244174957
+INFO:root:Batch 2450/total at loss 136.5853250874072, accuracy 0.48587310314178467
+INFO:root:Batch 2500/total at loss 135.1965023492224, accuracy 0.4873550534248352
+INFO:root:Batch 2550/total at loss 134.28363346972012, accuracy 0.49113091826438904
+INFO:root:Batch 2600/total at loss 134.43230163312765, accuracy 0.4968281388282776
+INFO:root:Batch 2650/total at loss 133.8234907524789, accuracy 0.49358731508255005
+INFO:root:Batch 2700/total at loss 133.4945992291129, accuracy 0.4921325743198395
+INFO:root:Batch 2750/total at loss 134.75880605122418, accuracy 0.49182116985321045
+INFO:root:Batch 2800/total at loss 134.957102201347, accuracy 0.4922795295715332
+INFO:root:Batch 2850/total at loss 134.22049524112813, accuracy 0.4898281395435333
+INFO:root:Batch 2900/total at loss 133.6014593542762, accuracy 0.48862460255622864
+INFO:root:Batch 2950/total at loss 133.68200532110566, accuracy 0.4947051703929901
+INFO:root:Batch 3000/total at loss 133.39585342324946, accuracy 0.49258580803871155
+INFO:root:Batch 3050/total at loss 133.49751030697615, accuracy 0.4924205243587494
+INFO:root:Batch 3100/total at loss 133.6802155030791, accuracy 0.4910915791988373
+INFO:root:Batch 3150/total at loss 134.5322280456336, accuracy 0.49337512254714966
+INFO:root:Batch 3200/total at loss 134.99770928753836, accuracy 0.4947282075881958
+INFO:root:Batch 3250/total at loss 135.3857804545985, accuracy 0.4980390667915344
+INFO:root:Batch 3300/total at loss 135.3448367936553, accuracy 0.49678128957748413
+INFO:root:Batch 3350/total at loss 135.32300630722307, accuracy 0.4965682029724121
+INFO:root:Batch 3400/total at loss 134.86191350067904, accuracy 0.4925389587879181
+INFO:root:Batch 3450/total at loss 134.32194392774576, accuracy 0.4930092990398407
+INFO:root:Batch 3500/total at loss 134.1498171158458, accuracy 0.4939660131931305
+INFO:root:Batch 3550/total at loss 133.39834459186005, accuracy 0.49003803730010986
+INFO:root:Batch 3600/total at loss 133.63396338392224, accuracy 0.49288392066955566
+INFO:root:Batch 3650/total at loss 133.6576140685424, accuracy 0.4938715696334839
+INFO:root:Batch 3700/total at loss 133.31492139676416, accuracy 0.49270468950271606
+INFO:root:Batch 3750/total at loss 133.7071786968972, accuracy 0.4926352798938751
+INFO:root:Batch 3800/total at loss 133.28689914556713, accuracy 0.4948040246963501
+INFO:root:Batch 3850/total at loss 132.6275973705474, accuracy 0.49535834789276123
+INFO:root:Batch 3900/total at loss 132.77162881568933, accuracy 0.4994873106479645
+INFO:root:Batch 3950/total at loss 133.20860418616837, accuracy 0.49946215748786926
+INFO:root:Batch 4000/total at loss 132.72979472495487, accuracy 0.4994688928127289
+INFO:root:Batch 4050/total at loss 132.2709412238759, accuracy 0.4980560541152954
+INFO:root:Batch 4100/total at loss 132.14458967692102, accuracy 0.497165322303772
+INFO:root:Batch 4150/total at loss 131.74409278888703, accuracy 0.49710914492607117
+INFO:root:Batch 4200/total at loss 131.20429832220574, accuracy 0.49473339319229126
+INFO:root:Batch 4250/total at loss 130.76895977940117, accuracy 0.4961479604244232
+INFO:root:Batch 4300/total at loss 130.96317860766322, accuracy 0.4986921548843384
+INFO:root:Batch 4350/total at loss 130.66103535979343, accuracy 0.49735692143440247
+INFO:root:Batch 4400/total at loss 131.32528504214463, accuracy 0.49963074922561646
+INFO:root:Batch 4450/total at loss 130.97090961937616, accuracy 0.4999438524246216
+INFO:root:Batch 4500/total at loss 130.3965393160432, accuracy 0.5001388788223267
+INFO:root:Epoch: 4
+INFO:root:[Train]		 J_a: 130.07, mean accuracy on epoch: 0.50
+INFO:root:Batch 5/total at VALID loss                     132.81066240591414, accuracy 0.6666666865348816
+INFO:root:Artifacts for epoch 4
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_4_valid_20220518_185255_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 10/total at VALID loss                     106.86324738227553, accuracy 0.5
+INFO:root:Artifacts for epoch 4
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+INFO:root:Artifact saved at /home/papillon/move/move/animations/experiment/recon_epoch_4_valid_20220518_185257_klweight1_nl4_b8.gif.
+INFO:root:ARTIFACT: logged reconstruction to wandb.
+INFO:root:Batch 15/total at VALID loss                     102.58440000936939, accuracy 0.3671875
+INFO:root:Artifacts for epoch 4
+INFO:root:xrecon has
+INFO:root:torch.Size([8, 40, 159])
+INFO:matplotlib.animation:Animation.save using <class 'matplotlib.animation.PillowWriter'>
+>> Labelled Train ds has shape (5318, 40, 159)
+>> Unlabelled Train ds has shape (36356, 40, 159)
+>> Labelled Validation ds has shape (295, 40, 159)
+>> Labelled Test ds has shape (295, 40, 159)
+>> Unlabelled Test ds has shape (1913, 40, 159)
+>> Labels train ds has shape (5318, 1, 1)
+>> Labels valid ds has shape (295, 1, 1)
+>> Labels test ds has shape (295, 1, 1)
+Traceback (most recent call last):
+  File "main_dgm.py", line 93, in <module>
+    train_dgm.run_train_dgm(
+  File "/home/papillon/move/move/train_dgm.py", line 186, in run_train_dgm
+    generate_f.recongeneral(model, epoch, x, y, 'valid')
+  File "/home/papillon/move/move/generate_f.py", line 404, in recongeneral
+    fname = animatestick(
+  File "/home/papillon/move/move/generate_f.py", line 346, in animatestick
+    anim.save(fname, writer="pillow", fps=30)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/animation.py", line 1091, in save
+    anim._draw_next_frame(d, blit=False)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/animation.py", line 1127, in _draw_next_frame
+    self._post_draw(framedata, blit)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/animation.py", line 1152, in _post_draw
+    self._fig.canvas.draw_idle()
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2060, in draw_idle
+    self.draw(*args, **kwargs)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/backends/backend_agg.py", line 436, in draw
+    self.figure.draw(self.renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/artist.py", line 73, in draw_wrapper
+    result = draw(artist, renderer, *args, **kwargs)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/artist.py", line 50, in draw_wrapper
+    return draw(artist, renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/figure.py", line 2810, in draw
+    mimage._draw_list_compositing_images(
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/image.py", line 132, in _draw_list_compositing_images
+    a.draw(renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/artist.py", line 50, in draw_wrapper
+    return draw(artist, renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/mpl_toolkits/mplot3d/axes3d.py", line 473, in draw
+    super().draw(renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/artist.py", line 50, in draw_wrapper
+    return draw(artist, renderer)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 3033, in draw
+    self.apply_aspect()
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/mpl_toolkits/mplot3d/axes3d.py", line 368, in apply_aspect
+    bb = mtransforms.Bbox.from_bounds(0, 0, 1, 1).transformed(trans)
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/transforms.py", line 494, in transformed
+    return Bbox([ll, [lr[0], ul[1]]])
+  File "/home/papillon/anaconda3/envs/choreo/lib/python3.8/site-packages/matplotlib/transforms.py", line 779, in __init__
+    self._points = points
+KeyboardInterrupt
+wandb: Waiting for W&B process to finish... (failed 255). Press Control-C to abort syncing.
+wandb: - 9.371 MB of 9.371 MB uploaded (0.000 MB deduped)wandb: \ 9.371 MB of 9.371 MB uploaded (0.000 MB deduped)wandb: | 9.371 MB of 9.371 MB uploaded (0.000 MB deduped)wandb: / 9.371 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: - 9.371 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: \ 9.472 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: | 9.527 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: / 9.527 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: - 9.527 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: \ 9.527 MB of 9.527 MB uploaded (0.000 MB deduped)wandb: ERROR Control-C detected -- Run data was not synced
+/home/papillon/anaconda3/envs/choreo/lib/python3.8/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 6 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
