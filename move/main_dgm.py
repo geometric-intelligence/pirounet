@@ -103,7 +103,7 @@ train_dgm.run_train_dgm(
     optimizer,
     default_config.epochs,
     default_config.label_features,
-    checkpoint=False,
+    checkpoint=True,
     with_clip=True
 )
 

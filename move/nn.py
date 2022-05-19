@@ -100,19 +100,42 @@ class LstmEncoder(torch.nn.Module):
         logging.debug(
             f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
         )
+        if torch.isnan(h).any():
+            print('h from lstm1 has nan')        
+        if torch.isnan(h_last_t).any():
+            print('h_last_t from lstm1 has nan')    
+        if torch.isnan(c_last_t).any():
+            print('c_last_t from lstm1 has nan')    
 
         for i in range(self.n_layers - 1):
             logging.debug(f"LSTM2 loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm2(h, (h_last_t, c_last_t))
             assert h.shape == (batch_size, seq_len, self.h_features_loop)
             assert h_last_t.shape == (1, batch_size, self.h_features_loop)
+            if torch.isnan(h).any():
+                print('h from lstm 1 '+ str(self.n_layers) + ' has nan')        
+            if torch.isnan(h_last_t).any():
+                print('h_last_t from lstm 1 '+ str(self.n_layers) + ' has nan')        
+            if torch.isnan(c_last_t).any():
+                print('hclast_t from lstm 1 '+ str(self.n_layers) + ' has nan')        
 
         logging.debug("Computing encoder output.")
         h1_last_t = h_last_t.squeeze(axis=0)
         assert h1_last_t.shape == (batch_size, self.h_features_loop)
+        if torch.isnan(h1_last_t).any():
+            print('h1_last_t (after squeezing h_last_t) has nan') 
+        
         z_mean = self.mean_block(h1_last_t)
+        if torch.isnan(z_mean).any():
+            print('z_mean has nan (SHOULD HAPPEN') 
+
         z_logvar = self.logvar_block(h1_last_t)
+        if torch.isnan(z_logvar).any():
+            print('z_logvar has nan (SHOULD HAPPEN') 
+
         z_sample = self.reparametrize(z_mean, z_logvar)
+        if torch.isnan(z_sample).any():
+            print('z_sample has nan (SHOULD HAPPEN') 
 
         logging.debug("Encoder done.")
         return z_sample, z_mean, z_logvar
@@ -519,19 +542,36 @@ class DeepGenerativeModel(LstmVAE):
         logging.debug('shape of before anything')
         logging.debug(x.shape)
         y_for_encoder = y.repeat((1, self.seq_len, 1))
+        if torch.isnan(y_for_encoder).any():
+            print('y_for_encoder has nan')
+
         logging.debug('what we send to encoder')
         logging.debug(torch.cat([x, y_for_encoder], dim=2).shape)
 
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+        if torch.isnan(z).any():
+            print('encoded z has nan')
+        if torch.isnan(z_mu).any():
+            print('encoded z_mu has nan')
+        if torch.isnan(z_log_var).any():
+            print('encoded z_log_var has nan')
+
         logging.debug('encoded z')
         logging.debug(z.shape)
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
+        if torch.isnan(y_for_decoder).any():
+            print('y_for_decoder has nan')
+
         logging.debug('what we send to decoder')
         logging.debug(torch.cat([z, y_for_decoder], dim=1).shape)
+
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
+        if torch.isnan(x_mu).any():
+            print('decoded x_mu has nan (SHOULD HAPPEN)')
+
         logging.debug('x recon')
         logging.debug(x_mu.shape)
         return x_mu
@@ -584,7 +624,7 @@ class DeepGenerativeModel(LstmVAE):
         recon_loss = (x - x_mu) ** 2
         recon_loss = torch.sum(recon_loss, axis=2)
 
-        recon_loss = torch.sum(recon_loss)
+        recon_loss = torch.mean(recon_loss)
 
         return recon_loss    
 
@@ -636,11 +676,22 @@ class SVI(nn.Module):
     def reconstruction_loss(x, x_recon):
         assert x.ndim == x_recon.ndim == 3
         batch_size, seq_len, _ = x.shape
+        # print("CHECK FOR NAN IN X AND XRECON")
+        if torch.isnan(x).any():
+            print('x has nan')
+        if torch.isnan(x_recon).any():
+            print('xrecon has nan')
         recon_loss = (x - x_recon) ** 2
+        if torch.isnan(recon_loss).any():
+            print('recon loss ARGUMENT has nan')
         recon_loss = torch.sum(recon_loss, axis=2)
+        if torch.isnan(recon_loss).any():
+            print('recon loss summed over axis 2 has nan')
         assert recon_loss.shape == (batch_size, seq_len)
 
         recon_loss = torch.sum(recon_loss, axis=1)
+        if torch.isnan(recon_loss).any():
+            print('recon loss summed over axis 1 has nan')
         assert recon_loss.shape == (batch_size,)
         return recon_loss
 
@@ -660,13 +711,27 @@ class SVI(nn.Module):
         xs = self.sampler.resample(xs)
         ys = self.sampler.resample(ys)
 
+        # print('CHECKING IF SAMPLED X AND Y HAVE NANS')
+        if torch.isnan(xs).any():
+            print('sampled xs has nan')
+        if torch.isnan(ys).any():
+            print('sampled ys has nan')
         reconstruction = self.model(xs, ys)
+        # print('CHECKING IF RECONSTRUCTION HAS NAN')
+        if torch.isnan(reconstruction).any():
+            print('reconstruction has nan')
 
         # p(x|y,z)
         likelihood = -likelihood_func(xs, reconstruction)
+        # print('CHECKING IF LIKELIHOOD HAS NAN')
+        if torch.isnan(likelihood).any():
+            print('likelihood has nan')
 
         # p(y)
         prior = -torch.squeeze(log_standard_categorical(ys))
+        # print('CHECKING IF PRIOR HAS NAN')
+        if torch.isnan(prior).any():
+            print('prior has nan')
 
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence

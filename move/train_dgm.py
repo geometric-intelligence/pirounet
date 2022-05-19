@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 from nn import SVI
 from torch.autograd import Variable
+import torch.autograd
 
 CUDA_VISIBLE_DEVICES=0,1
 DEVICE = torch.device("cpu")
@@ -61,18 +62,18 @@ def run_train_dgm(
     onehot_encoder = utils.make_onehot_encoder(label_features)
 
     now = time.strftime("%Y%m%d_%H%M%S")
-    old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/checkpoint_20220518_233110_stacked_leaky_class_skip.pt")
+    old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/checkpoint_debug_prints_nonclipped_epoch5.pt")
     
     if checkpoint is True:
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         latest_epoch = checkpoint['epoch']
-        total_loss = checkpoint['loss']
 
     else:
         latest_epoch = 0
 
+    # torch.autograd.set_detect_anomaly(True)
     for epoch in range(epochs - latest_epoch):
 
         # Train
