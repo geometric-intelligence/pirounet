@@ -364,7 +364,7 @@ def recongeneral(
     No conditions on output.
     """
     now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/test")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/experiment")
 
     # for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
     #     x, y = Variable(x), Variable(y)

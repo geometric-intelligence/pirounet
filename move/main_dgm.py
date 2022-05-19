@@ -14,7 +14,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
-import generate
+import generate_f
 import nn
 import torch
 import train
@@ -103,7 +103,8 @@ train_dgm.run_train_dgm(
     optimizer,
     default_config.epochs,
     default_config.label_features,
-    checkpoint=False
+    checkpoint=False,
+    with_clip=True
 )
 
 # generate
