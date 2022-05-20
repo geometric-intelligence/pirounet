@@ -43,6 +43,7 @@ def run_train_dgm(
     optimizer,
     epochs,
     label_features,
+    run_name,
     checkpoint=False,
     with_clip=True
 ):
@@ -62,9 +63,16 @@ def run_train_dgm(
     onehot_encoder = utils.make_onehot_encoder(label_features)
 
     now = time.strftime("%Y%m%d_%H%M%S")
-    old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/checkpoint_debug_prints_nonclipped_epoch5.pt")
+    directory = "GeeksForGeeks"
     
-    if checkpoint is True:
+    # Path for saving artifacts
+    path = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
+    os.mkdir(path)
+
+    
+    if checkpoint:
+        old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 
+            "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt")
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

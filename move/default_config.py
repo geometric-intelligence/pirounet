@@ -20,7 +20,7 @@ We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
 which_device = "1"
-run_name = "nan_enc_load_debug_prints_nonclipped"
+run_name = "bigger_valid_meanrecon"
 label_features = 4
 amount_of_labels = 1
 
