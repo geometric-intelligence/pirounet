@@ -323,16 +323,28 @@ def get_dgm_data(config, augmentation_factor=1):
     seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
-    five_perc_lab = int(round(seq_data_lab.shape[0] * 0.05))
-    ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
-    labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
-    labelled_data_valid_ds = seq_data_lab[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :]
-    labelled_data_test_ds = seq_data_lab[(ninety_perc_lab + five_perc_lab) :, :, :]
+    one_perc_lab = int(round(len(labels_ind) * 0.01))
+    five_perc_lab = int(one_perc_lab * 5)
+    # ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
+
+    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab * 2), :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab * 2) : ((five_perc_lab * 18) + (one_perc_lab * 8)), :, :]
+    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 18) + (one_perc_lab * 8)) :, :, :]
+
+    # labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
+    # labelled_data_valid_ds = seq_data_lab[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :]
+    # labelled_data_test_ds = seq_data_lab[(ninety_perc_lab + five_perc_lab) :, :, :]
 
     #divide labels into 90% training, 5% validating, and 5% testing sets
-    labels_train_ds = labels[:ninety_perc_lab, :]
-    labels_valid_ds = labels[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :]
-    labels_test_ds = labels[(ninety_perc_lab + five_perc_lab) :, :]
+
+    labels_valid_ds = labels[:(five_perc_lab * 2), :, :]
+    labels_train_ds = labels[(five_perc_lab * 2) : ((five_perc_lab * 18) + (one_perc_lab * 8)), :, :]
+    labels_test_ds = labels[((five_perc_lab * 18) + (one_perc_lab * 8)) :, :, :]
+
+
+    # labels_train_ds = labels[:ninety_perc_lab, :]
+    # labels_valid_ds = labels[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :]
+    # labels_test_ds = labels[(ninety_perc_lab + five_perc_lab) :, :]
 
     # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
@@ -352,28 +364,28 @@ def get_dgm_data(config, augmentation_factor=1):
     logging.info("Preprocessing: Convert into torch dataloader")
 
     labelled_data_train = torch.utils.data.DataLoader(
-        labelled_data_train_ds, batch_size=config.batch_size
+        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
         )
     labels_train = torch.utils.data.DataLoader(
-        labels_train_ds, batch_size=config.batch_size
+        labels_train_ds, batch_size=config.batch_size, drop_last=True
         )
     unlabelled_data_train = torch.utils.data.DataLoader(
         unlabelled_data_train_ds, batch_size=config.batch_size
         )
     labelled_data_valid = torch.utils.data.DataLoader(
-        labelled_data_valid_ds, batch_size=config.batch_size
+        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
         )
     labels_valid = torch.utils.data.DataLoader(
-        labels_valid_ds, batch_size=config.batch_size
+        labels_valid_ds, batch_size=config.batch_size, drop_last=True
         )
     labelled_data_test = torch.utils.data.DataLoader(
-        labelled_data_test_ds, batch_size=1
+        labelled_data_test_ds, batch_size=1, drop_last=True
         )
     labels_test = torch.utils.data.DataLoader(
-        labels_test_ds, batch_size=config.batch_size
+        labels_test_ds, batch_size=config.batch_size, drop_last=True
         )
     unlabelled_data_test = torch.utils.data.DataLoader(
-        unlabelled_data_test_ds, batch_size=1
+        unlabelled_data_test_ds, batch_size=1,
         )
 
 

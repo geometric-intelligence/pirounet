@@ -364,7 +364,7 @@ def recongeneral(
     No conditions on output.
     """
     now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/experiment")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
 
     # for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
     #     x, y = Variable(x), Variable(y)
@@ -396,9 +396,9 @@ def recongeneral(
         #     break 
 
     if epoch is not None:
-        name = f"recon_epoch_{epoch}_{purpose}_{now}_{run_name}.gif"
+        name = f"recon_epoch_{epoch}_{purpose}_{run_name}.gif"
     else:
-        name = f"recon_trained_{purpose}_{now}_{run_name}.gif"
+        name = f"recon_{purpose}_{run_name}.gif"
 
     fname = os.path.join(filepath, name)
     fname = animatestick(
@@ -450,16 +450,15 @@ def generatecond(
     seq_len=default_config.seq_len,
     run_name=default_config.run_name
 ):
-    now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
 
     x_create, y_title = get_sample(model, y_given)
     x_create_formatted = x_create[0].reshape((seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"gen_label{y_title}_epoch_{epoch}_{now}_{run_name}.gif"
+        name = f"gen_label{y_title}_epoch_{epoch}_{run_name}.gif"
     else:
-        name = f"gen_label{y_title}_trained_{now}_{run_name}.gif"
+        name = f"gen_label{y_title}_{run_name}.gif"
 
     fname = os.path.join(filepath, name)
     fname = animatestick(

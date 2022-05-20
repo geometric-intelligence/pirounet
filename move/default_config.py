@@ -20,11 +20,11 @@ We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
 which_device = "1"
-run_name = "clipped_stck_leaky_class_skip_cpk"
+run_name = "bigger_valid_meanrecon"
 label_features = 4
 amount_of_labels = 1
 
-batch_size = 8
+batch_size = 20
 learning_rate = 3e-6 #6e-6
 epochs = 400 
 seq_len = 40
