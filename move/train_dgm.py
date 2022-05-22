@@ -68,7 +68,6 @@ def run_train_dgm(
     # Path for saving artifacts
     path = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
     os.mkdir(path)
-
     
     if checkpoint:
         old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 

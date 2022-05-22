@@ -19,8 +19,8 @@ The VAE maps:
 We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
-which_device = "1"
-run_name = "bigger_valid_meanrecon"
+which_device = "0"
+run_name = "diff_layers_class"
 label_features = 4
 amount_of_labels = 1
 

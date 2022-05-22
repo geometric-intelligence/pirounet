@@ -13,7 +13,8 @@ class LinearClassifier(nn.Module):
         """
         super(LinearClassifier, self).__init__()
         self.dense = nn.Linear(seq_len*input_features, h_features_loop)
-        self.looplayer = nn.Linear(h_features_loop, h_features_loop)
+        self.looplayer1 = nn.Linear(h_features_loop, h_features_loop)
+        self.looplayer2 = nn.Linear(h_features_loop, h_features_loop)
         self.logits = nn.Linear(h_features_loop, label_features)
         self.class_loops = class_loops
         self.class_neg_slope = class_neg_slope
@@ -23,8 +24,10 @@ class LinearClassifier(nn.Module):
         batch_size = x.shape[0]
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
-        for i in range(self.class_loops):
-            x = F.leaky_relu(self.looplayer(x), negative_slope=self.class_neg_slope)
+        # for i in range(self.class_loops):
+        x = F.leaky_relu(self.looplayer1(x), negative_slope=self.class_neg_slope)
+        x = F.leaky_relu(self.looplayer2(x), negative_slope=self.class_neg_slope)
+        
         x = F.softmax(self.logits(x), dim=-1)
 
         return x
