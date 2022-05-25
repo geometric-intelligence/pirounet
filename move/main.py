@@ -12,19 +12,19 @@ import torch
 import train
 import wandb
 
-print('TORCH')
-print(torch. __version__)
 
 # Can be replaced by logging.DEBUG or logging.WARNING
 logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
+
+logging.info(f"PyTorch version: {torch. __version__}")
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
-# The config put in the init is treated as default
+# The config put in wandb.init is treated as default
 # and would be overwritten by a sweep
 wandb.init(
     project="move",
