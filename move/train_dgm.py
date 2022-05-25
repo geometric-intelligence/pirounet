@@ -1,8 +1,8 @@
 """Training functions."""
+import itertools
 import logging
 import os
 import time
-from itertools import cycle
 
 import default_config
 import numpy as np
@@ -10,12 +10,12 @@ import numpy as np
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
-import generate_f
+import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import models.utils as utils
 import torch
 import torch.autograd
-import torch.nn as nn
+import torch.nn
 import wandb
 from torch.autograd import Variable
 
@@ -43,7 +43,7 @@ def run_train_dgm(
     unlabelled_data_test,
     optimizer,
     epochs,
-    label_features,
+    label_dim,
     run_name,
     checkpoint=False,
     with_clip=True,
@@ -61,7 +61,7 @@ def run_train_dgm(
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
     seq_ct = 0
-    onehot_encoder = utils.make_onehot_encoder(label_features)
+    onehot_encoder = utils.make_onehot_encoder(label_dim)
 
     now = time.strftime("%Y%m%d_%H%M%S")
     directory = "GeeksForGeeks"
@@ -93,7 +93,11 @@ def run_train_dgm(
         batches_seen = 0
 
         for i_batch, (x, y, u) in enumerate(
-            zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)
+            zip(
+                itertools.cycle(labelled_data_train),
+                itertools.cycle(labels_train),
+                unlabelled_data_train,
+            )
         ):
 
             # Wrap in variables
@@ -103,10 +107,10 @@ def run_train_dgm(
 
             batches_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, label_features))
+            batch_one_hot = torch.zeros((1, 1, label_dim))
             for y_i in y:
                 y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, label_features))
+                y_i_enc = y_i_enc.reshape((1, 1, label_dim))
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
 
             batch_one_hot = batch_one_hot[1:, :, :]
@@ -133,7 +137,7 @@ def run_train_dgm(
 
             # gradient clipping
             if with_clip:
-                nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
 
             optimizer.step()
             optimizer.zero_grad()
@@ -196,10 +200,10 @@ def run_train_dgm(
 
             batches_v_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, label_features))
+            batch_one_hot = torch.zeros((1, 1, label_dim))
             for y_i in y:
                 y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, label_features))
+                y_i_enc = y_i_enc.reshape((1, 1, label_dim))
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
             batch_one_hot = batch_one_hot[1:, :, :]
             y = batch_one_hot.to(DEVICE)
@@ -253,7 +257,7 @@ def run_train_dgm(
         )
         # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
-        for label in range(default_config.label_features):
+        for label in range(default_config.label_dim):
             generate_f.generatecond(model, epoch=epoch, y_given=label)
 
         logging.info("Save a checkpoint.")

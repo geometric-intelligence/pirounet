@@ -9,13 +9,13 @@ class DeepGenerativeModel(LstmVAE):
     def __init__(
         self,
         n_layers,
-        input_features,
+        input_dim,
         h_dim,
         latent_dim,
-        output_features,
+        output_dim,
         seq_len,
-        negative_slope,
-        label_features,
+        neg_slope,
+        label_dim,
         batch_size,
         h_dim_classif,
         neg_slope_classif,
@@ -36,44 +36,44 @@ class DeepGenerativeModel(LstmVAE):
         Parameters
         ----------
         n_layers :
-        input_features :
+        input_dim :
         h_dim :
         latent_dim :
-        output_features :
+        output_dim :
         seq_len :
-        negative_slope :
-        label_features :
+        neg_slope :
+        label_dim :
         """
 
         super(DeepGenerativeModel, self).__init__()
-        self.label_features = label_features
+        self.label_dim = label_dim
         self.seq_len = seq_len
 
         self.encoder = LstmEncoder(
             n_layers=n_layers,
-            input_features=input_features,
+            input_dim=input_dim,
             h_dim=h_dim,
             latent_dim=latent_dim,
-            label_features=label_features,
+            label_dim=label_dim,
             bias=bias,
             batch_norm=batch_norm,
         )
 
         self.decoder = LstmDecoder(
             n_layers=n_layers,
-            output_features=output_features,
+            output_dim=output_dim,
             h_dim=h_dim,
             latent_dim=latent_dim,
             seq_len=seq_len,
-            negative_slope=negative_slope,
-            label_features=label_features,
+            neg_slope=neg_slope,
+            label_dim=label_dim,
             batch_size=batch_size,
         )
 
         self.classifier = LinearClassifier(
-            input_features,
+            input_dim,
             h_dim_classif,
-            label_features,
+            label_dim,
             seq_len,
             neg_slope_classif,
             n_layers_classif,
@@ -91,10 +91,10 @@ class DeepGenerativeModel(LstmVAE):
         ---
         x : array-like
             input sequence
-            Shape = [batchsize, seq_len, input_features]
+            Shape = [batchsize, seq_len, input_dim]
         y : array-like
             input label
-            Shape = [batchsize, 1,label_features]
+            Shape = [batchsize, 1,label_dim]
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
@@ -114,12 +114,12 @@ class DeepGenerativeModel(LstmVAE):
         Parameters
         ----------
         x : array-like
-            Shape=[batch_size, seq_len, input_features]
+            Shape=[batch_size, seq_len, input_dim]
 
         Returns
         -------
         logits : array-like
-                 Shape=[batch_size, label_features]
+                 Shape=[batch_size, label_dim]
         """
         logits = self.classifier(x)
         return logits
@@ -148,11 +148,11 @@ class DeepGenerativeModel(LstmVAE):
         ----------
         x : array-like
             Input data.
-            Shape=[batch_size, seq_len, input_features].
+            Shape=[batch_size, seq_len, input_dim].
 
         y : array-like
             one hot encoder.
-            Shape=[batch_size, label_features].
+            Shape=[batch_size, label_dim].
 
         Returns
         -------
@@ -250,9 +250,9 @@ class SVI(torch.nn.Module):
 
         # Enumerate choices of label
         if not is_labelled:
-            ys = enumerate_discrete(xs, self.model.label_features)
+            ys = enumerate_discrete(xs, self.model.label_dim)
             ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
-            xs = xs.repeat(self.model.label_features, 1, 1)
+            xs = xs.repeat(self.model.label_dim, 1, 1)
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
@@ -320,7 +320,7 @@ def log_standard_categorical(p):
     """
     Calculates the cross entropy between a (one-hot) categorical vector
     and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution with shape [batch_size, 1, label_features]
+    :param p: one-hot categorical distribution with shape [batch_size, 1, label_dim]
     :return: H(p, u)
     """
     # Uniform prior over y

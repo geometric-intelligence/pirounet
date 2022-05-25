@@ -4,7 +4,7 @@ import logging
 import os
 import time
 
-import artifact
+import evaluate.artifact as artifact
 import numpy as np
 import torch
 import wandb

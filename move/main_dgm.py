@@ -14,7 +14,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
-import generate_f
+import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import torch
 import train
@@ -40,19 +40,20 @@ wandb.init(
     project="move_labelled",
     entity="bioshape-lab",
     config={
-        "learning_rate": default_config.learning_rate,
         "epochs": default_config.epochs,
+        "learning_rate": default_config.learning_rate,
         "batch_size": default_config.batch_size,
         "seq_len": default_config.seq_len,
+        "input_dim": default_config.input_dim,
         "kl_weight": default_config.kl_weight,
-        "negative_slope": default_config.negative_slope,
+        "neg_slope": default_config.neg_slope,
         "n_layers": default_config.n_layers,
         "h_dim": default_config.h_dim,
         "latent_dim": default_config.latent_dim,
-        "label_features": default_config.label_features,
         "neg_slope_classif": default_config.neg_slope_classif,
         "n_layers_classif": default_config.n_layers_classif,
         "h_dim_classif": default_config.h_dim_classif,
+        "label_dim": default_config.label_dim,
     },
 )
 config = wandb.config
@@ -61,13 +62,13 @@ logging.info("Config: {config}")
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
-    input_features=config.input_features,
+    input_dim=config.input_dim,
     h_dim=config.h_dim,
     latent_dim=config.latent_dim,
-    output_features=3 * 53,
+    output_dim=config.input_dim,
     seq_len=config.seq_len,
-    negative_slope=config.negative_slope,
-    label_features=config.label_features,
+    neg_slope=config.neg_slope,
+    label_dim=config.label_dim,
     batch_size=config.batch_size,
     h_dim_classif=config.h_dim_classif,
     neg_slope_classif=config.neg_slope_classif,
@@ -106,15 +107,15 @@ train_dgm.run_train_dgm(
     unlabelled_data_test,
     optimizer,
     config.epochs,
-    config.label_features,
+    config.label_dim,
     config.run_name,
     checkpoint=False,
     with_clip=False,
 )
 
-logging.info("Create dances")
+logging.info("Generate dances")
 artifact_maker = generate.Artifact(model)
-for label in range(1, config.label_features + 1):
+for label in range(1, config.label_dim + 1):
     artifact_maker.generatecond(y_given=label)
 
 wandb.finish()

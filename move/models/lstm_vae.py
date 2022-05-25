@@ -35,27 +35,27 @@ class LstmEncoder(torch.nn.Module):
     def __init__(
         self,
         n_layers,
-        input_features,
+        input_dim,
         h_dim,
         latent_dim,
-        label_features,
+        label_dim,
         bias,
         batch_norm,
     ):
         super().__init__()
         self.n_layers = n_layers
-        self.input_features = input_features
+        self.input_dim = input_dim
         self.h_dim = h_dim
         self.latent_dim = latent_dim
-        self.label_features = label_features
+        self.label_dim = label_dim
 
-        if label_features:
-            total_input_features = input_features + label_features
+        if label_dim:
+            total_input_dim = input_dim + label_dim
         else:
-            total_input_features = input_features
+            total_input_dim = input_dim
 
         self.lstm1 = torch.nn.LSTM(
-            input_size=total_input_features,
+            input_size=total_input_dim,
             hidden_size=h_dim,
             batch_first=True,
         )
@@ -93,14 +93,14 @@ class LstmEncoder(torch.nn.Module):
         Parameters
         ----------
         inputs : array-like
-            shape=[batch_size, seq_len, input_features]
-            where input_features = 3 * n_body_joints.
+            shape=[batch_size, seq_len, input_dim]
+            where input_dim = 3 * n_body_joints.
         """
 
-        if self.label_features:
-            assert inputs.shape[-1] == self.input_features + self.label_features
+        if self.label_dim:
+            assert inputs.shape[-1] == self.input_dim + self.label_dim
         else:
-            assert inputs.shape[-1] == self.input_features
+            assert inputs.shape[-1] == self.input_dim
 
         batch_size, seq_len, _ = inputs.shape
 
@@ -126,30 +126,30 @@ class LstmDecoder(torch.nn.Module):
     def __init__(
         self,
         n_layers,
-        output_features,
+        output_dim,
         h_dim,
         latent_dim,
         seq_len,
         negative_slope,
-        label_features,
+        label_dim,
         batch_size,
     ):
         super().__init__()
         self.n_layers = n_layers
-        self.output_features = output_features
+        self.output_dim = output_dim
         self.h_dim = h_dim
         self.latent_dim = latent_dim
         self.seq_len = seq_len
-        self.label_features = label_features
+        self.label_dim = label_dim
         self.batch_size = batch_size
 
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
 
-        if label_features:
-            input_features_decoder = h_dim + label_features
-            total_latent_dim = latent_dim + label_features
+        if label_dim:
+            input_dim_decoder = h_dim + label_dim
+            total_latent_dim = latent_dim + label_dim
         else:
-            input_features_decoder = h_dim
+            input_dim_decoder = h_dim
             total_latent_dim = latent_dim
 
         self.linear = torch.nn.Linear(total_latent_dim, h_dim)
@@ -159,7 +159,7 @@ class LstmDecoder(torch.nn.Module):
         )
 
         self.lstm2 = torch.nn.LSTM(
-            input_size=h_dim, hidden_size=output_features, batch_first=True
+            input_size=h_dim, hidden_size=output_dim, batch_first=True
         )
 
     def forward(self, inputs):
@@ -174,8 +174,8 @@ class LstmDecoder(torch.nn.Module):
         inputs : array-like
             Shape=[batch_size, latent_dim]
         """
-        if self.label_features:
-            assert inputs.shape[-1] == self.latent_dim + self.label_features
+        if self.label_dim:
+            assert inputs.shape[-1] == self.latent_dim + self.label_dim
         else:
             assert inputs.shape[-1] == self.latent_dim
 
@@ -216,7 +216,7 @@ class LstmDecoder(torch.nn.Module):
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
         h, _ = self.lstm2(h)
-        # assert h.shape == (batch_size, self.seq_len, self.output_features)
+        # assert h.shape == (batch_size, self.seq_len, self.output_dim)
         logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
         logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
@@ -259,16 +259,16 @@ class LstmVAE(torch.nn.Module):
     def __init__(
         self,
         n_layers=2,
-        input_features=3 * 53,
+        input_dim=3 * 53,
         h_dim=32,
         latent_dim=32,
         kl_weight=0,
-        output_features=3 * 53,
+        output_dim=3 * 53,
         seq_len=128,
         negative_slope=0.2,
         batch_size=8,
         with_rotation_layer=True,
-        label_features=None,
+        label_dim=None,
     ):
         super(LstmVAE, self).__init__()
         self.latent_dim = latent_dim
@@ -276,27 +276,27 @@ class LstmVAE(torch.nn.Module):
 
         self.encoder = LstmEncoder(
             n_layers=n_layers,
-            input_features=input_features,
+            input_dim=input_dim,
             h_dim=h_dim,
             latent_dim=latent_dim,
-            label_features=label_features,
+            label_dim=label_dim,
             bias=None,
             batch_norm=None,
         )
         self.decoder = LstmDecoder(
             n_layers=n_layers,
-            output_features=output_features,
+            output_dim=output_dim,
             h_dim=h_dim,
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
-            label_features=label_features,
+            label_dim=label_dim,
             batch_size=batch_size,
         )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
 
-        assert input_features == output_features
+        assert input_dim == output_dim
 
         # This initializes the weights and biases
         for m in self.modules():
@@ -343,10 +343,10 @@ class LstmVAE(torch.nn.Module):
         ----------
         x : array-like
             Input sequence.
-            Shape=[batch_size, seq_len, input_features]
+            Shape=[batch_size, seq_len, input_dim]
         x_recon : array-like
             Output (reconstructed) sequence.
-            Shape=[batch_size, seq_len, output_features]
+            Shape=[batch_size, seq_len, output_dim]
         z : array-like
             Latent variable. Not a sequence.
             Shape=[batch_size, latent_dim]
@@ -375,7 +375,7 @@ class LstmVAE(torch.nn.Module):
         ----------
         x : array-like
             Input data.
-            Shape=[batch_size, seq_len, input_features].
+            Shape=[batch_size, seq_len, input_dim].
 
         y : one hot encoder for Laban effort.
 
@@ -418,7 +418,7 @@ class LstmVAE(torch.nn.Module):
         ----------
         x : array-like
             Input data.
-            Shape=[batch_size, seq_len, input_features].
+            Shape=[batch_size, seq_len, input_dim].
 
         Returns
         -------
