@@ -459,6 +459,7 @@ def generate_and_save(
     model,
     epoch=None,
     y_given=None,
+    config=None,
 ):
     """Generate a dance from a given label and save the corresponding artifact."""
     if config is None:

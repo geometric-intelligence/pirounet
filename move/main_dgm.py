@@ -60,6 +60,9 @@ wandb.init(
 config = wandb.config
 logging.info(f"Config: {config}")
 
+wandb.run.name = default_config.run_name
+
+
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
@@ -108,13 +111,13 @@ train_dgm.run_train_dgm(
     unlabelled_data_test,
     optimizer,
     config=config,
+    load_from_checkpoint=default_config.load_from_checkpoint,
     checkpoint=False,
     with_clip=False,
 )
 
-logging.info("Generate dances")
-artifact_maker = generate.Artifact(model)
-for label in range(1, config.label_dim + 1):
-    artifact_maker.generate(y_given=label)
+# generate
+for label in range(config.label_dim):
+    generate_f.generate(model, y_given=label, config=config)
 
 wandb.finish()

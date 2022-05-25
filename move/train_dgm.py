@@ -43,8 +43,8 @@ def run_train_dgm(
     unlabelled_data_test,
     optimizer,
     config,
-    checkpoint=False,
-    with_clip=True,
+    load_from_checkpoint=None,
+    with_clip=False,
 ):
     """Run training and track it with wandb.
 
@@ -58,19 +58,11 @@ def run_train_dgm(
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
-    seq_ct = 0
-    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
+    onehot_encoder = utils.make_onehot_encoder(label_features)
 
-    now = time.strftime("%Y%m%d_%H%M%S")
-    directory = "GeeksForGeeks"
-
-    # Path for saving artifacts
-    path = os.path.join(os.path.abspath(os.getcwd()), config.run_name)
-
-    if checkpoint:
+    if load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()),
-            "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt",
+            os.path.abspath(os.getcwd()), load_from_checkpoint
         )
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -148,7 +140,6 @@ def run_train_dgm(
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()
-            # recon_loss += model.get_recon_loss(x,y)
 
             if (total_loss / batches_seen) > 1e20:
                 logging.info(f"Loss exploded, skipping batch {batches_seen}")
@@ -166,8 +157,12 @@ def run_train_dgm(
                     f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
                 )
 
-            # if i_batch % 5 == 0 and i_batch != 0 :
-            #     recon_loss += model.get_recon_loss(x, y)
+            if i_batch % 50 == 0 and i_batch != 0:
+                logging.info(
+                    f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
+                )
+                logging.info(f"        Recon lab-loss {labloss / (batches_seen)}")
+                logging.info(f"        Recon unlab-loss {unlabloss / (batches_seen)}")
 
         logging.info(f"Epoch: {epoch}")
         logging.info(
@@ -189,7 +184,6 @@ def run_train_dgm(
             step=epoch,
         )
         wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
-        # wandb.log({"epoch": epoch, "recon_loss": recon_loss / (batches_seen/5)}, step=epoch)
 
         # Validation
         total_loss_valid, accuracy_valid, recon_loss_valid = (0, 0, 0)
@@ -215,7 +209,6 @@ def run_train_dgm(
 
             L = -elbo(x, y)
             U = -elbo(x)
-            # recon_loss_valid += model.get_recon_loss(x,y)
 
             logits_v = model.classify(x)
             classication_loss_v = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
@@ -249,8 +242,6 @@ def run_train_dgm(
                     purpose="valid",
                     config=config,
                 )
-                # logging.info(f"Reconstruction loss for epoch {epoch}")
-                # recon_loss_valid += model.get_recon_loss(x, y,)
 
         logging.info(f"Epoch: {epoch}")
         logging.info(
@@ -267,7 +258,6 @@ def run_train_dgm(
             {"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
             step=epoch,
         )
-        # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
         for label in range(config.label_dim):
             generate_f.generate_and_save(
