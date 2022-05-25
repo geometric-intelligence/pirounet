@@ -14,10 +14,8 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
-import generate_f
 import nn
 import torch
-import train
 import train_dgm
 
 import wandb
@@ -51,9 +49,10 @@ wandb.init(
         "label_features": default_config.label_features,
         "neg_slope_classif": default_config.neg_slope_classif,
         "n_layers_classif": default_config.n_layers_classif,
-        "h_dim_classif": default_config.h_dim_classif
+        "h_dim_classif": default_config.h_dim_classif,
     },
 )
+wandb.run.name = default_config.run_name
 
 
 logging.info("Run server specific commands")
@@ -90,7 +89,7 @@ labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
     datasets.get_dgm_data(default_config)
 
-wandb.watch(model, train.get_loss, log="all", log_freq=100)
+#wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
 
 train_dgm.run_train_dgm(
