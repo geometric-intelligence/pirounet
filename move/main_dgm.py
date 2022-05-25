@@ -15,10 +15,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
 import nn
-import torch
 import train_dgm
+import generate_f
 
 import wandb
+import torch
 
 logging.info('TORCH')
 logging.info(torch. __version__)
@@ -105,14 +106,12 @@ train_dgm.run_train_dgm(
     optimizer,
     default_config.epochs,
     default_config.label_features,
-    default_config.run_name,
-    checkpoint=False,
+    load_from_checkpoint=default_config.load_from_checkpoint,
     with_clip=False
 )
 
 # generate
-artifact_maker = generate.Artifact(model)
-for label in range(1, default_config.label_features + 1):
-    artifact_maker.generatecond(y_given=label)
+for label in range(default_config.label_features):
+    generate_f.generatecond(model, y_given=label)
 
 wandb.finish()
