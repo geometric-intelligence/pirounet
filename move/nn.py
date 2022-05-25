@@ -54,17 +54,11 @@ class LstmEncoder(torch.nn.Module):
         else:
             total_input_features = input_features
 
-        self.lstm1 = torch.nn.LSTM(
+        self.lstm = torch.nn.LSTM(
             input_size=total_input_features,
             hidden_size=h_dim,
             batch_first=True,
-        )
-
-        self.lstm2 = torch.nn.LSTM(
-            input_size=h_dim, 
-            hidden_size=h_dim,
-            batch_first=True,
-            num_layers=1 #n_layers - 1
+            num_layers= n_layers
         )
 
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
@@ -104,17 +98,15 @@ class LstmEncoder(torch.nn.Module):
 
         batch_size, seq_len, _ = inputs.shape
 
-        h1, (h1_last_t, c1_last_t) = self.lstm1(inputs)
+        h, (h_last_t_all, c_last_t) = self.lstm(inputs)
 
-        h, (h_last_t, c_last_t) = self.lstm2(h1, (h1_last_t, c1_last_t))
         assert h.shape == (batch_size, seq_len, self.h_dim)
-        assert h_last_t.shape == (1, batch_size, self.h_dim)
+        assert h_last_t_all.shape == (self.n_layers, batch_size, self.h_dim)
+        h_last_t = h_last_t_all[self.n_layers - 1, :, :]
+        assert h_last_t.shape == (batch_size, self.h_dim)
 
-        h1_last_t = h_last_t.squeeze(axis=0)
-        assert h1_last_t.shape == (batch_size, self.h_dim)
-       
-        z_mean = self.mean_block(h1_last_t)
-        z_logvar = self.logvar_block(h1_last_t)
+        z_mean = self.mean_block(h_last_t)
+        z_logvar = self.logvar_block(h_last_t)
         z_sample = self.reparametrize(z_mean, z_logvar)
 
         return z_sample, z_mean, z_logvar
@@ -152,14 +144,22 @@ class LstmDecoder(torch.nn.Module):
             input_features_decoder = h_dim
             total_latent_dim = latent_dim
 
-        self.linear = torch.nn.Linear(total_latent_dim, h_dim)
-
-        self.lstm_loop = torch.nn.LSTM(
-            input_size=h_dim, hidden_size=h_dim, batch_first=True
+        self.linear = torch.nn.Linear(
+            total_latent_dim, 
+            h_dim
         )
 
-        self.lstm2 = torch.nn.LSTM(
-            input_size=h_dim, hidden_size=output_features, batch_first=True
+        self.lstm = torch.nn.LSTM(
+            input_size=h_dim, 
+            hidden_size=h_dim, 
+            batch_first=True,
+            num_layers=n_layers - 1
+        )
+
+        self.lstm_out = torch.nn.LSTM(
+            input_size=h_dim, 
+            hidden_size=output_features, 
+            batch_first=True
         )
 
     def forward(self, inputs):
@@ -178,49 +178,15 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim + self.label_features
         else:
             assert inputs.shape[-1] == self.latent_dim
-        
-        logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-        logging.debug('SHAPE OF inputs')
-        logging.debug(inputs.shape)
+
         h = self.linear(inputs)
         h = self.leakyrelu(h)
-        logging.debug("SHAPE OF h")
-        logging.debug(h.shape)
-        # assert h.shape == (self.batch_size, self.h_dim)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
-
-        #normalize h over the sequence
-        # h = F.normalize(h, dim=3)
-
-        # norm_h = torch.norm(h, dim=(2,3))
-        # with open('norm_hklwt1_2leakyclass.csv', 'w', newline='') as file:
-        #     writer = csv.writer(file, delimiter=',')
-        #     writer.writerows(norm_h)
-        # file.close()
-
         h = h.repeat(1, self.seq_len, 1)
-        
 
+        h, (h_last_t, c_last_t) = self.lstm(h)
+        h, (h_last_t, c_last_t) = self.lstm_out(h)
 
-        #assert h.shape == (batch_size, self.seq_len, self.h_dim)
-
-        # input_zeros = torch.zeros_like(h)
-        # h0 = h[:, 0, :]
-        # h0 = h0.reshape((1, h0.shape[0], h0.shape[-1]))
-        # c0 = h0
-
-        h, (h_last_t, c_last_t) = self.lstm_loop(h)
-
-        for i in range(self.n_layers - 1):
-            logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
-            h, (h_last_t, c_last_t) = self.lstm_loop(h)
-            #assert h.shape == (batch_size, self.seq_len, self.h_dim)
-            logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
-
-        h, _ = self.lstm2(h)
-        #assert h.shape == (batch_size, self.seq_len, self.output_features)
-        logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
-        logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
 
 
