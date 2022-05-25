@@ -106,8 +106,7 @@ train_dgm.run_train_dgm(
     optimizer,
     default_config.epochs,
     default_config.label_features,
-    default_config.run_name,
-    checkpoint=False,
+    load_from_checkpoint=default_config.load_from_checkpoint,
     with_clip=False
 )
 

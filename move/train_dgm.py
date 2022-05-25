@@ -43,8 +43,7 @@ def run_train_dgm(
     optimizer,
     epochs,
     label_features,
-    run_name,
-    checkpoint=False,
+    load_from_checkpoint=None,
     with_clip=False,
 ):
     """Run training and track it with wandb.
@@ -61,9 +60,8 @@ def run_train_dgm(
 
     onehot_encoder = utils.make_onehot_encoder(label_features)
     
-    if checkpoint:
-        old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 
-            "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt")
+    if load_from_checkpoint is not None:
+        old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), load_from_checkpoint)
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -160,7 +158,6 @@ def run_train_dgm(
         model.eval()
 
         batches_v_seen = 0
-        total_v_batches = len(labelled_data_valid)
         
         for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
@@ -179,7 +176,6 @@ def run_train_dgm(
 
             L = -elbo(x, y)
             U = -elbo(x)
-            #recon_loss_valid += model.get_recon_loss(x,y)
 
             logits_v = model.classify(x)
             classication_loss_v = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
@@ -201,9 +197,6 @@ def run_train_dgm(
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}")
                 logging.info(f"Artifacts for epoch {epoch}")
                 generate_f.recongeneral(model, epoch, x, y, 'valid')
-                # logging.info(f"Reconstruction loss for epoch {epoch}")
-                # recon_loss_valid += model.get_recon_loss(x, y,)
-
 
         logging.info(f"Epoch: {epoch}")
         logging.info("[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
@@ -211,7 +204,6 @@ def run_train_dgm(
 
         wandb.log({"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen}, step=epoch)
         wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen}, step=epoch)
-        # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
         for label in range(default_config.label_features):
             generate_f.generatecond(model, epoch=epoch, y_given=label)
