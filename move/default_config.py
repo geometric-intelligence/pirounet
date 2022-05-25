@@ -20,7 +20,7 @@ We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
 which_device = "0"
-run_name = "3e-4"
+run_name = "sep_layers_3e4NOCLIP_alpha001"
 label_features = 4
 amount_of_labels = 1
 

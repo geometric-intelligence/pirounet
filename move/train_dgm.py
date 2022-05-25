@@ -45,7 +45,7 @@ def run_train_dgm(
     label_features,
     run_name,
     checkpoint=False,
-    with_clip=True
+    with_clip=False,
 ):
     """Run training and track it with wandb.
 
@@ -111,7 +111,7 @@ def run_train_dgm(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
-            L = -elbo(x, y)  # check that averaged on minibatch
+            L = -elbo(x, y) 
             labloss += L
             U = -elbo(u)
             unlabloss += U
@@ -135,7 +135,6 @@ def run_train_dgm(
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()
-            #recon_loss += model.get_recon_loss(x,y)
 
             if (total_loss / batches_seen) > 1e+20:
                 logging.info(f"Loss exploded, skipping batch {batches_seen}")
@@ -148,9 +147,10 @@ def run_train_dgm(
 
             if i_batch % 50 == 0 and i_batch != 0 :
                 logging.info(f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}")
+                logging.info(f"        Recon lab-loss {labloss / (batches_seen)}")
+                logging.info(f"        Recon unlab-loss {unlabloss / (batches_seen)}")
             
-            # if i_batch % 5 == 0 and i_batch != 0 :
-            #     recon_loss += model.get_recon_loss(x, y)
+
 
         logging.info(f"Epoch: {epoch}")
         logging.info("[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
@@ -161,7 +161,6 @@ def run_train_dgm(
         wandb.log({"epoch": epoch, "unlabelled_recon_loss": unlabloss / batches_seen}, step=epoch)
         wandb.log({"epoch": epoch, "classification_loss": class_loss / batches_seen}, step=epoch)
         wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
-        # wandb.log({"epoch": epoch, "recon_loss": recon_loss / (batches_seen/5)}, step=epoch)
 
         # Validation
         total_loss_valid, accuracy_valid, recon_loss_valid = (0, 0, 0)
