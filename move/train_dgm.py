@@ -66,9 +66,7 @@ def run_train_dgm(
     directory = "GeeksForGeeks"
     
     # Path for saving artifacts
-    path = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
-    os.mkdir(path)
-
+    path = os.path.join(os.path.abspath(os.getcwd()), run_name)
     
     if checkpoint:
         old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 

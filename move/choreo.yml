@@ -1,0 +1,13 @@
+name: choreo
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - scipy
+  - numpy
+  - matplotlib
+  - pytorch
+  - torchvision
+  - wandb
+  - pre-commit
+prefix: /home/papillon/anaconda3/envs/choreo

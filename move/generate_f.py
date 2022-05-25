@@ -364,7 +364,7 @@ def recongeneral(
     No conditions on output.
     """
     now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
     # for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
     #     x, y = Variable(x), Variable(y)
@@ -450,7 +450,7 @@ def generatecond(
     seq_len=default_config.seq_len,
     run_name=default_config.run_name
 ):
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "artifacts/" + run_name)
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
     x_create, y_title = get_sample(model, y_given)
     x_create_formatted = x_create[0].reshape((seq_len, -1, 3))
