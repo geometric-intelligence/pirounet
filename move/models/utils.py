@@ -2,11 +2,18 @@ import torch
 
 
 def make_onehot_encoder(label_features):
-    """
-    Converts a number to its one-hot or 1-of-amount_of_labels representation
-    vector.
-    :param amount_of_labels: (int) length of vector
-    :return: onehot function
+    """Convert a number to its one-hot representation vector.
+
+    The one-hot representation is also called the 1-of-amount_of_labels.
+
+    Parameters
+    ----------
+    label_features: int
+        Length of vector
+
+    Returns
+    -------
+    onehot_encode : function
     """
 
     def onehot_encode(label):

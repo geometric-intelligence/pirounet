@@ -12,7 +12,6 @@ import torch
 import train
 import wandb
 
-
 # Can be replaced by logging.DEBUG or logging.WARNING
 logging.basicConfig(level=logging.INFO)
 warnings.filterwarnings("ignore")
@@ -43,18 +42,6 @@ wandb.init(
 )
 config = wandb.config
 logging.info("Config: {config}")
-
-logging.info("Run server specific commands")
-SERVER = "pod"  # colab
-if SERVER == "colab":
-    from google.colab import drive
-
-    drive.mount("/content/drive")
-    # %cd /content/drive/MyDrive/colab-github/move/dance
-    sys.path.append(os.path.dirname(os.getcwd()))
-
-elif SERVER == "pod":
-    sys.path.append(os.path.dirname(os.getcwd()))
 
 
 logging.info("Initialize model")

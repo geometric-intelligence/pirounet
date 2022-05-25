@@ -1,34 +1,35 @@
 """Training functions."""
 import logging
 import os
-from itertools import cycle
 import time
-import numpy as np
+from itertools import cycle
 
 import default_config
+import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import generate_f
-import utils
-import wandb
-
+import models.dgm_lstm_vae as dgm_lstm_vae
+import models.utils as utils
 import torch
-import torch.nn as nn
-from nn import SVI
-from torch.autograd import Variable
 import torch.autograd
+import torch.nn as nn
+import wandb
+from torch.autograd import Variable
 
-CUDA_VISIBLE_DEVICES=0,1
+CUDA_VISIBLE_DEVICES = 0, 1
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
+
 
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
 
     return -torch.sum(in_sum, dim=-1)
+
 
 def run_train_dgm(
     model,
@@ -45,7 +46,7 @@ def run_train_dgm(
     label_features,
     run_name,
     checkpoint=False,
-    with_clip=True
+    with_clip=True,
 ):
     """Run training and track it with wandb.
 
@@ -55,7 +56,7 @@ def run_train_dgm(
     loss_epoch = average loss per sequence.
     """
 
-    elbo = SVI(model)
+    elbo = dgm_lstm_vae.SVI(model)
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
@@ -64,17 +65,19 @@ def run_train_dgm(
 
     now = time.strftime("%Y%m%d_%H%M%S")
     directory = "GeeksForGeeks"
-    
+
     # Path for saving artifacts
     path = os.path.join(os.path.abspath(os.getcwd()), run_name)
-    
+
     if checkpoint:
-        old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 
-            "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt")
+        old_checkpoint_filepath = os.path.join(
+            os.path.abspath(os.getcwd()),
+            "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt",
+        )
         checkpoint = torch.load(old_checkpoint_filepath)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        latest_epoch = checkpoint['epoch']
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        latest_epoch = checkpoint["epoch"]
 
     else:
         latest_epoch = 0
@@ -89,14 +92,15 @@ def run_train_dgm(
 
         batches_seen = 0
 
-        for i_batch, (x, y, u) in enumerate(zip(cycle(labelled_data_train),
-                cycle(labels_train), unlabelled_data_train)):
+        for i_batch, (x, y, u) in enumerate(
+            zip(cycle(labelled_data_train), cycle(labels_train), unlabelled_data_train)
+        ):
 
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)
             u = u.to(DEVICE)
-            
+
             batches_seen += 1
 
             batch_one_hot = torch.zeros((1, 1, label_features))
@@ -135,31 +139,46 @@ def run_train_dgm(
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()
-            #recon_loss += model.get_recon_loss(x,y)
+            # recon_loss += model.get_recon_loss(x,y)
 
-            if (total_loss / batches_seen) > 1e+20:
+            if (total_loss / batches_seen) > 1e20:
                 logging.info(f"Loss exploded, skipping batch {batches_seen}")
                 continue
 
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy += torch.mean(
-                (torch.max(logits, 1).indices
-                    == torch.max(y_like_logits, 1).indices).float())
+                (
+                    torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices
+                ).float()
+            )
 
-            if i_batch % 50 == 0 and i_batch != 0 :
-                logging.info(f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}")
-            
+            if i_batch % 50 == 0 and i_batch != 0:
+                logging.info(
+                    f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
+                )
+
             # if i_batch % 5 == 0 and i_batch != 0 :
             #     recon_loss += model.get_recon_loss(x, y)
 
         logging.info(f"Epoch: {epoch}")
-        logging.info("[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
-                format(total_loss / batches_seen, accuracy / batches_seen))
+        logging.info(
+            "[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
+                total_loss / batches_seen, accuracy / batches_seen
+            )
+        )
 
         wandb.log({"epoch": epoch, "loss": total_loss / batches_seen}, step=epoch)
-        wandb.log({"epoch": epoch, "labelled_recon_loss": labloss / batches_seen}, step=epoch)
-        wandb.log({"epoch": epoch, "unlabelled_recon_loss": unlabloss / batches_seen}, step=epoch)
-        wandb.log({"epoch": epoch, "classification_loss": class_loss / batches_seen}, step=epoch)
+        wandb.log(
+            {"epoch": epoch, "labelled_recon_loss": labloss / batches_seen}, step=epoch
+        )
+        wandb.log(
+            {"epoch": epoch, "unlabelled_recon_loss": unlabloss / batches_seen},
+            step=epoch,
+        )
+        wandb.log(
+            {"epoch": epoch, "classification_loss": class_loss / batches_seen},
+            step=epoch,
+        )
         wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
         # wandb.log({"epoch": epoch, "recon_loss": recon_loss / (batches_seen/5)}, step=epoch)
 
@@ -169,7 +188,7 @@ def run_train_dgm(
 
         batches_v_seen = 0
         total_v_batches = len(labelled_data_valid)
-        
+
         for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
             x, y = Variable(x), Variable(y)
@@ -187,7 +206,7 @@ def run_train_dgm(
 
             L = -elbo(x, y)
             U = -elbo(x)
-            #recon_loss_valid += model.get_recon_loss(x,y)
+            # recon_loss_valid += model.get_recon_loss(x,y)
 
             logits_v = model.classify(x)
             classication_loss_v = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
@@ -201,39 +220,56 @@ def run_train_dgm(
 
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy_valid += torch.mean(
-                (torch.max(logits_v, 1).indices
-                    == torch.max(y_like_logits, 1).indices).float())
+                (
+                    torch.max(logits_v, 1).indices
+                    == torch.max(y_like_logits, 1).indices
+                ).float()
+            )
 
-            if i_batch % 5 == 0 and i_batch != 0 :
-                logging.info(f"Batch {i_batch}/total at VALID loss \
-                    {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}")
+            if i_batch % 5 == 0 and i_batch != 0:
+                logging.info(
+                    f"Batch {i_batch}/total at VALID loss \
+                    {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
+                )
                 logging.info(f"Artifacts for epoch {epoch}")
-                generate_f.recongeneral(model, epoch, x, y, 'valid')
+                generate_f.recongeneral(model, epoch, x, y, "valid")
                 # logging.info(f"Reconstruction loss for epoch {epoch}")
                 # recon_loss_valid += model.get_recon_loss(x, y,)
 
-
         logging.info(f"Epoch: {epoch}")
-        logging.info("[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".
-                format(total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen))
+        logging.info(
+            "[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
+                total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen
+            )
+        )
 
-        wandb.log({"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen}, step=epoch)
-        wandb.log({"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen}, step=epoch)
+        wandb.log(
+            {"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen},
+            step=epoch,
+        )
+        wandb.log(
+            {"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
+            step=epoch,
+        )
         # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
         for label in range(default_config.label_features):
             generate_f.generatecond(model, epoch=epoch, y_given=label)
 
-        logging.info('Save a checkpoint.')
-        checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 
-            "saved/checkpoint_{}_epoch{}.pt".format(default_config.run_name, epoch))
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': (total_loss / batches_seen),
-            'accuracy': (accuracy / batches_seen),
-            'valid_loss': (total_loss_valid / batches_v_seen),
-            'valid_accuracy': (accuracy_valid / batches_v_seen)
-        }, checkpoint_filepath)
-
+        logging.info("Save a checkpoint.")
+        checkpoint_filepath = os.path.join(
+            os.path.abspath(os.getcwd()),
+            "saved/checkpoint_{}_epoch{}.pt".format(default_config.run_name, epoch),
+        )
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "loss": (total_loss / batches_seen),
+                "accuracy": (accuracy / batches_seen),
+                "valid_loss": (total_loss_valid / batches_v_seen),
+                "valid_accuracy": (accuracy_valid / batches_v_seen),
+            },
+            checkpoint_filepath,
+        )

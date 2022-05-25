@@ -9,15 +9,14 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import matplotlib
 import matplotlib.pyplot as plt
+import models.utils as utils
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 import torch
-from torch.autograd import Variable
-
-import utils
 import wandb
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
+from torch.autograd import Variable
 
 DEVICE = torch.device("cpu")
 if torch.cuda.is_available():
@@ -189,6 +188,7 @@ for g1, g2 in skeleton_lines:
     entry.append([point_labels.index(line) for line in g2])
     skeleton_idxs.append(entry)
 
+
 def getlinesegments(seq, zcolor=None, cmap=None):
     """Calculate coordinates for the lines."""
     xline = np.zeros((seq.shape[0], len(skeleton_idxs), 3, 2))
@@ -204,6 +204,7 @@ def getlinesegments(seq, zcolor=None, cmap=None):
         return xline, colors
     else:
         return xline
+
 
 def putlines(ax, segments, color=None, lw=2.5, alpha=None):
     """Put line segments on the given axis with given colors."""
@@ -225,6 +226,7 @@ def putlines(ax, segments, color=None, lw=2.5, alpha=None):
         lines.append(line)
     return lines
 
+
 def animatestick(
     seq,
     fname,
@@ -240,7 +242,7 @@ def animatestick(
     lw=2.5,
     cmap="inferno",
     pointer_color="black",
-    condition=None
+    condition=None,
 ):
     """Create skeleton animation."""
     # Put data on CPU and convert to numpy array
@@ -251,7 +253,6 @@ def animatestick(
     if zcolor is None:
         zcolor = np.zeros(seq.shape[1])
 
-    
     fig = plt.figure(figsize=figsize)
     ax = p3.Axes3D(fig)
 
@@ -315,8 +316,7 @@ def animatestick(
         ax.quiv = quiv
 
     if condition is not None:
-        title = str('Generated for label ' + str(condition))
-        
+        title = str("Generated for label " + str(condition))
 
     def update(t):
         if condition is not None:
@@ -336,8 +336,7 @@ def animatestick(
 
         if pointer is not None:
             ax.quiv.remove()
-            ax.quiv = ax.quiver(X[t], Y[t], Z[t],
-                    dX[t], dY[t], 0, color=pointer_color)
+            ax.quiv = ax.quiver(X[t], Y[t], Z[t], dX[t], dY[t], 0, color=pointer_color)
 
     anim = animation.FuncAnimation(
         fig, update, len(seq), interval=speed, blit=False, save_count=200
@@ -348,6 +347,7 @@ def animatestick(
 
     return fname
 
+
 def recongeneral(
     model,
     epoch,
@@ -356,8 +356,7 @@ def recongeneral(
     purpose,
     label_features=default_config.label_features,
     seq_len=default_config.seq_len,
-    run_name=default_config.run_name
-
+    run_name=default_config.run_name,
 ):
     """
     Make and save stick video on seq from input_data dataset.
@@ -383,17 +382,17 @@ def recongeneral(
     #     x_recon = model(x_good.float(), y_good.float())
     x = input_data
     y = input_label
-    x_recon = model(x,y) # has shape [batch_size, seq_len, 159]
-    logging.info('xrecon has')
+    x_recon = model(x, y)  # has shape [batch_size, seq_len, 159]
+    logging.info("xrecon has")
     logging.info(x_recon.shape)
     _, seq_len, _ = x.shape
 
     x_formatted = x[0].reshape((seq_len, -1, 3))
     x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
 
-        # random_integer = random.randint(0, 10)
-        # if random_integer == 5:
-        #     break 
+    # random_integer = random.randint(0, 10)
+    # if random_integer == 5:
+    #     break
 
     if epoch is not None:
         name = f"recon_epoch_{epoch}_{purpose}_{run_name}.gif"
@@ -413,11 +412,12 @@ def recongeneral(
     wandb.log_artifact(animation_artifact)
     logging.info("ARTIFACT: logged reconstruction to wandb.")
 
+
 def get_sample(
     model,
     y_given=None,
     label_features=default_config.label_features,
-    latent_dim=default_config.latent_dim
+    latent_dim=default_config.latent_dim,
 ):
     onehot_encoder = utils.make_onehot_encoder(label_features)
     if y_given is not None:
@@ -427,7 +427,7 @@ def get_sample(
         y_title = y_given
 
     else:
-        y_rand = random.randint(0, label_features-1)
+        y_rand = random.randint(0, label_features - 1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(DEVICE)
@@ -440,6 +440,7 @@ def get_sample(
 
     return x_create, y_title
 
+
 def generatecond(
     model,
     epoch=None,
@@ -448,7 +449,7 @@ def generatecond(
     latent_dim=default_config.latent_dim,
     label_features=default_config.label_features,
     seq_len=default_config.seq_len,
-    run_name=default_config.run_name
+    run_name=default_config.run_name,
 ):
     filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
@@ -467,7 +468,7 @@ def generatecond(
         ghost=None,
         dot_alpha=0.7,
         ghost_shift=0.2,
-        condition=y_title
+        condition=y_title,
     )
 
     animation_artifact = wandb.Artifact("animation", type="video")

@@ -15,7 +15,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 import datasets
 import generate_f
-import nn
+import models.dgm_lstm_vae as dgm_lstm_vae
 import torch
 import train
 import train_dgm
@@ -59,7 +59,7 @@ config = wandb.config
 logging.info("Config: {config}")
 
 logging.info("Initialize model")
-model = nn.DeepGenerativeModel(
+model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
     input_features=config.input_features,
     h_dim=config.h_dim,
