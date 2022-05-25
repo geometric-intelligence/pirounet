@@ -354,7 +354,6 @@ def recongeneral(
     input_data,
     input_label,
     purpose,
-    label_features=default_config.label_features,
     seq_len=default_config.seq_len,
     run_name=default_config.run_name
 
@@ -363,24 +362,7 @@ def recongeneral(
     Make and save stick video on seq from input_data dataset.
     No conditions on output.
     """
-    now = time.strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
-
-    # for i_batch, (x,y) in enumerate(zip(input_data, input_label)):
-    #     x, y = Variable(x), Variable(y)
-
-    #     x_good = x[0]
-    #     x_good = torch.unsqueeze(x_good, 0) #.reshape((1, x.shape[1], x.shape[-1]))
-    #     y_good = y[0]
-    #     y_good = y_good.reshape((1,1,1))
-    #     x_good = x_good.to(DEVICE)
-    #     y_good = y_good.to(DEVICE)
-
-    #     onehot_encoder = utils.make_onehot_encoder(label_features)
-    #     y_good = onehot_encoder(y_good.item()).to(DEVICE)
-    #     y_good = torch.unsqueeze(torch.unsqueeze(y_good, 0), 0)
-
-    #     x_recon = model(x_good.float(), y_good.float())
     x = input_data
     y = input_label
     x_recon = model(x,y) # has shape [batch_size, seq_len, 159]
@@ -390,10 +372,6 @@ def recongeneral(
 
     x_formatted = x[0].reshape((seq_len, -1, 3))
     x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
-
-        # random_integer = random.randint(0, 10)
-        # if random_integer == 5:
-        #     break 
 
     if epoch is not None:
         name = f"recon_epoch_{epoch}_{purpose}_{run_name}.gif"
@@ -444,9 +422,6 @@ def generatecond(
     model,
     epoch=None,
     y_given=None,
-    batch_size=default_config.batch_size,
-    latent_dim=default_config.latent_dim,
-    label_features=default_config.label_features,
     seq_len=default_config.seq_len,
     run_name=default_config.run_name
 ):
