@@ -57,7 +57,7 @@ wandb.init(
     },
 )
 config = wandb.config
-logging.info("Config: {config}")
+logging.info(f"Config: {config}")
 
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(
@@ -116,6 +116,6 @@ train_dgm.run_train_dgm(
 logging.info("Generate dances")
 artifact_maker = generate.Artifact(model)
 for label in range(1, config.label_dim + 1):
-    artifact_maker.generatecond(y_given=label)
+    artifact_maker.generate(y_given=label)
 
 wandb.finish()

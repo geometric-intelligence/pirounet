@@ -21,22 +21,26 @@ to about 4 seconds of continuous movement.
 """
 which_device = "1"
 run_name = "3e-4"
-label_dim = 4
-amount_of_labels = 1
 
+# Training
 epochs = 400
 learning_rate = 3e-4  # 6e-6
 batch_size = 80
+
+# Input data
 seq_len = 40
-
 input_dim = 159
+label_dim = 4
+amount_of_labels = 1
 
+# LSTM VAE
 kl_weight = 0
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
 h_dim = 384
 latent_dim = 256
 
+# Classifier
 h_dim_classif = 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

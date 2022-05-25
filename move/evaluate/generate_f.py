@@ -348,20 +348,26 @@ def animatestick(
     return fname
 
 
-def recongeneral(
+def reconstruct(
     model,
     epoch,
     input_data,
     input_label,
     purpose,
-    label_features=default_config.label_features,
-    seq_len=default_config.seq_len,
-    run_name=default_config.run_name,
+    config=None,
 ):
     """
     Make and save stick video on seq from input_data dataset.
     No conditions on output.
+
+    Parameters
+    ----------
+    purpose : str, {"train", "valid"}
     """
+    if config is None:
+        logging.info("!! Parameter config is not given: Using default_config")
+        config = default_config
+
     now = time.strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
@@ -375,7 +381,7 @@ def recongeneral(
     #     x_good = x_good.to(DEVICE)
     #     y_good = y_good.to(DEVICE)
 
-    #     onehot_encoder = utils.make_onehot_encoder(label_features)
+    #     onehot_encoder = utils.make_onehot_encoder(config.label_features)
     #     y_good = onehot_encoder(y_good.item()).to(DEVICE)
     #     y_good = torch.unsqueeze(torch.unsqueeze(y_good, 0), 0)
 
@@ -395,9 +401,9 @@ def recongeneral(
     #     break
 
     if epoch is not None:
-        name = f"recon_epoch_{epoch}_{purpose}_{run_name}.gif"
+        name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
     else:
-        name = f"recon_{purpose}_{run_name}.gif"
+        name = f"recon_{purpose}_{config.run_name}.gif"
 
     fname = os.path.join(filepath, name)
     fname = animatestick(
@@ -413,13 +419,21 @@ def recongeneral(
     logging.info("ARTIFACT: logged reconstruction to wandb.")
 
 
-def get_sample(
+def generate(
     model,
     y_given=None,
-    label_features=default_config.label_features,
-    latent_dim=default_config.latent_dim,
+    config=None,
 ):
-    onehot_encoder = utils.make_onehot_encoder(label_features)
+    """Generate a dance from a given label by sampling in the latent space.
+
+    If no label y is given, then a random label is chosen.
+    """
+
+    if config is None:
+        logging.info("!! Parameter config is not given: Using default_config")
+        config = default_config
+
+    onehot_encoder = utils.make_onehot_encoder(config.label_features)
     if y_given is not None:
         y_onehot = onehot_encoder(y_given)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
@@ -427,7 +441,7 @@ def get_sample(
         y_title = y_given
 
     else:
-        y_rand = random.randint(0, label_features - 1)
+        y_rand = random.randint(0, config.label_features - 1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(DEVICE)
@@ -441,25 +455,25 @@ def get_sample(
     return x_create, y_title
 
 
-def generatecond(
+def generate_and_save(
     model,
     epoch=None,
     y_given=None,
-    batch_size=default_config.batch_size,
-    latent_dim=default_config.latent_dim,
-    label_features=default_config.label_features,
-    seq_len=default_config.seq_len,
-    run_name=default_config.run_name,
 ):
+    """Generate a dance from a given label and save the corresponding artifact."""
+    if config is None:
+        logging.info("!! Parameter config is not given: Using default_config")
+        config = default_config
+
     filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
 
-    x_create, y_title = get_sample(model, y_given)
-    x_create_formatted = x_create[0].reshape((seq_len, -1, 3))
+    x_create, y_title = generate(model, y_given)
+    x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"gen_label{y_title}_epoch_{epoch}_{run_name}.gif"
+        name = f"gen_label{y_title}_epoch_{epoch}_{config.run_name}.gif"
     else:
-        name = f"gen_label{y_title}_{run_name}.gif"
+        name = f"gen_label{y_title}_{config.run_name}.gif"
 
     fname = os.path.join(filepath, name)
     fname = animatestick(

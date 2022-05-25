@@ -236,7 +236,14 @@ def run_train_dgm(
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                 )
                 logging.info(f"Artifacts for epoch {epoch}")
-                generate_f.recongeneral(model, epoch, x, y, "valid")
+                generate_f.reconstruct(
+                    model=model,
+                    epoch=epoch,
+                    input_data=x,
+                    input_label=y,
+                    purpose="valid",
+                    config=config,
+                )
                 # logging.info(f"Reconstruction loss for epoch {epoch}")
                 # recon_loss_valid += model.get_recon_loss(x, y,)
 
@@ -258,7 +265,9 @@ def run_train_dgm(
         # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
         for label in range(default_config.label_dim):
-            generate_f.generatecond(model, epoch=epoch, y_given=label)
+            generate_f.generate_and_save(
+                model=model, epoch=epoch, y_given=label, config=config
+            )
 
         logging.info("Save a checkpoint.")
         checkpoint_filepath = os.path.join(

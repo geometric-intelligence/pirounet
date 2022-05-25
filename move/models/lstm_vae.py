@@ -130,7 +130,7 @@ class LstmDecoder(torch.nn.Module):
         h_dim,
         latent_dim,
         seq_len,
-        negative_slope,
+        neg_slope,
         label_dim,
         batch_size,
     ):
@@ -143,7 +143,7 @@ class LstmDecoder(torch.nn.Module):
         self.label_dim = label_dim
         self.batch_size = batch_size
 
-        self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
+        self.leakyrelu = torch.nn.LeakyReLU(negative_slope=neg_slope)
 
         if label_dim:
             input_dim_decoder = h_dim + label_dim
@@ -265,7 +265,7 @@ class LstmVAE(torch.nn.Module):
         kl_weight=0,
         output_dim=3 * 53,
         seq_len=128,
-        negative_slope=0.2,
+        neg_slope=0.2,
         batch_size=8,
         with_rotation_layer=True,
         label_dim=None,
@@ -289,7 +289,7 @@ class LstmVAE(torch.nn.Module):
             h_dim=h_dim,
             latent_dim=latent_dim,
             seq_len=seq_len,
-            negative_slope=negative_slope,
+            neg_slope=neg_slope,
             label_dim=label_dim,
             batch_size=batch_size,
         )

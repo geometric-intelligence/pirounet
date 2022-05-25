@@ -8,9 +8,9 @@ import torch.nn.functional as F
 class LinearClassifier(nn.Module):
     def __init__(
         self,
-        input_features,
+        input_dim,
         h_dim_classif,
-        label_features,
+        label_dim,
         seq_len,
         neg_slope_classif,
         n_layers_classif,
@@ -22,7 +22,7 @@ class LinearClassifier(nn.Module):
         activated.
         """
         super(LinearClassifier, self).__init__()
-        self.dense = nn.Linear(seq_len * input_features, h_dim_classif)
+        self.dense = nn.Linear(seq_len * input_dim, h_dim_classif)
 
         self.n_layers_classif = n_layers_classif
         self.neg_slope_classif = neg_slope_classif
@@ -31,7 +31,7 @@ class LinearClassifier(nn.Module):
         for i in range(int(n_layers_classif)):
             self.layers.append(nn.Linear(h_dim_classif, h_dim_classif))
 
-        self.layers.append(nn.Linear(h_dim_classif, label_features))
+        self.layers.append(nn.Linear(h_dim_classif, label_dim))
 
     def forward(self, x):
         """Perform forward pass of the linear classifier."""
@@ -53,9 +53,7 @@ class LinearClassifier(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(
-        self, d_model=default_config.input_features, dropout=0.1, max_len=5000
-    ):
+    def __init__(self, d_model=default_config.input_dim, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
 
         self.dropout = nn.Dropout(p=dropout)
@@ -78,16 +76,16 @@ class PositionalEncoding(nn.Module):
 
 
 class TransformerClassifier(PositionalEncoding):
-    def __init__(self, input_features, label_features):
+    def __init__(self, input_dim, label_dim):
         """
         Single hidden layer classifier
         with softmax output.
         """
         super(TransformerClassifier, self).__init__()
 
-        self.positional_encoder = PositionalEncoding(dim_model=input_features)
+        self.positional_encoder = PositionalEncoding(dim_model=input_dim)
         self.transformer = nn.Transformer(
-            d_model=input_features,
+            d_model=input_dim,
             nhead=8,
             num_encoder_layers=3,
             num_decoder_layers=3,
@@ -95,7 +93,7 @@ class TransformerClassifier(PositionalEncoding):
             batch_first=True,
         )
         self.dropout = nn.Dropout(p=0.01)
-        self.logits = nn.Linear(input_features, label_features)
+        self.logits = nn.Linear(input_dim, label_dim)
 
     def forward(self, x, x_lengths, apply_softmax=True):
         x = self.positional_encoder(x)
