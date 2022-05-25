@@ -33,8 +33,11 @@ if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
-# The config put in the init is treated as default
-# and would be overwritten by a sweep
+# The config put in wandb.init is treated as default:
+# - it is filled with values from the default_config.py file
+# - it will be overwritten by any sweep
+# After wandb is initialize, use wandb.config (and not default_config)
+# to get the config parameters of the run, potentially coming from a sweep.
 wandb.init(
     project="move_labelled",
     entity="bioshape-lab",
@@ -54,45 +57,36 @@ wandb.init(
         "h_dim_classif": default_config.h_dim_classif
     },
 )
-
-
-logging.info("Run server specific commands")
-SERVER = "pod"  # colab
-if SERVER == "colab":
-    from google.colab import drive
-
-    drive.mount("/content/drive")
-    # %cd /content/drive/MyDrive/colab-github/move/dance
-    syspath.append(os.path.dirname(os.getcwd()))
-
-elif SERVER == "pod":
-    sys.path.append(os.path.dirname(os.getcwd()))
+config = wandb.config
+logging.info("Config: {config}")  
 
 logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
-    n_layers=default_config.n_layers,
-    input_features=default_config.input_features,
-    h_dim=default_config.h_dim,
-    latent_dim=default_config.latent_dim,
+    n_layers=config.n_layers,
+    input_features=config.input_features,
+    h_dim=config.h_dim,
+    latent_dim=config.latent_dim,
     output_features=3 * 53,
-    seq_len=default_config.seq_len,
-    negative_slope=default_config.negative_slope,
-    label_features=default_config.label_features,
-    batch_size=default_config.batch_size,
-    h_dim_classif=default_config.h_dim_classif,
-    neg_slope_classif=default_config.neg_slope_classif,
-    n_layers_classif=default_config.n_layers_classif,
+    seq_len=config.seq_len,
+    negative_slope=config.negative_slope,
+    label_features=config.label_features,
+    batch_size=config.batch_size,
+    h_dim_classif=config.h_dim_classif,
+    neg_slope_classif=config.neg_slope_classif,
+    n_layers_classif=config.n_layers_classif,
     bias=None,
     batch_norm=True
 ).to(DEVICE)
 
+logging.info("Get data")
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(default_config)
+    datasets.get_dgm_data(config)
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
-optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
+optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999))
 
+logging.info("Train")
 train_dgm.run_train_dgm(
     model,
     labelled_data_train,
@@ -104,16 +98,16 @@ train_dgm.run_train_dgm(
     labels_test,
     unlabelled_data_test,
     optimizer,
-    default_config.epochs,
-    default_config.label_features,
-    default_config.run_name,
+    config.epochs,
+    config.label_features,
+    config.run_name,
     checkpoint=False,
     with_clip=False
 )
 
-# generate
+logging.info("Create dances")
 artifact_maker = generate.Artifact(model)
-for label in range(1, default_config.label_features + 1):
+for label in range(1, config.label_features + 1):
     artifact_maker.generatecond(y_given=label)
 
 wandb.finish()
