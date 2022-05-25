@@ -10,8 +10,8 @@ import torch
 import wandb
 
 DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
+# if torch.cuda.is_available():
+#     DEVICE = torch.device("cuda")
 
 
 def get_loss(model, x, x_recon, z, z_mean, z_logvar):

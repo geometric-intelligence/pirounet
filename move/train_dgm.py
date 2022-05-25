@@ -21,8 +21,8 @@ from torch.autograd import Variable
 
 CUDA_VISIBLE_DEVICES = 0, 1
 DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
+# if torch.cuda.is_available():
+#     DEVICE = torch.device("cuda")
 
 
 def binary_cross_entropy(r, x):
@@ -42,9 +42,7 @@ def run_train_dgm(
     labels_test,
     unlabelled_data_test,
     optimizer,
-    epochs,
-    label_dim,
-    run_name,
+    config,
     checkpoint=False,
     with_clip=True,
 ):
@@ -61,13 +59,13 @@ def run_train_dgm(
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
     seq_ct = 0
-    onehot_encoder = utils.make_onehot_encoder(label_dim)
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
 
     now = time.strftime("%Y%m%d_%H%M%S")
     directory = "GeeksForGeeks"
 
     # Path for saving artifacts
-    path = os.path.join(os.path.abspath(os.getcwd()), run_name)
+    path = os.path.join(os.path.abspath(os.getcwd()), config.run_name)
 
     if checkpoint:
         old_checkpoint_filepath = os.path.join(
@@ -83,7 +81,7 @@ def run_train_dgm(
         latest_epoch = 0
 
     # torch.autograd.set_detect_anomaly(True)
-    for epoch in range(epochs - latest_epoch):
+    for epoch in range(config.epochs - latest_epoch):
 
         # Train
         model.train()
@@ -91,6 +89,7 @@ def run_train_dgm(
         labloss, unlabloss, class_loss = (0, 0, 0)
 
         batches_seen = 0
+        n_batches = len(unlabelled_data_train)
 
         for i_batch, (x, y, u) in enumerate(
             zip(
@@ -100,6 +99,9 @@ def run_train_dgm(
             )
         ):
 
+            if i_batch > 52:  # DEBUG
+                break
+
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(DEVICE), y.to(DEVICE)
@@ -107,10 +109,10 @@ def run_train_dgm(
 
             batches_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, label_dim))
+            batch_one_hot = torch.zeros((1, 1, config.label_dim))
             for y_i in y:
                 y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, label_dim))
+                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
 
             batch_one_hot = batch_one_hot[1:, :, :]
@@ -119,6 +121,9 @@ def run_train_dgm(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
+            print("shape problems?")
+            print(x.shape)
+            print(y.shape)
             L = -elbo(x, y)  # check that averaged on minibatch
             labloss += L
             U = -elbo(u)
@@ -158,7 +163,7 @@ def run_train_dgm(
 
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
+                    f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
                 )
 
             # if i_batch % 5 == 0 and i_batch != 0 :
@@ -200,10 +205,10 @@ def run_train_dgm(
 
             batches_v_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, label_dim))
+            batch_one_hot = torch.zeros((1, 1, config.label_dim))
             for y_i in y:
                 y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, label_dim))
+                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
             batch_one_hot = batch_one_hot[1:, :, :]
             y = batch_one_hot.to(DEVICE)
@@ -232,7 +237,7 @@ def run_train_dgm(
 
             if i_batch % 5 == 0 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch}/total at VALID loss \
+                    f"Batch {i_batch}/{total_v_batches} at VALID loss \
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                 )
                 logging.info(f"Artifacts for epoch {epoch}")
@@ -264,7 +269,7 @@ def run_train_dgm(
         )
         # wandb.log({"epoch": epoch, "valid_recon_loss": recon_loss_valid / (batches_v_seen/5)}, step=epoch)
 
-        for label in range(default_config.label_dim):
+        for label in range(config.label_dim):
             generate_f.generate_and_save(
                 model=model, epoch=epoch, y_given=label, config=config
             )
@@ -272,7 +277,7 @@ def run_train_dgm(
         logging.info("Save a checkpoint.")
         checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()),
-            "saved/checkpoint_{}_epoch{}.pt".format(default_config.run_name, epoch),
+            "saved/checkpoint_{}_epoch{}.pt".format(config.run_name, epoch),
         )
         torch.save(
             {

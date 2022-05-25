@@ -19,8 +19,8 @@ from mpl_toolkits.mplot3d.art3d import juggle_axes
 from torch.autograd import Variable
 
 DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
+# if torch.cuda.is_available():
+#     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
 point_labels = [

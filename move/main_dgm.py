@@ -27,8 +27,8 @@ logging.info(f"Using PyTorch version: {torch. __version__}")
 warnings.filterwarnings("ignore")
 
 DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
+# if torch.cuda.is_available():
+#     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
 # The config put in wandb.init is treated as default:
@@ -40,6 +40,7 @@ wandb.init(
     project="move_labelled",
     entity="bioshape-lab",
     config={
+        "run_name": default_config.run_name,
         "epochs": default_config.epochs,
         "learning_rate": default_config.learning_rate,
         "batch_size": default_config.batch_size,
@@ -106,9 +107,7 @@ train_dgm.run_train_dgm(
     labels_test,
     unlabelled_data_test,
     optimizer,
-    config.epochs,
-    config.label_dim,
-    config.run_name,
+    config=config,
     checkpoint=False,
     with_clip=False,
 )

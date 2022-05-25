@@ -24,8 +24,8 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
+# if torch.cuda.is_available():
+#     DEVICE = torch.device("cuda")
 logging.info(f"Using device {DEVICE}")
 
 
@@ -61,10 +61,7 @@ class LstmEncoder(torch.nn.Module):
         )
 
         self.lstm2 = torch.nn.LSTM(
-            input_size=h_dim,
-            hidden_size=h_dim,
-            batch_first=True,
-            num_layers=1,  # n_layers - 1
+            input_size=h_dim, hidden_size=h_dim, batch_first=True, num_layers=n_layers
         )
 
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
@@ -90,6 +87,7 @@ class LstmEncoder(torch.nn.Module):
 
     def forward(self, inputs):
         """Perform forward pass of the encoder.
+
         Parameters
         ----------
         inputs : array-like
@@ -105,16 +103,25 @@ class LstmEncoder(torch.nn.Module):
         batch_size, seq_len, _ = inputs.shape
 
         h1, (h1_last_t, c1_last_t) = self.lstm1(inputs)
+        print("helloooooo")
+        print(h1_last_t.shape)
+        print(c1_last_t.shape)
+        h1_last_t = h1_last_t.repeat((1, self.n_layers, 1))
+        c1_last_t = c1_last_t.repeat((1, self.n_layers, 1))
 
         h, (h_last_t, c_last_t) = self.lstm2(h1, (h1_last_t, c1_last_t))
+        print("test")
         assert h.shape == (batch_size, seq_len, self.h_dim)
         assert h_last_t.shape == (1, batch_size, self.h_dim)
+        assert c_last_t.shape == (1, batch_size, self.h_dim)
+        print("HE::P")
+        print(h_last_t.shape)
 
-        h1_last_t = h_last_t.squeeze(axis=0)
-        assert h1_last_t.shape == (batch_size, self.h_dim)
+        h_last_t = h_last_t.squeeze(axis=0)
+        assert h_last_t.shape == (batch_size, self.h_dim)
 
-        z_mean = self.mean_block(h1_last_t)
-        z_logvar = self.logvar_block(h1_last_t)
+        z_mean = self.mean_block(h_last_t)
+        z_logvar = self.logvar_block(h_last_t)
         z_sample = self.reparametrize(z_mean, z_logvar)
 
         return z_sample, z_mean, z_logvar

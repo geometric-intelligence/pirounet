@@ -25,7 +25,7 @@ run_name = "3e-4"
 # Training
 epochs = 400
 learning_rate = 3e-4  # 6e-6
-batch_size = 80
+batch_size = 2  # 80
 
 # Input data
 seq_len = 40
@@ -37,10 +37,10 @@ amount_of_labels = 1
 kl_weight = 0
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
-h_dim = 384
-latent_dim = 256
+h_dim = 8  # 384
+latent_dim = 8  # 256
 
 # Classifier
-h_dim_classif = 384
+h_dim_classif = 8  # 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
-n_layers_classif = 2
+n_layers_classif = 1  # 2

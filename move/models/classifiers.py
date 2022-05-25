@@ -9,11 +9,11 @@ class LinearClassifier(nn.Module):
     def __init__(
         self,
         input_dim,
-        h_dim_classif,
+        h_dim,
         label_dim,
         seq_len,
-        neg_slope_classif,
-        n_layers_classif,
+        neg_slope,
+        n_layers,
     ):
         """
         Multi hidden layer classifier
@@ -22,16 +22,16 @@ class LinearClassifier(nn.Module):
         activated.
         """
         super(LinearClassifier, self).__init__()
-        self.dense = nn.Linear(seq_len * input_dim, h_dim_classif)
+        self.dense = nn.Linear(seq_len * input_dim, h_dim)
 
-        self.n_layers_classif = n_layers_classif
-        self.neg_slope_classif = neg_slope_classif
+        self.n_layers = n_layers
+        self.neg_slope = neg_slope
 
         self.layers = nn.ModuleList()
-        for i in range(int(n_layers_classif)):
-            self.layers.append(nn.Linear(h_dim_classif, h_dim_classif))
+        for i in range(int(n_layers)):
+            self.layers.append(nn.Linear(h_dim, h_dim))
 
-        self.layers.append(nn.Linear(h_dim_classif, label_dim))
+        self.layers.append(nn.Linear(h_dim, label_dim))
 
     def forward(self, x):
         """Perform forward pass of the linear classifier."""
@@ -40,9 +40,9 @@ class LinearClassifier(nn.Module):
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
 
-        if self.neg_slope_classif is not None and not 0:
+        if self.neg_slope is not None and not 0:
             for layer in self.layers[:-1]:
-                x = F.leaky_relu(layer(x), negative_slope=self.neg_slope_classif)
+                x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
 
         else:
             for layer in self.layers[:-1]:

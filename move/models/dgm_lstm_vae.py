@@ -1,8 +1,10 @@
 """Architectures of DGM LSTM VAE."""
 
 import torch.nn
+import torch.nn.functional as F
 from models.classifiers import LinearClassifier
 from models.lstm_vae import LstmDecoder, LstmEncoder, LstmVAE
+from torch.autograd import Variable
 
 
 class DeepGenerativeModel(LstmVAE):
@@ -71,12 +73,12 @@ class DeepGenerativeModel(LstmVAE):
         )
 
         self.classifier = LinearClassifier(
-            input_dim,
-            h_dim_classif,
-            label_dim,
-            seq_len,
-            neg_slope_classif,
-            n_layers_classif,
+            input_dim=input_dim,
+            h_dim=h_dim_classif,
+            label_dim=label_dim,
+            seq_len=seq_len,
+            neg_slope=neg_slope_classif,
+            n_layers=n_layers_classif,
         )
 
         for m in self.modules():
