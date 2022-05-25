@@ -6,14 +6,14 @@ implementation-differences-in-lstm-layers-tensorflow
 -vs-pytorch-77a31d742f74
 """
 
+import csv
 import logging
 import os
-import csv
+from collections import OrderedDict
 
 import classifiers
 import default_config
 import numpy as np
-from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,12 +33,12 @@ class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
 
     def __init__(
-        self, 
-        n_layers, 
-        input_features, 
-        h_dim, 
-        latent_dim, 
-        label_features, 
+        self,
+        n_layers,
+        input_features,
+        h_dim,
+        latent_dim,
+        label_features,
         bias,
         batch_norm,
     ):
@@ -61,10 +61,10 @@ class LstmEncoder(torch.nn.Module):
         )
 
         self.lstm2 = torch.nn.LSTM(
-            input_size=h_dim, 
+            input_size=h_dim,
             hidden_size=h_dim,
             batch_first=True,
-            num_layers=1 #n_layers - 1
+            num_layers=1,  # n_layers - 1
         )
 
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
@@ -112,7 +112,7 @@ class LstmEncoder(torch.nn.Module):
 
         h1_last_t = h_last_t.squeeze(axis=0)
         assert h1_last_t.shape == (batch_size, self.h_dim)
-       
+
         z_mean = self.mean_block(h1_last_t)
         z_logvar = self.logvar_block(h1_last_t)
         z_sample = self.reparametrize(z_mean, z_logvar)
@@ -178,9 +178,9 @@ class LstmDecoder(torch.nn.Module):
             assert inputs.shape[-1] == self.latent_dim + self.label_features
         else:
             assert inputs.shape[-1] == self.latent_dim
-        
+
         logging.debug(f"- Decoder inputs are of shape {inputs.shape}")
-        logging.debug('SHAPE OF inputs')
+        logging.debug("SHAPE OF inputs")
         logging.debug(inputs.shape)
         h = self.linear(inputs)
         h = self.leakyrelu(h)
@@ -189,7 +189,7 @@ class LstmDecoder(torch.nn.Module):
         # assert h.shape == (self.batch_size, self.h_dim)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
 
-        #normalize h over the sequence
+        # normalize h over the sequence
         # h = F.normalize(h, dim=3)
 
         # norm_h = torch.norm(h, dim=(2,3))
@@ -199,10 +199,8 @@ class LstmDecoder(torch.nn.Module):
         # file.close()
 
         h = h.repeat(1, self.seq_len, 1)
-        
 
-
-        #assert h.shape == (batch_size, self.seq_len, self.h_dim)
+        # assert h.shape == (batch_size, self.seq_len, self.h_dim)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]
@@ -214,11 +212,11 @@ class LstmDecoder(torch.nn.Module):
         for i in range(self.n_layers - 1):
             logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm_loop(h)
-            #assert h.shape == (batch_size, self.seq_len, self.h_dim)
+            # assert h.shape == (batch_size, self.seq_len, self.h_dim)
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
         h, _ = self.lstm2(h)
-        #assert h.shape == (batch_size, self.seq_len, self.output_features)
+        # assert h.shape == (batch_size, self.seq_len, self.output_features)
         logging.debug(f"1st batch example, 1st 20t, 1st 2 joints: {h[0, :20, :6]}")
         logging.debug(f"1st batch example, last 20t, 1st 2 joints: {h[0, :-20, :6]}")
         return h
@@ -283,7 +281,7 @@ class LstmVAE(torch.nn.Module):
             latent_dim=latent_dim,
             label_features=label_features,
             bias=None,
-            batch_norm=None
+            batch_norm=None,
         )
         self.decoder = LstmDecoder(
             n_layers=n_layers,
@@ -370,7 +368,7 @@ class LstmVAE(torch.nn.Module):
 
         Runs a data point through the model in order
         to provide its reconstruction and q distribution
-        parameters. Records the reconstruction loss of 
+        parameters. Records the reconstruction loss of
         this point.
 
         Parameters
@@ -456,10 +454,10 @@ class DeepGenerativeModel(LstmVAE):
         label_features,
         batch_size,
         h_dim_classif,
-        neg_slope_classif, 
+        neg_slope_classif,
         n_layers_classif,
         bias,
-        batch_norm
+        batch_norm,
     ):
 
         """
@@ -494,7 +492,7 @@ class DeepGenerativeModel(LstmVAE):
             latent_dim=latent_dim,
             label_features=label_features,
             bias=bias,
-            batch_norm=batch_norm
+            batch_norm=batch_norm,
         )
 
         self.decoder = LstmDecoder(
@@ -508,7 +506,14 @@ class DeepGenerativeModel(LstmVAE):
             batch_size=batch_size,
         )
 
-        self.classifier = classifiers.LinearClassifier(input_features, h_dim_classif, label_features, seq_len, neg_slope_classif, n_layers_classif)
+        self.classifier = classifiers.LinearClassifier(
+            input_features,
+            h_dim_classif,
+            label_features,
+            seq_len,
+            neg_slope_classif,
+            n_layers_classif,
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -518,14 +523,14 @@ class DeepGenerativeModel(LstmVAE):
 
     def forward(self, x, y):
         """
-            Parameters
-            ---
-            x : array-like
-                input sequence 
-                Shape = [batchsize, seq_len, input_features]
-            y : array-like
-                input label 
-                Shape = [batchsize, 1,label_features]
+        Parameters
+        ---
+        x : array-like
+            input sequence
+            Shape = [batchsize, seq_len, input_features]
+        y : array-like
+            input label
+            Shape = [batchsize, 1,label_features]
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
@@ -566,13 +571,13 @@ class DeepGenerativeModel(LstmVAE):
 
         x = self.decoder(torch.cat([z, y], dim=1))
         return x
-    
+
     def get_recon_loss(self, x, y=None):
         """Perform forward pass of the VAE.
 
         Runs a data point through the model in order
         to provide its reconstruction and q distribution
-        parameters. Records the reconstruction loss of 
+        parameters. Records the reconstruction loss of
         this point.
 
         Parameters
@@ -603,7 +608,7 @@ class DeepGenerativeModel(LstmVAE):
 
         recon_loss = torch.mean(recon_loss)
 
-        return recon_loss    
+        return recon_loss
 
 
 class ImportanceWeightedSampler(object):
@@ -655,21 +660,21 @@ class SVI(nn.Module):
         batch_size, seq_len, _ = x.shape
         # print("CHECK FOR NAN IN X AND XRECON")
         # if torch.isnan(x).any():
-            # print('x has nan')
+        # print('x has nan')
         # if torch.isnan(x_recon).any():
-            # print('xrecon has nan')
+        # print('xrecon has nan')
         recon_loss = (x - x_recon) ** 2
         # if torch.isnan(recon_loss).any():
-            # print('recon loss ARGUMENT has nan')
+        # print('recon loss ARGUMENT has nan')
         # recon_loss = torch.sum(recon_loss, axis=2)
         recon_loss = torch.mean(recon_loss, axis=(1, 2))
         # if torch.isnan(recon_loss).any():
-            # print('recon loss summed over axis 2 has nan')
+        # print('recon loss summed over axis 2 has nan')
         # assert recon_loss.shape == (batch_size, seq_len)
 
         # recon_loss = torch.sum(recon_loss, axis=1)
         # if torch.isnan(recon_loss).any():
-            # print('recon loss summed over axis 1 has nan')
+        # print('recon loss summed over axis 1 has nan')
         assert recon_loss.shape == (batch_size,)
         return recon_loss
 
@@ -691,25 +696,25 @@ class SVI(nn.Module):
 
         # print('CHECKING IF SAMPLED X AND Y HAVE NANS')
         if torch.isnan(xs).any():
-            print('sampled xs has nan')
+            print("sampled xs has nan")
         if torch.isnan(ys).any():
-            print('sampled ys has nan')
+            print("sampled ys has nan")
         reconstruction = self.model(xs, ys)
         # print('CHECKING IF RECONSTRUCTION HAS NAN')
         if torch.isnan(reconstruction).any():
-            print('reconstruction has nan')
-        
+            print("reconstruction has nan")
+
         # p(x|y,z)
         likelihood = -likelihood_func(xs, reconstruction)
         # print('CHECKING IF LIKELIHOOD HAS NAN')
         if torch.isnan(likelihood).any():
-            print('likelihood has nan')
+            print("likelihood has nan")
 
         # p(y)
         prior = -torch.squeeze(log_standard_categorical(ys))
         # print('CHECKING IF PRIOR HAS NAN')
         if torch.isnan(prior).any():
-            print('prior has nan')
+            print("prior has nan")
 
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence

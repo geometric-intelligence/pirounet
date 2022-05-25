@@ -1,4 +1,7 @@
 wandb/
+move/data/*
+move/logs/*
+
 _Store
 .DS_Store
 .vscode/*
