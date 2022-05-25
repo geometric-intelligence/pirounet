@@ -6,31 +6,44 @@ import numpy as np
 import default_config
 
 class LinearClassifier(nn.Module):
-    def __init__(self, input_features, h_features_loop, label_features, seq_len, class_neg_slope, class_loops):
+    def __init__(self, input_features, h_dim_classif, label_features, seq_len, neg_slope_classif, n_layers_classif):
         """
-        Single hidden layer classifier
+        Multi hidden layer classifier
         with softmax output.
+        Can be ReLu or LeakyRelu
+        activated.
         """
         super(LinearClassifier, self).__init__()
-        self.dense = nn.Linear(seq_len*input_features, h_features_loop)
-        self.looplayer1 = nn.Linear(h_features_loop, h_features_loop)
-        self.looplayer2 = nn.Linear(h_features_loop, h_features_loop)
-        self.logits = nn.Linear(h_features_loop, label_features)
-        self.class_loops = class_loops
-        self.class_neg_slope = class_neg_slope
+        self.dense = nn.Linear(seq_len*input_features, h_dim_classif)
 
+        self.n_layers_classif = n_layers_classif
+        self.neg_slope_classif = neg_slope_classif
+
+        self.layers = nn.ModuleList()
+        for i in range(int(n_layers_classif)):
+            self.layers.append(nn.Linear(h_dim_classif, h_dim_classif))
+
+        self.layers.append(nn.Linear(h_dim_classif, label_features))
 
     def forward(self, x):
+        """Perform forward pass of the linear classifier."""
+
+ 
         batch_size = x.shape[0]
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
-        # for i in range(self.class_loops):
-        x = F.leaky_relu(self.looplayer1(x), negative_slope=self.class_neg_slope)
-        x = F.leaky_relu(self.looplayer2(x), negative_slope=self.class_neg_slope)
-        
-        x = F.softmax(self.logits(x), dim=-1)
 
-        return x
+        if self.neg_slope_classif is not None and not 0:
+            for layer in self.layers[:-1]:
+                x = F.leaky_relu(layer(x), negative_slope=self.neg_slope_classif)
+        
+        else:
+            for layer in self.layers[:-1]:
+                x = F.relu(layer(x))
+
+        logits = F.softmax(self.layers[-1](x))
+        return logits 
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model=default_config.input_features, dropout=0.1, max_len=5000):

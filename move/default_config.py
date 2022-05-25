@@ -20,19 +20,20 @@ We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
 which_device = "0"
-run_name = "diff_layers_class"
+run_name = "3e-4"
 label_features = 4
 amount_of_labels = 1
 
-batch_size = 20
-learning_rate = 3e-6 #6e-6
+batch_size = 80
+learning_rate = 3e-4 #6e-6
 epochs = 400 
 seq_len = 40
 negative_slope = 0  # 0.1,0.5 LeakyRelu
-kl_weight = 1
-n_layers = 4 #,5,6
-h_features_loop = 384
+kl_weight = 0
+n_layers = 5 #,5,6
+h_dim = 384
 latent_dim = 256
 input_features = 159
-class_neg_slope = 0.1 # 0.05
-class_loops = 2
+h_dim_classif = 384
+neg_slope_classif = 0 #0.5 #0.1 # 0.05
+n_layers_classif = 2

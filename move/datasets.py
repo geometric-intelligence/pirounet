@@ -327,9 +327,9 @@ def get_dgm_data(config, augmentation_factor=1):
     five_perc_lab = int(one_perc_lab * 5)
     # ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
 
-    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab * 2), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab * 2) : ((five_perc_lab * 18) + (one_perc_lab * 8)), :, :]
-    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 18) + (one_perc_lab * 8)) :, :, :]
+    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
     # labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
     # labelled_data_valid_ds = seq_data_lab[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :]

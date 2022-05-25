@@ -46,11 +46,12 @@ wandb.init(
         "kl_weight": default_config.kl_weight,
         "negative_slope": default_config.negative_slope,
         "n_layers": default_config.n_layers,
-        "h_features_loop": default_config.h_features_loop,
+        "h_dim": default_config.h_dim,
         "latent_dim": default_config.latent_dim,
         "label_features": default_config.label_features,
-        "class_neg_slope": default_config.class_neg_slope,
-        "class_loops": default_config.class_loops
+        "neg_slope_classif": default_config.neg_slope_classif,
+        "n_layers_classif": default_config.n_layers_classif,
+        "h_dim_classif": default_config.h_dim_classif
     },
 )
 
@@ -71,21 +72,23 @@ logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
     n_layers=default_config.n_layers,
     input_features=default_config.input_features,
-    h_features_loop=default_config.h_features_loop,
+    h_dim=default_config.h_dim,
     latent_dim=default_config.latent_dim,
     output_features=3 * 53,
     seq_len=default_config.seq_len,
     negative_slope=default_config.negative_slope,
     label_features=default_config.label_features,
     batch_size=default_config.batch_size,
-    class_neg_slope=default_config.class_neg_slope,
-    class_loops=default_config.class_loops
+    h_dim_classif=default_config.h_dim_classif,
+    neg_slope_classif=default_config.neg_slope_classif,
+    n_layers_classif=default_config.n_layers_classif,
+    bias=None,
+    batch_norm=True
 ).to(DEVICE)
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
     datasets.get_dgm_data(default_config)
-
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4, betas=(0.9, 0.999))
