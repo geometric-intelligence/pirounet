@@ -13,6 +13,7 @@ import csv
 import classifiers
 import default_config
 import numpy as np
+from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,12 +33,19 @@ class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
 
     def __init__(
-        self, n_layers, input_features, h_features_loop, latent_dim, label_features=None
+        self, 
+        n_layers, 
+        input_features, 
+        h_dim, 
+        latent_dim, 
+        label_features, 
+        bias,
+        batch_norm,
     ):
         super().__init__()
         self.n_layers = n_layers
         self.input_features = input_features
-        self.h_features_loop = h_features_loop
+        self.h_dim = h_dim
         self.latent_dim = latent_dim
         self.label_features = label_features
 
@@ -48,21 +56,24 @@ class LstmEncoder(torch.nn.Module):
 
         self.lstm1 = torch.nn.LSTM(
             input_size=total_input_features,
-            hidden_size=h_features_loop,
+            hidden_size=h_dim,
             batch_first=True,
         )
+
         self.lstm2 = torch.nn.LSTM(
-            input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
+            input_size=h_dim, 
+            hidden_size=h_dim,
+            batch_first=True,
+            num_layers=1 #n_layers - 1
         )
-        self.mean_block = torch.nn.Linear(h_features_loop, latent_dim)
-        self.logvar_block = torch.nn.Linear(h_features_loop, latent_dim)
+
+        self.mean_block = torch.nn.Linear(h_dim, latent_dim)
+        self.logvar_block = torch.nn.Linear(h_dim, latent_dim)
 
     def reparametrize(self, z_mean, z_logvar):
         """Sample from a multivariate Gaussian.
-
         The multivariate Gaussian samples in the vector
         space of dimension latent_dim.
-
         Parameters
         ----------
         z_mean : array-like, shape=[batch_size, latent_dim]
@@ -79,7 +90,6 @@ class LstmEncoder(torch.nn.Module):
 
     def forward(self, inputs):
         """Perform forward pass of the encoder.
-
         Parameters
         ----------
         inputs : array-like
@@ -94,50 +104,19 @@ class LstmEncoder(torch.nn.Module):
 
         batch_size, seq_len, _ = inputs.shape
 
-        logging.debug(f"- Encoder inputs of shape {inputs.shape}")
+        h1, (h1_last_t, c1_last_t) = self.lstm1(inputs)
 
-        h, (h_last_t, c_last_t) = self.lstm1(inputs)
-        logging.debug(
-            f"LSTM1 gives h of shape {h.shape} & h_last_t of shape {h_last_t.shape} "
-        )
-        if torch.isnan(h).any():
-            print('h from lstm1 has nan')        
-        if torch.isnan(h_last_t).any():
-            print('h_last_t from lstm1 has nan')    
-        if torch.isnan(c_last_t).any():
-            print('c_last_t from lstm1 has nan')    
+        h, (h_last_t, c_last_t) = self.lstm2(h1, (h1_last_t, c1_last_t))
+        assert h.shape == (batch_size, seq_len, self.h_dim)
+        assert h_last_t.shape == (1, batch_size, self.h_dim)
 
-        for i in range(self.n_layers - 1):
-            logging.debug(f"LSTM2 loop iteration {i}/{self.n_layers-1}.")
-            h, (h_last_t, c_last_t) = self.lstm2(h, (h_last_t, c_last_t))
-            assert h.shape == (batch_size, seq_len, self.h_features_loop)
-            assert h_last_t.shape == (1, batch_size, self.h_features_loop)
-            if torch.isnan(h).any():
-                print('h from lstm 1 '+ str(self.n_layers) + ' has nan')        
-            if torch.isnan(h_last_t).any():
-                print('h_last_t from lstm 1 '+ str(self.n_layers) + ' has nan')        
-            if torch.isnan(c_last_t).any():
-                print('hclast_t from lstm 1 '+ str(self.n_layers) + ' has nan')        
-
-        logging.debug("Computing encoder output.")
         h1_last_t = h_last_t.squeeze(axis=0)
-        assert h1_last_t.shape == (batch_size, self.h_features_loop)
-        if torch.isnan(h1_last_t).any():
-            print('h1_last_t (after squeezing h_last_t) has nan') 
-        
+        assert h1_last_t.shape == (batch_size, self.h_dim)
+       
         z_mean = self.mean_block(h1_last_t)
-        if torch.isnan(z_mean).any():
-            print('z_mean has nan (SHOULD HAPPEN') 
-
         z_logvar = self.logvar_block(h1_last_t)
-        if torch.isnan(z_logvar).any():
-            print('z_logvar has nan (SHOULD HAPPEN') 
-
         z_sample = self.reparametrize(z_mean, z_logvar)
-        if torch.isnan(z_sample).any():
-            print('z_sample has nan (SHOULD HAPPEN') 
 
-        logging.debug("Encoder done.")
         return z_sample, z_mean, z_logvar
 
 
@@ -148,7 +127,7 @@ class LstmDecoder(torch.nn.Module):
         self,
         n_layers,
         output_features,
-        h_features_loop,
+        h_dim,
         latent_dim,
         seq_len,
         negative_slope,
@@ -158,7 +137,7 @@ class LstmDecoder(torch.nn.Module):
         super().__init__()
         self.n_layers = n_layers
         self.output_features = output_features
-        self.h_features_loop = h_features_loop
+        self.h_dim = h_dim
         self.latent_dim = latent_dim
         self.seq_len = seq_len
         self.label_features = label_features
@@ -167,20 +146,20 @@ class LstmDecoder(torch.nn.Module):
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=negative_slope)
 
         if label_features:
-            input_features_decoder = h_features_loop + label_features
+            input_features_decoder = h_dim + label_features
             total_latent_dim = latent_dim + label_features
         else:
-            input_features_decoder = h_features_loop
+            input_features_decoder = h_dim
             total_latent_dim = latent_dim
 
-        self.linear = torch.nn.Linear(total_latent_dim, h_features_loop)
+        self.linear = torch.nn.Linear(total_latent_dim, h_dim)
 
         self.lstm_loop = torch.nn.LSTM(
-            input_size=h_features_loop, hidden_size=h_features_loop, batch_first=True
+            input_size=h_dim, hidden_size=h_dim, batch_first=True
         )
 
         self.lstm2 = torch.nn.LSTM(
-            input_size=h_features_loop, hidden_size=output_features, batch_first=True
+            input_size=h_dim, hidden_size=output_features, batch_first=True
         )
 
     def forward(self, inputs):
@@ -207,7 +186,7 @@ class LstmDecoder(torch.nn.Module):
         h = self.leakyrelu(h)
         logging.debug("SHAPE OF h")
         logging.debug(h.shape)
-        # assert h.shape == (self.batch_size, self.h_features_loop)
+        # assert h.shape == (self.batch_size, self.h_dim)
         h = h.reshape((h.shape[0], 1, h.shape[-1]))
 
         #normalize h over the sequence
@@ -223,7 +202,7 @@ class LstmDecoder(torch.nn.Module):
         
 
 
-        #assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+        #assert h.shape == (batch_size, self.seq_len, self.h_dim)
 
         # input_zeros = torch.zeros_like(h)
         # h0 = h[:, 0, :]
@@ -235,7 +214,7 @@ class LstmDecoder(torch.nn.Module):
         for i in range(self.n_layers - 1):
             logging.debug(f"LSTM loop iteration {i}/{self.n_layers-1}.")
             h, (h_last_t, c_last_t) = self.lstm_loop(h)
-            #assert h.shape == (batch_size, self.seq_len, self.h_features_loop)
+            #assert h.shape == (batch_size, self.seq_len, self.h_dim)
             logging.debug(f"First batch example, first 20t: {h[0, :20, :4]}")
 
         h, _ = self.lstm2(h)
@@ -283,7 +262,7 @@ class LstmVAE(torch.nn.Module):
         self,
         n_layers=2,
         input_features=3 * 53,
-        h_features_loop=32,
+        h_dim=32,
         latent_dim=32,
         kl_weight=0,
         output_features=3 * 53,
@@ -300,19 +279,21 @@ class LstmVAE(torch.nn.Module):
         self.encoder = LstmEncoder(
             n_layers=n_layers,
             input_features=input_features,
-            h_features_loop=h_features_loop,
+            h_dim=h_dim,
             latent_dim=latent_dim,
             label_features=label_features,
+            bias=None,
+            batch_norm=None
         )
         self.decoder = LstmDecoder(
             n_layers=n_layers,
             output_features=output_features,
-            h_features_loop=h_features_loop,
+            h_dim=h_dim,
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
             label_features=label_features,
-            batch_size=batch_size
+            batch_size=batch_size,
         )
         self.kl_divergence = 0
         self.kl_weight = kl_weight
@@ -467,15 +448,18 @@ class DeepGenerativeModel(LstmVAE):
         self,
         n_layers,
         input_features,
-        h_features_loop,
+        h_dim,
         latent_dim,
         output_features,
         seq_len,
         negative_slope,
         label_features,
         batch_size,
-        class_neg_slope, 
-        class_loops
+        h_dim_classif,
+        neg_slope_classif, 
+        n_layers_classif,
+        bias,
+        batch_norm
     ):
 
         """
@@ -491,7 +475,7 @@ class DeepGenerativeModel(LstmVAE):
         ----------
         n_layers :
         input_features :
-        h_features_loop :
+        h_dim :
         latent_dim :
         output_features :
         seq_len :
@@ -506,24 +490,25 @@ class DeepGenerativeModel(LstmVAE):
         self.encoder = LstmEncoder(
             n_layers=n_layers,
             input_features=input_features,
-            h_features_loop=h_features_loop,
+            h_dim=h_dim,
             latent_dim=latent_dim,
             label_features=label_features,
+            bias=bias,
+            batch_norm=batch_norm
         )
 
         self.decoder = LstmDecoder(
             n_layers=n_layers,
             output_features=output_features,
-            h_features_loop=h_features_loop,
+            h_dim=h_dim,
             latent_dim=latent_dim,
             seq_len=seq_len,
             negative_slope=negative_slope,
             label_features=label_features,
-            batch_size=batch_size
+            batch_size=batch_size,
         )
 
-        self.classifier = classifiers.LinearClassifier(input_features, h_features_loop, label_features, seq_len, class_neg_slope, class_loops)
-        #self.classifier = classifiers.TransformerClassifier(input_features, label_features)
+        self.classifier = classifiers.LinearClassifier(input_features, h_dim_classif, label_features, seq_len, neg_slope_classif, n_layers_classif)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -532,51 +517,41 @@ class DeepGenerativeModel(LstmVAE):
                     m.bias.data.zero_()
 
     def forward(self, x, y):
-        # Add label and data and generate latent variable
         """
             Parameters
             ---
-            x : input sequence with shape [batchsize, seq_len, 3*keypoints]
-            y : input label with shape [batchsize, 1,label_features]
+            x : array-like
+                input sequence 
+                Shape = [batchsize, seq_len, input_features]
+            y : array-like
+                input label 
+                Shape = [batchsize, 1,label_features]
         """
-        logging.debug('shape of before anything')
-        logging.debug(x.shape)
+
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        if torch.isnan(y_for_encoder).any():
-            print('y_for_encoder has nan')
-
-        logging.debug('what we send to encoder')
-        logging.debug(torch.cat([x, y_for_encoder], dim=2).shape)
-
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
-        if torch.isnan(z).any():
-            print('encoded z has nan')
-        if torch.isnan(z_mu).any():
-            print('encoded z_mu has nan')
-        if torch.isnan(z_log_var).any():
-            print('encoded z_log_var has nan')
-
-        logging.debug('encoded z')
-        logging.debug(z.shape)
 
         self.kl_divergence = self._kld(z, (z_mu, z_log_var))
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
-        if torch.isnan(y_for_decoder).any():
-            print('y_for_decoder has nan')
-
-        logging.debug('what we send to decoder')
-        logging.debug(torch.cat([z, y_for_decoder], dim=1).shape)
-
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
-        if torch.isnan(x_mu).any():
-            print('decoded x_mu has nan (SHOULD HAPPEN)')
 
-        logging.debug('x recon')
-        logging.debug(x_mu.shape)
         return x_mu
 
     def classify(self, x):
+        """
+        Classifies input x into logits.
+
+        Parameters
+        ----------
+        x : array-like
+            Shape=[batch_size, seq_len, input_features]
+
+        Returns
+        -------
+        logits : array-like
+                 Shape=[batch_size, label_features]
+        """
         logits = self.classifier(x)
         return logits
 
@@ -606,7 +581,9 @@ class DeepGenerativeModel(LstmVAE):
             Input data.
             Shape=[batch_size, seq_len, input_features].
 
-        y : one hot encoder for Laban effort.
+        y : array-like
+            one hot encoder.
+            Shape=[batch_size, label_features].
 
         Returns
         -------
@@ -677,21 +654,22 @@ class SVI(nn.Module):
         assert x.ndim == x_recon.ndim == 3
         batch_size, seq_len, _ = x.shape
         # print("CHECK FOR NAN IN X AND XRECON")
-        if torch.isnan(x).any():
-            print('x has nan')
-        if torch.isnan(x_recon).any():
-            print('xrecon has nan')
+        # if torch.isnan(x).any():
+            # print('x has nan')
+        # if torch.isnan(x_recon).any():
+            # print('xrecon has nan')
         recon_loss = (x - x_recon) ** 2
-        if torch.isnan(recon_loss).any():
-            print('recon loss ARGUMENT has nan')
-        recon_loss = torch.sum(recon_loss, axis=2)
-        if torch.isnan(recon_loss).any():
-            print('recon loss summed over axis 2 has nan')
-        assert recon_loss.shape == (batch_size, seq_len)
+        # if torch.isnan(recon_loss).any():
+            # print('recon loss ARGUMENT has nan')
+        # recon_loss = torch.sum(recon_loss, axis=2)
+        recon_loss = torch.mean(recon_loss, axis=(1, 2))
+        # if torch.isnan(recon_loss).any():
+            # print('recon loss summed over axis 2 has nan')
+        # assert recon_loss.shape == (batch_size, seq_len)
 
-        recon_loss = torch.sum(recon_loss, axis=1)
-        if torch.isnan(recon_loss).any():
-            print('recon loss summed over axis 1 has nan')
+        # recon_loss = torch.sum(recon_loss, axis=1)
+        # if torch.isnan(recon_loss).any():
+            # print('recon loss summed over axis 1 has nan')
         assert recon_loss.shape == (batch_size,)
         return recon_loss
 
@@ -720,7 +698,7 @@ class SVI(nn.Module):
         # print('CHECKING IF RECONSTRUCTION HAS NAN')
         if torch.isnan(reconstruction).any():
             print('reconstruction has nan')
-
+        
         # p(x|y,z)
         likelihood = -likelihood_func(xs, reconstruction)
         # print('CHECKING IF LIKELIHOOD HAS NAN')
@@ -751,6 +729,7 @@ class SVI(nn.Module):
 
         # Equivalent to -U(x)
         U = L + H
+
         return torch.mean(U)
 
 
