@@ -19,11 +19,9 @@ import nn
 import torch
 import train
 import train_dgm
-
 import wandb
 
-logging.info('TORCH')
-logging.info(torch. __version__)
+logging.info(f"Using PyTorch version: {torch. __version__}")
 
 # Can be replaced by logging.DEBUG or logging.WARNING
 warnings.filterwarnings("ignore")
@@ -54,11 +52,11 @@ wandb.init(
         "label_features": default_config.label_features,
         "neg_slope_classif": default_config.neg_slope_classif,
         "n_layers_classif": default_config.n_layers_classif,
-        "h_dim_classif": default_config.h_dim_classif
+        "h_dim_classif": default_config.h_dim_classif,
     },
 )
 config = wandb.config
-logging.info("Config: {config}")  
+logging.info("Config: {config}")
 
 logging.info("Initialize model")
 model = nn.DeepGenerativeModel(
@@ -75,16 +73,25 @@ model = nn.DeepGenerativeModel(
     neg_slope_classif=config.neg_slope_classif,
     n_layers_classif=config.n_layers_classif,
     bias=None,
-    batch_norm=True
+    batch_norm=True,
 ).to(DEVICE)
 
 logging.info("Get data")
-labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
-    labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(config)
+(
+    labelled_data_train,
+    labels_train,
+    unlabelled_data_train,
+    labelled_data_valid,
+    labels_valid,
+    labelled_data_test,
+    labels_test,
+    unlabelled_data_test,
+) = datasets.get_dgm_data(config)
 
 wandb.watch(model, train.get_loss, log="all", log_freq=100)
-optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999))
+optimizer = torch.optim.Adam(
+    model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
+)
 
 logging.info("Train")
 train_dgm.run_train_dgm(
@@ -102,7 +109,7 @@ train_dgm.run_train_dgm(
     config.label_features,
     config.run_name,
     checkpoint=False,
-    with_clip=False
+    with_clip=False,
 )
 
 logging.info("Create dances")
