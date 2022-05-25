@@ -59,14 +59,7 @@ def run_train_dgm(
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
-    seq_ct = 0
     onehot_encoder = utils.make_onehot_encoder(label_features)
-
-    now = time.strftime("%Y%m%d_%H%M%S")
-    directory = "GeeksForGeeks"
-    
-    # Path for saving artifacts
-    path = os.path.join(os.path.abspath(os.getcwd()), run_name)
     
     if checkpoint:
         old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), 
