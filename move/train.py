@@ -86,9 +86,6 @@ def run_train_dgm(
             )
         ):
 
-            if i_batch > 52:  # Only here for DEBUG
-                break
-
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
             x, y = x.to(config.device), y.to(config.device)
