@@ -25,6 +25,15 @@ DEVICE = torch.device("cpu")
 #     DEVICE = torch.device("cuda")
 
 
+def get_loss(model, x, x_recon, z, z_mean, z_logvar):
+    """Return loss as ELBO averaged on the minibatch.
+    This gives a loss averaged on all sequences of the minibatch,
+    i.e. a loss per sequence.
+    """
+    loss = torch.mean(model.elbo(x, x_recon, z, (z_mean, z_logvar)))
+    return loss
+
+
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
 
@@ -43,8 +52,6 @@ def run_train_dgm(
     unlabelled_data_test,
     optimizer,
     config,
-    load_from_checkpoint=None,
-    with_clip=False,
 ):
     """Run training and track it with wandb.
 
@@ -58,11 +65,11 @@ def run_train_dgm(
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
-    onehot_encoder = utils.make_onehot_encoder(label_features)
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
 
-    if load_from_checkpoint is not None:
+    if config.load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()), load_from_checkpoint
+            os.path.abspath(os.getcwd()), config.load_from_checkpoint
         )
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -113,9 +120,6 @@ def run_train_dgm(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
-            print("shape problems?")
-            print(x.shape)
-            print(y.shape)
             L = -elbo(x, y)  # check that averaged on minibatch
             labloss += L
             U = -elbo(u)
@@ -133,7 +137,7 @@ def run_train_dgm(
             J_alpha.backward()
 
             # gradient clipping
-            if with_clip:
+            if config.with_clip:
                 torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
 
             optimizer.step()

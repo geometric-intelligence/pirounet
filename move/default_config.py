@@ -30,6 +30,7 @@ amount_of_labels = 1
 epochs = 400
 learning_rate = 3e-4  # 6e-6
 batch_size = 2  # 80
+with_clip = False
 
 # Input data
 seq_len = 40

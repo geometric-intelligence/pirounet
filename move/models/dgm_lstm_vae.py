@@ -1,5 +1,6 @@
 """Architectures of DGM LSTM VAE."""
 
+import models.utils as utils
 import torch.nn
 import torch.nn.functional as F
 from models.classifiers import LinearClassifier

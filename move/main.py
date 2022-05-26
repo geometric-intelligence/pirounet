@@ -40,10 +40,12 @@ wandb.init(
     entity="bioshape-lab",
     config={
         "run_name": default_config.run_name,
+        "load_from_checkpoint": default_config.load_from_checkpoint,
         "epochs": default_config.epochs,
         "learning_rate": default_config.learning_rate,
         "batch_size": default_config.batch_size,
         "seq_len": default_config.seq_len,
+        "with_clip": default_config.with_clip,
         "input_dim": default_config.input_dim,
         "kl_weight": default_config.kl_weight,
         "neg_slope": default_config.neg_slope,
@@ -92,13 +94,13 @@ logging.info("Get data")
     unlabelled_data_test,
 ) = datasets.get_dgm_data(config)
 
-wandb.watch(model, train.get_loss, log="all", log_freq=100)
+# wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
 )
 
 logging.info("Train")
-train_dgm.run_train_dgm(
+train.run_train_dgm(
     model,
     labelled_data_train,
     labels_train,
@@ -110,9 +112,6 @@ train_dgm.run_train_dgm(
     unlabelled_data_test,
     optimizer,
     config=config,
-    load_from_checkpoint=default_config.load_from_checkpoint,
-    checkpoint=False,
-    with_clip=False,
 )
 
 # generate
