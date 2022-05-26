@@ -88,6 +88,7 @@ class Encoder(nn.Module):
         x = self.skelEmbedding(x)
 
         # adding the mu and sigma queries
+        # muQuery[y][None] == muquery[y, :] (with a different unsqueezed shape)
         xseq = torch.cat((self.muQuery[y][None], self.sigmaQuery[y][None], x), axis=0)
 
         # add positional encoding

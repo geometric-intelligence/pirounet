@@ -110,13 +110,12 @@ class ActorClassifier(torch.nn.Module):
         activation="gelu",
         **kargs
     ):
+        """This is Encoder_TRANSFORMER from Actor, turned into a classifier"""
         super().__init__()
         self.seq_len = seq_len
         self.label_dim = label_dim
         self.input_dim = input_dim
-
-        self.mu_query = nn.Parameter(torch.randn(self.label_dim, embed_dim))
-        self.sigma_query = nn.Parameter(torch.randn(self.label_dim, embed_dim))
+        self.embed_dim = embed_dim
 
         self.embedding = nn.Linear(self.input_dim, embed_dim)
         self.seq_positional_encoding = PositionalEncoding(embed_dim, dropout)
@@ -132,7 +131,7 @@ class ActorClassifier(torch.nn.Module):
             seq_transformer_encoder_layer, num_layers=n_layers
         )
 
-        self.logits = nn.Linear(embed_dim, label_dim)
+        self.dense = nn.Linear(embed_dim, label_dim)
 
     def forward(self, x):
         """Perform forward pass of the linear classifier.
@@ -141,34 +140,35 @@ class ActorClassifier(torch.nn.Module):
         ----------
         x : array-like, shape=[batch_size, seq_len, input_dim]
         """
-        _, seq_len, input_dim = x.shape
+        batch_size, seq_len, input_dim = x.shape
         assert seq_len == self.seq_len
         assert input_dim == self.input_dim
 
         # Transforming to shape seq_len, batch_size, input_dim
         # to match Actor's architecture
         x = x.permute((1, 0, 2))
-        seq_len, _, input_dim = x.shape
-        assert seq_len == self.seq_len
-        assert input_dim == self.input_dim
+        assert x.shape == (self.seq_len, batch_size, self.input_dim)
 
         # embedding of the skeleton
         x = self.embedding(x.float())
-
-        # adding the mu and sigma queries
-        # xseq = torch.cat((self.mu_query[y][None], self.sigma_query[y][None], x), axis=0)
+        assert x.shape == (self.seq_len, batch_size, self.embed_dim)
 
         # add positional encoding
         xseq = self.seq_positional_encoding(x)
 
         final = self.seq_transformer_encoder(xseq)
+        print(final.shape)
+        assert final.shape == (seq_len, batch_size, self.embed_dim)
         mu = final[0]
 
         # ignoring logvar: only here for compatibility with Actor
         logvar = final[1]
+        assert mu.shape == (batch_size, self.embed_dim)
+        assert logvar.shape == (batch_size, self.embed_dim)
 
-        y_pred = self.logits(mu)
+        y_pred = self.dense(mu)
+        assert y_pred.shape == (batch_size, self.label_dim)
 
-        y_pred = F.softmax(y_pred, dim=-1)
+        logits = F.softmax(y_pred, dim=-1)
 
-        return y_pred
+        return logits
