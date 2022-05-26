@@ -238,9 +238,9 @@ class SVI(torch.nn.Module):
         assert logits.shape == (batch_size, self.model.label_dim)
 
         L = L.reshape((batch_size, self.model.label_dim))
+
         # Calculate entropy H(q(y|x)) and sum over all labels
         # H(p) = - integral_x p(x) logp(x) dx
-
         H = torch.log(logits + 1e-8)
         assert L.shape == logits.shape
         assert H.shape == logits.shape
