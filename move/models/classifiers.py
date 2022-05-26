@@ -111,3 +111,116 @@ class TransformerClassifier(PositionalEncoding):
         if apply_softmax:
             y_pred = F.softmax(y_pred, dim=-1)
         return y_pred
+
+
+class ActorClassifier(torch.nn.Module):
+    def __init__(
+        self,
+        modeltype,
+        njoints,
+        nfeats,
+        num_frames,
+        num_classes,
+        translation,
+        pose_rep,
+        glob,
+        glob_rot,
+        latent_dim=256,
+        ff_size=1024,
+        num_layers=4,
+        num_heads=4,
+        dropout=0.1,
+        ablation=None,
+        activation="gelu",
+        **kargs
+    ):
+        super().__init__()
+
+        self.modeltype = modeltype
+        self.njoints = njoints
+        self.nfeats = nfeats
+        self.num_frames = num_frames
+        self.num_classes = num_classes
+
+        self.pose_rep = pose_rep
+        self.glob = glob
+        self.glob_rot = glob_rot
+        self.translation = translation
+
+        self.latent_dim = latent_dim
+
+        self.ff_size = ff_size
+        self.num_layers = num_layers
+        self.num_heads = num_heads
+        self.dropout = dropout
+
+        self.ablation = ablation
+        self.activation = activation
+
+        self.input_feats = self.njoints * self.nfeats
+
+        if self.ablation == "average_encoder":
+            self.mu_layer = nn.Linear(self.latent_dim, self.latent_dim)
+            self.sigma_layer = nn.Linear(self.latent_dim, self.latent_dim)
+        else:
+            self.muQuery = nn.Parameter(torch.randn(self.num_classes, self.latent_dim))
+            self.sigmaQuery = nn.Parameter(
+                torch.randn(self.num_classes, self.latent_dim)
+            )
+
+        self.skelEmbedding = nn.Linear(self.input_feats, self.latent_dim)
+
+        self.sequence_pos_encoder = PositionalEncoding(self.latent_dim, self.dropout)
+
+        # self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
+
+        seqTransEncoderLayer = nn.TransformerEncoderLayer(
+            d_model=self.latent_dim,
+            nhead=self.num_heads,
+            dim_feedforward=self.ff_size,
+            dropout=self.dropout,
+            activation=self.activation,
+        )
+        self.seqTransEncoder = nn.TransformerEncoder(
+            seqTransEncoderLayer, num_layers=self.num_layers
+        )
+
+    def forward(self, batch):
+        x, y, mask = batch["x"], batch["y"], batch["mask"]
+        bs, njoints, nfeats, nframes = x.shape
+        x = x.permute((3, 0, 1, 2)).reshape(nframes, bs, njoints * nfeats)
+
+        # embedding of the skeleton
+        x = self.skelEmbedding(x)
+
+        # only for ablation / not used in the final model
+        if self.ablation == "average_encoder":
+            # add positional encoding
+            x = self.sequence_pos_encoder(x)
+
+            # transformer layers
+            final = self.seqTransEncoder(x, src_key_padding_mask=~mask)
+            # get the average of the output
+            z = final.mean(axis=0)
+
+            # extract mu and logvar
+            mu = self.mu_layer(z)
+            logvar = self.sigma_layer(z)
+        else:
+            # adding the mu and sigma queries
+            xseq = torch.cat(
+                (self.muQuery[y][None], self.sigmaQuery[y][None], x), axis=0
+            )
+
+            # add positional encoding
+            xseq = self.sequence_pos_encoder(xseq)
+
+            # create a bigger mask, to allow attend to mu and sigma
+            muandsigmaMask = torch.ones((bs, 2), dtype=bool, device=x.device)
+            maskseq = torch.cat((muandsigmaMask, mask), axis=1)
+
+            final = self.seqTransEncoder(xseq, src_key_padding_mask=~maskseq)
+            mu = final[0]
+            logvar = final[1]
+
+        return {"mu": mu, "logvar": logvar}

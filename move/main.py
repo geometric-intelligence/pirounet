@@ -36,7 +36,7 @@ logging.info(f"Using device {DEVICE}")
 # After wandb is initialize, use wandb.config (and not default_config)
 # to get the config parameters of the run, potentially coming from a sweep.
 wandb.init(
-    project="move_labelled",
+    project="move_labelled_nina",
     entity="bioshape-lab",
     config={
         "run_name": default_config.run_name,
