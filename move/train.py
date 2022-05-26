@@ -20,9 +20,6 @@ import wandb
 from torch.autograd import Variable
 
 CUDA_VISIBLE_DEVICES = 0, 1
-DEVICE = torch.device("cpu")
-# if torch.cuda.is_available():
-#     DEVICE = torch.device("cuda")
 
 
 def get_loss(model, x, x_recon, z, z_mean, z_logvar):
@@ -98,13 +95,13 @@ def run_train_dgm(
             )
         ):
 
-            if i_batch > 52:  # DEBUG
+            if i_batch > 52:  # Only here for DEBUG
                 break
 
             # Wrap in variables
             x, y, u = Variable(x), Variable(y), Variable(u)
-            x, y = x.to(DEVICE), y.to(DEVICE)
-            u = u.to(DEVICE)
+            x, y = x.to(config.device), y.to(config.device)
+            u = u.to(config.device)
 
             batches_seen += 1
 
@@ -115,7 +112,7 @@ def run_train_dgm(
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
 
             batch_one_hot = batch_one_hot[1:, :, :]
-            y = batch_one_hot.to(DEVICE)
+            y = batch_one_hot.to(config.device)
 
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
@@ -199,7 +196,7 @@ def run_train_dgm(
         for i_batch, (x, y) in enumerate(zip(labelled_data_valid, labels_valid)):
 
             x, y = Variable(x), Variable(y)
-            x, y = x.to(DEVICE), y.to(DEVICE)
+            x, y = x.to(config.device), y.to(config.device)
 
             batches_v_seen += 1
 
@@ -209,7 +206,7 @@ def run_train_dgm(
                 y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
                 batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
             batch_one_hot = batch_one_hot[1:, :, :]
-            y = batch_one_hot.to(DEVICE)
+            y = batch_one_hot.to(config.device)
 
             L = -elbo(x, y)
             U = -elbo(x)

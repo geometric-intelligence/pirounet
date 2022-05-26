@@ -23,11 +23,6 @@ from torch.nn import init
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
-DEVICE = torch.device("cpu")
-# if torch.cuda.is_available():
-#     DEVICE = torch.device("cuda")
-logging.info(f"Using device {DEVICE}")
-
 
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""
@@ -196,7 +191,7 @@ class RotationLayer(torch.nn.Module):
         s_theta = torch.sin(theta)
         self.rotation_mat = torch.tensor(
             [[c_theta, -s_theta, 0], [s_theta, c_theta, 0], [0, 0, 1]]
-        ).to(DEVICE)
+        )
 
     def forward(self, x):
         """Rotate a minibatch of sequences of skeletons.
@@ -350,7 +345,6 @@ class LstmVAE(torch.nn.Module):
         """
         if self.with_rotation_layer:
             theta = np.random.uniform(0, 2 * np.pi)
-            x = x.to(DEVICE)
             x = RotationLayer(theta)(x)
         z, z_mean, z_log_var = self.encoder(x)
 
@@ -391,7 +385,6 @@ class LstmVAE(torch.nn.Module):
         """
         if self.with_rotation_layer:
             theta = np.random.uniform(0, 2 * np.pi)
-            x = x.to(DEVICE)
             x = RotationLayer(theta)(x)
         z, z_mean, z_log_var = self.encoder(x)
 

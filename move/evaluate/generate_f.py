@@ -378,11 +378,11 @@ def reconstruct(
     #     x_good = torch.unsqueeze(x_good, 0) #.reshape((1, x.shape[1], x.shape[-1]))
     #     y_good = y[0]
     #     y_good = y_good.reshape((1,1,1))
-    #     x_good = x_good.to(DEVICE)
-    #     y_good = y_good.to(DEVICE)
+    #     x_good = x_good.to(config.device)
+    #     y_good = y_good.to(config.device)
 
     #     onehot_encoder = utils.make_onehot_encoder(config.label_features)
-    #     y_good = onehot_encoder(y_good.item()).to(DEVICE)
+    #     y_good = onehot_encoder(y_good.item()).to(config.device)
     #     y_good = torch.unsqueeze(torch.unsqueeze(y_good, 0), 0)
 
     #     x_recon = model(x_good.float(), y_good.float())
@@ -437,18 +437,18 @@ def generate(
     if y_given is not None:
         y_onehot = onehot_encoder(y_given)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-        y_onehot = y_onehot.to(DEVICE)
+        y_onehot = y_onehot.to(config.device)
         y_title = y_given
 
     else:
         y_rand = random.randint(0, config.label_features - 1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-        y_onehot = y_onehot.to(DEVICE)
+        y_onehot = y_onehot.to(config.device)
         y_title = y_rand
 
     z_create = torch.randn(size=(1, latent_dim))
-    z_create = z_create.to(DEVICE)
+    z_create = z_create.to(config.device)
 
     x_create = model.sample(z_create, y_onehot)
 

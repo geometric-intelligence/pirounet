@@ -25,11 +25,6 @@ logging.info(f"Using PyTorch version: {torch. __version__}")
 # Can be replaced by logging.DEBUG or logging.WARNING
 warnings.filterwarnings("ignore")
 
-DEVICE = torch.device("cpu")
-# if torch.cuda.is_available():
-#     DEVICE = torch.device("cuda")
-logging.info(f"Using device {DEVICE}")
-
 # The config put in wandb.init is treated as default:
 # - it is filled with values from the default_config.py file
 # - it will be overwritten by any sweep
@@ -56,10 +51,12 @@ wandb.init(
         "n_layers_classif": default_config.n_layers_classif,
         "h_dim_classif": default_config.h_dim_classif,
         "label_dim": default_config.label_dim,
+        "device": default_config.device,
     },
 )
 config = wandb.config
 logging.info(f"Config: {config}")
+logging.info(f"---> Using device {config.device}")
 
 wandb.run.name = default_config.run_name
 
@@ -80,7 +77,7 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers_classif=config.n_layers_classif,
     bias=None,
     batch_norm=True,
-).to(DEVICE)
+).to(config.device)
 
 logging.info("Get data")
 (

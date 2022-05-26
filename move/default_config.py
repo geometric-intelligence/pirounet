@@ -19,12 +19,19 @@ The VAE maps:
 We used input sequences of length l = 128, which corresponds
 to about 4 seconds of continuous movement.
 """
-which_device = "1"
+import torch
+
 run_name = "sep_layers_3e4NOCLIP_alpha001"
 load_from_checkpoint = (
     None  # "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt"
 )
 amount_of_labels = 1
+
+# Hardware
+device = (
+    "cpu"  # torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+)
+which_device = "1"
 
 # Training
 epochs = 400
