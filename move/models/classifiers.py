@@ -123,6 +123,7 @@ class ActorClassifier(torch.nn.Module):
         self,
         seq_len,
         label_dim,
+        input_dim,
         embed_dim=256,
         dim_feedforward=1024,
         n_layers=4,
@@ -132,39 +133,25 @@ class ActorClassifier(torch.nn.Module):
         **kargs
     ):
         super().__init__()
-
-        self.njoints = njoints
-        self.nfeats = nfeats
         self.seq_len = seq_len
         self.label_dim = label_dim
+        self.input_dim = input_dim
 
-        self.embed_dim = embed_dim
+        self.mu_query = nn.Parameter(torch.randn(self.label_dim, embed_dim))
+        self.sigma_query = nn.Parameter(torch.randn(self.label_dim, embed_dim))
 
-        self.dim_feedforward = dim_feedforward
-        self.n_layers = n_layers
-        self.n_heads = n_heads
-        self.dropout = dropout
-
-        self.activation = activation
-
-        self.input_dim = self.njoints * self.nfeats
-
-        self.mu_query = nn.Parameter(torch.randn(self.label_dim, self.embed_dim))
-        self.sigma_query = nn.Parameter(torch.randn(self.label_dim, self.embed_dim))
-
-        self.embedding = nn.Linear(self.input_dim, self.embed_dim)
-
-        self.sequence_pos_encoder = PositionalEncoding(self.embed_dim, self.dropout)
+        self.embedding = nn.Linear(self.input_dim, embed_dim)
+        self.seq_positional_encoding = PositionalEncoding(embed_dim, dropout)
 
         seq_transformer_encoder_layer = nn.TransformerEncoderLayer(
-            d_model=self.embed_dim,
-            nhead=self.n_heads,
-            dim_feedforward=self.dim_feedforward,
-            dropout=self.dropout,
-            activation=self.activation,
+            d_model=embed_dim,
+            nhead=n_heads,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            activation=activation,
         )
         self.seq_transformer_encoder = nn.TransformerEncoder(
-            seq_transformer_encoder_layer, n_layers=self.n_layers
+            seq_transformer_encoder_layer, num_layers=n_layers
         )
 
         self.logits = nn.Linear(embed_dim, label_dim)
@@ -188,13 +175,13 @@ class ActorClassifier(torch.nn.Module):
         assert input_dim == self.input_dim
 
         # embedding of the skeleton
-        x = self.embedding(x)
+        x = self.embedding(x.float())
 
         # adding the mu and sigma queries
-        xseq = torch.cat((self.mu_query[y][None], self.sigma_query[y][None], x), axis=0)
+        # xseq = torch.cat((self.mu_query[y][None], self.sigma_query[y][None], x), axis=0)
 
         # add positional encoding
-        xseq = self.sequence_pos_encoder(xseq)
+        xseq = self.seq_positional_encoding(x)
 
         final = self.seq_transformer_encoder(xseq)
         mu = final[0]
