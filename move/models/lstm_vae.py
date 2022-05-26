@@ -265,49 +265,6 @@ class LstmVAE(torch.nn.Module):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
-    def get_recon_loss(self, x, y=None):
-        """Perform forward pass of the VAE.
-
-        Runs a data point through the model in order
-        to provide its reconstruction and q distribution
-        parameters. Records the reconstruction loss of
-        this point.
-
-        Parameters
-        ----------
-        x : array-like
-            Input data.
-            Shape=[batch_size, seq_len, input_dim].
-
-        y : one hot encoder for Laban effort.
-
-        Returns
-        -------
-        recon_loss : sum over each absolute distance between
-                     each given point in x versus x_recon
-        """
-        if self.with_rotation_layer:
-            theta = np.random.uniform(0, 2 * np.pi)
-            x = RotationLayer(theta)(x)
-        z, z_mean, z_log_var = self.encoder(x)
-
-        q_param = (z_mean, z_log_var)
-
-        self.kl_divergence = losses.kld(z, q_param)
-
-        x_recon = self.decoder(z)
-        if self.with_rotation_layer:
-            x_recon = RotationLayer(-theta)(x_recon)
-
-        batch_size, seq_len, _ = x.shape
-        recon_loss = (x - x_recon) ** 2
-        recon_loss = torch.sum(recon_loss, axis=2)
-        assert recon_loss.shape == (batch_size, seq_len)
-
-        recon_loss = torch.sum(recon_loss)
-
-        return recon_loss
-
     def forward(self, x, y=None):
         """Perform forward pass of the VAE.
 
