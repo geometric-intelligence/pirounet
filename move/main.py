@@ -18,7 +18,6 @@ import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import torch
 import train
-import train_dgm
 import wandb
 
 logging.info(f"Using PyTorch version: {torch. __version__}")
