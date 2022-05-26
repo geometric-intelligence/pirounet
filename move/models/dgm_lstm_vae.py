@@ -4,7 +4,7 @@ import models.losses as losses
 import models.utils as utils
 import torch.nn
 import torch.nn.functional as F
-from models.classifiers import ActorClassifier
+from models.classifiers import ActorClassifier, LinearClassifier
 from models.lstm_vae import LstmDecoder, LstmEncoder, LstmVAE
 from torch.autograd import Variable
 
@@ -74,22 +74,22 @@ class DeepGenerativeModel(LstmVAE):
             batch_size=batch_size,
         )
 
-        # self.classifier = LinearClassifier(
-        #     input_dim=input_dim,
-        #     h_dim=h_dim_classif,
-        #     label_dim=label_dim,
-        #     seq_len=seq_len,
-        #     neg_slope=neg_slope_classif,
-        #     n_layers=n_layers_classif,
-        # )
-
-        self.classifier = ActorClassifier(
-            seq_len=seq_len,
-            label_dim=label_dim,
+        self.classifier = LinearClassifier(
             input_dim=input_dim,
-            embed_dim=16,
-            dim_feedforward=2,
+            h_dim=h_dim_classif,
+            label_dim=label_dim,
+            seq_len=seq_len,
+            neg_slope=neg_slope_classif,
+            n_layers=n_layers_classif,
         )
+
+        # self.classifier = ActorClassifier(
+        #     seq_len=seq_len,
+        #     label_dim=label_dim,
+        #     input_dim=input_dim,
+        #     embed_dim=16,
+        #     dim_feedforward=2,
+        # )
 
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
@@ -120,8 +120,7 @@ class DeepGenerativeModel(LstmVAE):
         return x_mu
 
     def classify(self, x):
-        """
-        Classifies input x into logits.
+        """Classify input x into logits.
 
         Parameters
         ----------
@@ -194,6 +193,7 @@ class SVI(torch.nn.Module):
         self.sampler = sampler
 
     def forward(self, x, y=None, likelihood_func=losses.reconstruction_loss):
+        batch_size = x.shape[0]
         is_labelled = False if y is None else True
 
         # Prepare for sampling
@@ -204,6 +204,12 @@ class SVI(torch.nn.Module):
             ys = utils.enumerate_discrete(xs, self.model.label_dim)
             ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
             xs = xs.repeat(self.model.label_dim, 1, 1)
+
+            assert xs.shape == (
+                batch_size * self.model.label_dim,
+                x.shape[1],
+                x.shape[2],
+            )
 
         # Increase sampling dimension
         xs = self.sampler.resample(xs)
@@ -223,17 +229,29 @@ class SVI(torch.nn.Module):
         L = self.sampler(elbo)
 
         if is_labelled:
+            assert L.shape == (batch_size,)
             return torch.mean(L)
 
         logits = self.model.classify(x)
+        assert xs.shape == (batch_size * self.model.label_dim, x.shape[1], x.shape[2])
+        assert L.shape == (batch_size * self.model.label_dim,)
+        assert logits.shape == (batch_size, self.model.label_dim)
 
-        L = L.view_as(logits.t()).t()
-
+        L = L.reshape((batch_size, self.model.label_dim))
         # Calculate entropy H(q(y|x)) and sum over all labels
-        H = -torch.sum(torch.mul(logits, torch.log(logits + 1e-8)), dim=-1)
+        # H(p) = - integral_x p(x) logp(x) dx
+
+        H = torch.log(logits + 1e-8)
+        assert L.shape == logits.shape
+        assert H.shape == logits.shape
+
+        H = torch.sum(torch.mul(logits, H), dim=-1)
         L = torch.sum(torch.mul(logits, L), dim=-1)
 
+        assert H.shape == (batch_size,)
+        assert L.shape == (batch_size,)
+
         # Equivalent to -U(x)
-        U = L + H
+        U = L - H
 
         return torch.mean(U)

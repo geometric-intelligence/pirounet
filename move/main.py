@@ -5,7 +5,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 import os
-import sys
 import warnings
 
 import default_config
@@ -18,6 +17,7 @@ import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import torch
 import train
+
 import wandb
 
 logging.info(f"Using PyTorch version: {torch. __version__}")
