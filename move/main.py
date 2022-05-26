@@ -62,22 +62,25 @@ wandb.run.name = default_config.run_name
 
 
 logging.info("Initialize model")
-model = dgm_lstm_vae.DeepGenerativeModel(
-    n_layers=config.n_layers,
-    input_dim=config.input_dim,
-    h_dim=config.h_dim,
-    latent_dim=config.latent_dim,
-    output_dim=config.input_dim,
-    seq_len=config.seq_len,
-    neg_slope=config.neg_slope,
-    label_dim=config.label_dim,
-    batch_size=config.batch_size,
-    h_dim_classif=config.h_dim_classif,
-    neg_slope_classif=config.neg_slope_classif,
-    n_layers_classif=config.n_layers_classif,
-    bias=None,
-    batch_norm=True,
-).to(config.device)
+# model = dgm_lstm_vae.DeepGenerativeModel(
+#     n_layers=config.n_layers,
+#     input_dim=config.input_dim,
+#     h_dim=config.h_dim,
+#     latent_dim=config.latent_dim,
+#     output_dim=config.input_dim,
+#     seq_len=config.seq_len,
+#     neg_slope=config.neg_slope,
+#     label_dim=config.label_dim,
+#     batch_size=config.batch_size,
+#     h_dim_classif=config.h_dim_classif,
+#     neg_slope_classif=config.neg_slope_classif,
+#     n_layers_classif=config.n_layers_classif,
+#     bias=None,
+#     batch_norm=True,
+# ).to(config.device)
+encoder = transformer.Encoder()
+decoder = transformer.Decoder()
+model = transformer.CVAE()
 
 logging.info("Get data")
 (
