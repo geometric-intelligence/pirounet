@@ -185,6 +185,8 @@ class ActorClassifier(torch.nn.Module):
 
         final = self.seq_transformer_encoder(xseq)
         mu = final[0]
+
+        # ignoring logvar: only here for compatibility with Actor
         logvar = final[1]
 
         y_pred = self.logits(mu)
