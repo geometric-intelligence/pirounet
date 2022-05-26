@@ -1,7 +1,14 @@
+"""Losses."""
+
 import torch
 
 
 def reconstruction_loss(x, x_recon):
+    """Compute the reconstruction loss between two sequences.
+
+    This is computed as the mean square errors on the joints'
+    positions in 3D.
+    """
     assert x.ndim == x_recon.ndim == 3
     batch_size, seq_len, _ = x.shape
     recon_loss = (x - x_recon) ** 2

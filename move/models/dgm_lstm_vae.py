@@ -256,7 +256,7 @@ class SVI(torch.nn.Module):
         prior = -torch.squeeze(utils.log_standard_categorical(ys))
 
         # Equivalent to -L(x, y)
-        elbo = likelihood + prior - self.model.kl_divergence
+        elbo = likelihood + prior - self.model.kl_weight * self.model.kl_divergence
 
         L = self.sampler(elbo)
 
