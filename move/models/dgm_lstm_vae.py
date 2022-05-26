@@ -73,13 +73,20 @@ class DeepGenerativeModel(LstmVAE):
             batch_size=batch_size,
         )
 
-        self.classifier = LinearClassifier(
-            input_dim=input_dim,
-            h_dim=h_dim_classif,
-            label_dim=label_dim,
+        # self.classifier = LinearClassifier(
+        #     input_dim=input_dim,
+        #     h_dim=h_dim_classif,
+        #     label_dim=label_dim,
+        #     seq_len=seq_len,
+        #     neg_slope=neg_slope_classif,
+        #     n_layers=n_layers_classif,
+        # )
+
+        self.classifier = ActorClassifier(
             seq_len=seq_len,
-            neg_slope=neg_slope_classif,
-            n_layers=n_layers_classif,
+            label_dim=label_dim,
+            embed_dim=2,
+            dim_feedforward=2,
         )
 
         for m in self.modules():

@@ -167,6 +167,8 @@ class ActorClassifier(torch.nn.Module):
             seq_transformer_encoder_layer, n_layers=self.n_layers
         )
 
+        self.logits = nn.Linear(embed_dim, label_dim)
+
     def forward(self, x):
         """Perform forward pass of the linear classifier.
 
@@ -198,4 +200,8 @@ class ActorClassifier(torch.nn.Module):
         mu = final[0]
         logvar = final[1]
 
-        return {"mu": mu, "logvar": logvar}
+        y_pred = self.logits(mu)
+
+        y_pred = F.softmax(y_pred, dim=-1)
+
+        return y_pred
