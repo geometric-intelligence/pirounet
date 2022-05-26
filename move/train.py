@@ -22,15 +22,6 @@ from torch.autograd import Variable
 CUDA_VISIBLE_DEVICES = 0, 1
 
 
-def get_loss(model, x, x_recon, z, z_mean, z_logvar):
-    """Return loss as ELBO averaged on the minibatch.
-    This gives a loss averaged on all sequences of the minibatch,
-    i.e. a loss per sequence.
-    """
-    loss = torch.mean(model.elbo(x, x_recon, z, (z_mean, z_logvar)))
-    return loss
-
-
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
 
