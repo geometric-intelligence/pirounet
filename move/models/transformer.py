@@ -1,3 +1,5 @@
+import numpy as np
+import torch
 import torch.nn as nn
 
 # TODO: Understand the masks and the lengths
@@ -192,7 +194,7 @@ class Decoder(nn.Module):
         return batch
 
 
-class CVAE(nn.Module):
+class VAE(nn.Module):
     def __init__(self, encoder, decoder, device, lambdas, latent_dim, **kwargs):
         super().__init__()
 
