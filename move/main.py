@@ -78,9 +78,7 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     bias=None,
     batch_norm=True,
 ).to(config.device)
-# encoder = transformer.Encoder()
-# decoder = transformer.Decoder()
-# model = transformer.CVAE()
+
 
 logging.info("Get data")
 (

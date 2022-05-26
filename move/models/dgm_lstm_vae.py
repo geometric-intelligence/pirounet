@@ -1,5 +1,6 @@
 """Architectures of DGM LSTM VAE."""
 
+import models.losses as losses
 import models.utils as utils
 import torch.nn
 import torch.nn.functional as F
@@ -111,7 +112,7 @@ class DeepGenerativeModel(LstmVAE):
         y_for_encoder = y.repeat((1, self.seq_len, 1))
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
-        self.kl_divergence = self._kld(z, (z_mu, z_log_var))
+        self.kl_divergence = losses.kld(z, (z_mu, z_log_var))
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
@@ -230,17 +231,7 @@ class SVI(torch.nn.Module):
         self.model = model
         self.sampler = sampler
 
-    def reconstruction_loss(x, x_recon):
-        assert x.ndim == x_recon.ndim == 3
-        batch_size, seq_len, _ = x.shape
-        recon_loss = (x - x_recon) ** 2
-
-        recon_loss = torch.mean(recon_loss, axis=(1, 2))
-
-        assert recon_loss.shape == (batch_size,)
-        return recon_loss
-
-    def forward(self, x, y=None, likelihood_func=reconstruction_loss):
+    def forward(self, x, y=None, likelihood_func=losses.reconstruction_loss):
         is_labelled = False if y is None else True
 
         # Prepare for sampling
@@ -263,6 +254,7 @@ class SVI(torch.nn.Module):
 
         # p(y)
         prior = -torch.squeeze(utils.log_standard_categorical(ys))
+
         # Equivalent to -L(x, y)
         elbo = likelihood + prior - self.model.kl_divergence
 

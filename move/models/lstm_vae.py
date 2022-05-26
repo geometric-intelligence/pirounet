@@ -13,6 +13,7 @@ from collections import OrderedDict
 
 import default_config
 import models.classifiers as classifiers
+import models.losses as losses
 import numpy as np
 import torch
 import torch.nn as nn
@@ -264,64 +265,6 @@ class LstmVAE(torch.nn.Module):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
-    def _kld(self, z, q_param, p_param=None):
-        """Compute KL-divergence.
-
-        The KL is defined as:
-        KL(q||p) = -∫ q(z) log [ p(z) / q(z) ]
-                  = -E[log p(z) - log q(z)]
-
-        Formula in Keras was:
-        # -0.5*K.mean(K.sum(1 + auto_log_var -
-        # K.square(auto_mean) - K.exp(auto_log_var), axis=-1))
-
-        Parameters
-        ----------
-        z : array-like
-            Sample from q-distribuion
-        q_param : tuple
-            (mu, log_var) of the q-distribution
-        p_param: tuple
-            (mu, log_var) of the p-distribution
-
-        Returns
-        -------
-        kl : KL(q||p)
-        """
-        z_mean, z_logvar = q_param
-        kl = -(torch.sum(1 + z_logvar - torch.square(z_mean) - z_logvar.exp(), axis=-1))
-        return kl
-
-    def elbo(self, x, x_recon, z, q_param, p_param=None):
-        """Compute ELBO.
-
-        Formula in Keras was (reconstruction loss):
-        # 0.5*K.mean(K.sum(K.square(auto_input - auto_output), axis=-1))
-
-        Parameters
-        ----------
-        x : array-like
-            Input sequence.
-            Shape=[batch_size, seq_len, input_dim]
-        x_recon : array-like
-            Output (reconstructed) sequence.
-            Shape=[batch_size, seq_len, output_dim]
-        z : array-like
-            Latent variable. Not a sequence.
-            Shape=[batch_size, latent_dim]
-        """
-        assert x.ndim == x_recon.ndim == 3
-        assert z.ndim == 2
-        assert z.shape[-1] == self.latent_dim
-        batch_size, seq_len, _ = x.shape
-        recon_loss = (x - x_recon) ** 2
-        recon_loss = torch.sum(recon_loss, axis=2)
-        assert recon_loss.shape == (batch_size, seq_len)
-
-        recon_loss = torch.sum(recon_loss)
-        regul_loss = self._kld(z, q_param, p_param)
-        return recon_loss + self.kl_weight * regul_loss
-
     def get_recon_loss(self, x, y=None):
         """Perform forward pass of the VAE.
 
@@ -350,7 +293,7 @@ class LstmVAE(torch.nn.Module):
 
         q_param = (z_mean, z_log_var)
 
-        self.kl_divergence = self._kld(z, q_param)
+        self.kl_divergence = losses.kld(z, q_param)
 
         x_recon = self.decoder(z)
         if self.with_rotation_layer:
@@ -390,7 +333,7 @@ class LstmVAE(torch.nn.Module):
 
         q_param = (z_mean, z_log_var)
 
-        self.kl_divergence = self._kld(z, q_param)
+        self.kl_divergence = losses.kld(z, q_param)
 
         x_recon = self.decoder(z)
         if self.with_rotation_layer:
