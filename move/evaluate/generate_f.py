@@ -407,7 +407,7 @@ def generate(
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
 
-    onehot_encoder = utils.make_onehot_encoder(config.label_features)
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
     if y_given is not None:
         y_onehot = onehot_encoder(y_given)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
@@ -415,7 +415,7 @@ def generate(
         y_title = y_given
 
     else:
-        y_rand = random.randint(0, config.label_features - 1)
+        y_rand = random.randint(0, config.label_dim - 1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(config.device)
