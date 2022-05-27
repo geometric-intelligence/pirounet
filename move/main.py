@@ -15,9 +15,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import datasets
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
-import torch
 import train
 
+import torch
 import wandb
 
 logging.info(f"Using PyTorch version: {torch. __version__}")

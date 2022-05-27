@@ -136,12 +136,13 @@ def load_labels(
     labels_with_index = np.loadtxt(file, delimiter=",")
 
     labels_ind = labels_with_index[:,0]
-    labelsprint = labels_ind.reshape((labels_ind.shape[0], 1))
 
     if amount_of_labels == 2:
         labels = np.delete(labels_with_index, 0, axis=1)
     else:
         labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
+
+    labels = labels - 1.
 
     return labels, labels_ind
 

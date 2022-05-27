@@ -6,12 +6,6 @@ implementation-differences-in-lstm-layers-tensorflow
 -vs-pytorch-77a31d742f74
 """
 
-import csv
-import logging
-import os
-from collections import OrderedDict
-
-import default_config
 import models.classifiers as classifiers
 import models.losses as losses
 import numpy as np
@@ -20,10 +14,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.nn import init
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
-
 
 class LstmEncoder(torch.nn.Module):
     """Encoder with LSTM layers."""

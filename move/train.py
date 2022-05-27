@@ -2,10 +2,8 @@
 import itertools
 import logging
 import os
-import time
 
 import default_config
-import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -13,14 +11,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import models.utils as utils
+
 import torch
 import torch.autograd
 import torch.nn
-import wandb
 from torch.autograd import Variable
-
-CUDA_VISIBLE_DEVICES = 0, 1
-
+import wandb
 
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)

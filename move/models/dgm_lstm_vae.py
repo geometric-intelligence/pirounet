@@ -1,5 +1,5 @@
 """Architectures of DGM LSTM VAE."""
-
+import os
 import models.losses as losses
 import models.utils as utils
 import torch.nn
