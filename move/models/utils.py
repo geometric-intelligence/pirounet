@@ -2,18 +2,28 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+
 def make_onehot_encoder(label_features):
+    """Convert a number to its one-hot representation vector.
+
+    The one-hot representation is also called the 1-of-amount_of_labels.
+
+    Parameters
+    ----------
+    label_features: int
+        Length of vector
+
+    Returns
+    -------
+    onehot_encode : function
     """
-    Converts a number to its one-hot or 1-of-amount_of_labels representation
-    vector.
-    :param amount_of_labels: (int) length of vector
-    :return: onehot function
-    """
+
     def onehot_encode(label):
         y = torch.zeros(label_features)
         if label < label_features:
             y[int(label)] = 1
         return y
+
     return onehot_encode
 
 
@@ -71,6 +81,7 @@ def enumerate_discrete(x, y_dim):
 
     return Variable(generated.float())
 
+
 def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     """
     Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
@@ -83,4 +94,3 @@ def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     return (
         torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
     )
-
