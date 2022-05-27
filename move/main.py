@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 # The config put in wandb.init is treated as default:
 # - it is filled with values from the default_config.py file
 # - it will be overwritten by any sweep
-# After wandb is initialize, use wandb.config (and not default_config)
+# After wandb is initialized, use wandb.config (and not default_config)
 # to get the config parameters of the run, potentially coming from a sweep.
 wandb.init(
     project="move_labelled_nina",
@@ -59,7 +59,6 @@ logging.info(f"Config: {config}")
 logging.info(f"---> Using device {config.device}")
 
 wandb.run.name = default_config.run_name
-
 
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(

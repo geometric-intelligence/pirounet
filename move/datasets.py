@@ -142,8 +142,6 @@ def load_labels(
     else:
         labels = np.delete(np.delete(labels_with_index, 0, axis=1), 0, axis=1)
 
-    labels = labels - 1.
-
     return labels, labels_ind
 
 
@@ -288,9 +286,6 @@ def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
         start_ind = int(labels_ind[i])
         seq_data[i] = pose_data[start_ind : start_ind + int(seq_len)]
 
-    # for i in range(int(pose_data.shape[0]/seq_len)):
-    #     j = i*seq_len
-    #     seq_data[i] = pose_data[j : j + seq_len]
     logging.info(f"Preprocessing: Load labelled data of shape {seq_data.shape}")
 
     if augmentation_factor > 1:
@@ -311,13 +306,9 @@ def get_dgm_data(config, augmentation_factor=1):
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    labels, labels_ind = load_labels()
+    labels_1_to_4, labels_ind = load_labels()
+    labels = labels_1_to_4 - 1.
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
-
-    # divide into labelled and unlabelled
-
-    # pose_data_lab = pose_data[0:last_label_index]
-    # pose_data_unlab = pose_data[last_label_index:pose_data.shape[0]]
 
     # sequify both sets of data
     seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
@@ -326,26 +317,16 @@ def get_dgm_data(config, augmentation_factor=1):
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
-    # ninety_perc_lab = seq_data_lab.shape[0] - (2 * five_perc_lab)
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
     labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
     labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
-    # labelled_data_train_ds = seq_data_lab[:ninety_perc_lab, :, :]
-    # labelled_data_valid_ds = seq_data_lab[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :, :]
-    # labelled_data_test_ds = seq_data_lab[(ninety_perc_lab + five_perc_lab) :, :, :]
-
     #divide labels into 90% training, 5% validating, and 5% testing sets
 
-    labels_valid_ds = labels[:(five_perc_lab * 2), :, :]
-    labels_train_ds = labels[(five_perc_lab * 2) : ((five_perc_lab * 18) + (one_perc_lab * 8)), :, :]
-    labels_test_ds = labels[((five_perc_lab * 18) + (one_perc_lab * 8)) :, :, :]
-
-
-    # labels_train_ds = labels[:ninety_perc_lab, :]
-    # labels_valid_ds = labels[ninety_perc_lab : (ninety_perc_lab + five_perc_lab), :]
-    # labels_test_ds = labels[(ninety_perc_lab + five_perc_lab) :, :]
+    labels_valid_ds = labels[:(five_perc_lab), :, :]
+    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
     # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))

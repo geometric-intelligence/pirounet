@@ -1,100 +1,38 @@
-"""Main file performing training with labels (semi-supervised)."""
-
-import logging
-from random import triangular
-
-logging.basicConfig(level=logging.INFO)
+"""File that generate a confusion matrix from given checkpoint. Specify train/valid/test"""
 
 import os
-import sys
-import warnings
 
-import default_config
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
-
+import default_config as config
 import datasets
-import nn
-import generate_f
-import utils
+from models import dgm_lstm_vae
 
-
-import wandb
 import torch
+import torch.nn as nn
 from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
-# logging.info('TORCH')
-# logging.info(torch. __version__)
-
-# # Can be replaced by logging.DEBUG or logging.WARNING
-# warnings.filterwarnings("ignore")
-
-# DEVICE = torch.device("cpu")
-# if torch.cuda.is_available():
-#     DEVICE = torch.device("cuda")
-# logging.info(f"Using device {DEVICE}")
-
-# # The config put in the init is treated as default
-# # and would be overwritten by a sweep
-# wandb.init(
-#     project="move_labelled",
-#     entity="bioshape-lab",
-#     config={
-#         "learning_rate": default_config.learning_rate,
-#         "epochs": default_config.epochs,
-#         "batch_size": default_config.batch_size,
-#         "seq_len": default_config.seq_len,
-#         "kl_weight": default_config.kl_weight,
-#         "negative_slope": default_config.negative_slope,
-#         "n_layers": default_config.n_layers,
-#         "h_dim": default_config.h_dim,
-#         "latent_dim": default_config.latent_dim,
-#         "label_features": default_config.label_features,
-#         "neg_slope_classif": default_config.neg_slope_classif,
-#         "n_layers_classif": default_config.n_layers_classif,
-#         "h_dim_classif": default_config.h_dim_classif,
-#     },
-# )
-# wandb.run.name = default_config.run_name
-
-
-# logging.info("Run server specific commands")
-# SERVER = "pod"  # colab
-# if SERVER == "colab":
-#     from google.colab import drive
-
-#     drive.mount("/content/drive")
-#     # %cd /content/drive/MyDrive/colab-github/move/dance
-#     syspath.append(os.path.dirname(os.getcwd()))
-
-# elif SERVER == "pod":
-#     sys.path.append(os.path.dirname(os.getcwd()))
-
-logging.info("Initialize model")
-model = nn.DeepGenerativeModel(
-    n_layers=default_config.n_layers,
-    input_features=default_config.input_features,
-    h_dim=default_config.h_dim,
-    latent_dim=default_config.latent_dim,
-    output_features=3 * 53,
-    seq_len=default_config.seq_len,
-    negative_slope=default_config.negative_slope,
-    label_features=default_config.label_features,
-    batch_size=default_config.batch_size,
-    h_dim_classif=default_config.h_dim_classif,
-    neg_slope_classif=default_config.neg_slope_classif,
-    n_layers_classif=default_config.n_layers_classif,
+model = dgm_lstm_vae.DeepGenerativeModel(
+    n_layers=config.n_layers,
+    input_dim=config.input_dim,
+    h_dim=config.h_dim,
+    latent_dim=config.latent_dim,
+    output_dim=config.input_dim,
+    seq_len=config.seq_len,
+    neg_slope=config.neg_slope,
+    label_dim=config.label_dim,
+    batch_size=config.batch_size,
+    h_dim_classif=config.h_dim_classif,
+    neg_slope_classif=config.neg_slope_classif,
+    n_layers_classif=config.n_layers_classif,
     bias=None,
-    batch_norm=True
-).to(default_config.device)
+    batch_norm=True,
+).to(config.device)
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(default_config)
+    datasets.get_dgm_data(config)
 
-old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + default_config.load_from_checkpoint)
+old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint)
 checkpoint = torch.load(old_checkpoint_filepath)
 model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']
@@ -113,7 +51,7 @@ if purpose == 'test':
     x = torch.from_numpy(labelled_data_test.dataset)
     y = torch.squeeze(torch.from_numpy(labels_test.dataset))
 
-x = x.to(default_config.device)
+x = x.to(config.device)
 
 logits = model.classify(x)
 
@@ -127,4 +65,4 @@ conf_mat = ConfusionMatrixDisplay.from_predictions(
     )
 
 plt.savefig(fname="saved/confusion/conf_" + str(purpose) + "_" + 
-        default_config.run_name + "_" + str(latest_epoch) + ".png")
+        config.run_name + "_" + str(latest_epoch) + ".png")

@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "test_device"
+run_name = "Make_reconstruction"
 load_from_checkpoint = (
-    None  # "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt"
+    "checkpoint_piped_artifacts_epoch64"
 )
 amount_of_labels = 1
 
@@ -33,11 +33,10 @@ device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
 
-
 # Training
 epochs = 400
 learning_rate = 3e-4  # 6e-6
-batch_size = 5  # 80
+batch_size = 80
 with_clip = False
 
 # Input data
