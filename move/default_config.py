@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "Make_reconstruction"
+run_name = "linear_compare"
 load_from_checkpoint = (
-    "checkpoint_piped_artifacts_epoch64"
+    None #"checkpoint_piped_artifacts_epoch64"
 )
 amount_of_labels = 1
 
@@ -53,6 +53,7 @@ h_dim = 8  # 384
 latent_dim = 8  # 256
 
 # Classifier
+classifier = 'linear'
 h_dim_classif = 8  # 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

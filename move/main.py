@@ -52,6 +52,7 @@ wandb.init(
         "h_dim_classif": default_config.h_dim_classif,
         "label_dim": default_config.label_dim,
         "device": default_config.device,
+        "classifier": default_config.classifier,
     },
 )
 config = wandb.config
@@ -76,6 +77,7 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers_classif=config.n_layers_classif,
     bias=None,
     batch_norm=True,
+    classifier=config.classifier,
 ).to(config.device)
 
 
