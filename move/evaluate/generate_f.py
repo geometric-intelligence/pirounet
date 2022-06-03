@@ -363,8 +363,7 @@ def reconstruct(
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
 
-    now = time.strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
 
     x = input_data
     y = input_label
@@ -407,7 +406,7 @@ def generate(
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
 
-    onehot_encoder = utils.make_onehot_encoder(config.label_features)
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
     if y_given is not None:
         y_onehot = onehot_encoder(y_given)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
@@ -415,13 +414,13 @@ def generate(
         y_title = y_given
 
     else:
-        y_rand = random.randint(0, config.label_features - 1)
+        y_rand = random.randint(0, config.label_dim - 1)
         y_onehot = onehot_encoder(y_rand)
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(config.device)
         y_title = y_rand
 
-    z_create = torch.randn(size=(1, latent_dim))
+    z_create = torch.randn(size=(1, config.latent_dim))
     z_create = z_create.to(config.device)
 
     x_create = model.sample(z_create, y_onehot)
@@ -440,7 +439,7 @@ def generate_and_save(
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
 
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations")
+    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
 
     x_create, y_title = generate(model, y_given)
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))

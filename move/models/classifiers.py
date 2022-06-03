@@ -1,4 +1,3 @@
-import default_config
 import numpy as np
 import torch
 import torch.nn as nn
@@ -157,7 +156,6 @@ class ActorClassifier(torch.nn.Module):
         xseq = self.seq_positional_encoding(x)
 
         final = self.seq_transformer_encoder(xseq)
-        print(final.shape)
         assert final.shape == (seq_len, batch_size, self.embed_dim)
         mu = final[0]
 

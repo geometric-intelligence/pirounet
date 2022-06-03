@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-
+import default_config
 
 def make_onehot_encoder(label_features):
     """Convert a number to its one-hot representation vector.
@@ -77,7 +77,7 @@ def enumerate_discrete(x, y_dim):
     generated = torch.cat([batch(batch_size, i) for i in range(y_dim)])
 
     if x.is_cuda:
-        generated = generated.cuda()
+        generated = generated.to(default_config.device)
 
     return Variable(generated.float())
 

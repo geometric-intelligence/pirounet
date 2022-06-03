@@ -15,9 +15,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import datasets
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
-import torch
 import train
 
+import torch
 import wandb
 
 logging.info(f"Using PyTorch version: {torch. __version__}")
@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 # The config put in wandb.init is treated as default:
 # - it is filled with values from the default_config.py file
 # - it will be overwritten by any sweep
-# After wandb is initialize, use wandb.config (and not default_config)
+# After wandb is initialized, use wandb.config (and not default_config)
 # to get the config parameters of the run, potentially coming from a sweep.
 wandb.init(
     project="move_labelled_nina",
@@ -52,6 +52,7 @@ wandb.init(
         "h_dim_classif": default_config.h_dim_classif,
         "label_dim": default_config.label_dim,
         "device": default_config.device,
+        "classifier": default_config.classifier,
     },
 )
 config = wandb.config
@@ -59,7 +60,6 @@ logging.info(f"Config: {config}")
 logging.info(f"---> Using device {config.device}")
 
 wandb.run.name = default_config.run_name
-
 
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(
@@ -77,6 +77,7 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers_classif=config.n_layers_classif,
     bias=None,
     batch_norm=True,
+    classifier=config.classifier,
 ).to(config.device)
 
 

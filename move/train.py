@@ -2,10 +2,9 @@
 import itertools
 import logging
 import os
-import time
+from os.path import exists
 
 import default_config
-import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -13,14 +12,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import models.utils as utils
+
 import torch
 import torch.autograd
 import torch.nn
-import wandb
 from torch.autograd import Variable
-
-CUDA_VISIBLE_DEVICES = 0, 1
-
+import wandb
 
 def binary_cross_entropy(r, x):
     in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
@@ -57,7 +54,7 @@ def run_train_dgm(
 
     if config.load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()), config.load_from_checkpoint
+            os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt"
         )
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -66,17 +63,22 @@ def run_train_dgm(
 
     else:
         latest_epoch = 0
+    
+    filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
 
-    # torch.autograd.set_detect_anomaly(True)
+    if exists(filepath_for_artifacts) is False:
+        os.mkdir(filepath_for_artifacts)
+
     for epoch in range(config.epochs - latest_epoch):
 
         # Train
         model.train()
-        total_loss, accuracy, recon_loss = (0, 0, 0)
+        total_loss, accuracy = (0, 0)
         labloss, unlabloss, class_loss = (0, 0, 0)
 
         batches_seen = 0
         n_batches = len(unlabelled_data_train)
+        n_batches_valid = len(labelled_data_valid)
 
         for i_batch, (x, y, u) in enumerate(
             zip(
@@ -145,15 +147,18 @@ def run_train_dgm(
                 logging.info(
                     f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
                 )
-
-            if i_batch % 50 == 0 and i_batch != 0:
-                logging.info(
-                    f"Batch {i_batch}/total at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
-                )
                 logging.info(f"        Recon lab-loss {labloss / (batches_seen)}")
                 logging.info(f"        Recon unlab-loss {unlabloss / (batches_seen)}")
+                generate_f.reconstruct(
+                    model=model,
+                    epoch=epoch + latest_epoch,
+                    input_data=x,
+                    input_label=y,
+                    purpose="train",
+                    config=config,
+                )                
 
-        logging.info(f"Epoch: {epoch}")
+        logging.info(f"Epoch: {epoch + latest_epoch}")
         logging.info(
             "[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
                 total_loss / batches_seen, accuracy / batches_seen
@@ -200,7 +205,7 @@ def run_train_dgm(
             U = -elbo(x)
 
             logits_v = model.classify(x)
-            classication_loss_v = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            classication_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
 
             J_alpha_v = L - alpha * classication_loss_v + U
 
@@ -217,22 +222,37 @@ def run_train_dgm(
                 ).float()
             )
 
-            if i_batch % 5 == 0 and i_batch != 0:
+            if n_batches_valid <= 5 and i_batch != 0:
                 logging.info(
-                    f"Batch {i_batch}/{total_v_batches} at VALID loss \
+                    f"Valid batch {i_batch}/{total_v_batches} at loss \
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                 )
                 logging.info(f"Artifacts for epoch {epoch}")
                 generate_f.reconstruct(
                     model=model,
-                    epoch=epoch,
+                    epoch=epoch + latest_epoch,
                     input_data=x,
                     input_label=y,
                     purpose="valid",
                     config=config,
                 )
+            if n_batches > 5 and i_batch != 0:
+                if i_batch % 5 == 0:
+                    logging.info(
+                        f"Valid batch {i_batch}/{total_v_batches} at loss \
+                        {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
+                    )
+                    logging.info(f"Artifacts for epoch {epoch}")
+                    generate_f.reconstruct(
+                        model=model,
+                        epoch=epoch + latest_epoch,
+                        input_data=x,
+                        input_label=y,
+                        purpose="valid",
+                        config=config,
+                    )
 
-        logging.info(f"Epoch: {epoch}")
+        logging.info(f"Epoch: {epoch + latest_epoch}")
         logging.info(
             "[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
                 total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen
@@ -250,7 +270,10 @@ def run_train_dgm(
 
         for label in range(config.label_dim):
             generate_f.generate_and_save(
-                model=model, epoch=epoch, y_given=label, config=config
+                model=model, 
+                epoch=epoch + latest_epoch, 
+                y_given=label, 
+                config=config
             )
 
         logging.info("Save a checkpoint.")

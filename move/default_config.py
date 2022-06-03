@@ -21,28 +21,28 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "sep_layers_3e4NOCLIP_alpha001"
+run_name = "CONF_transf"
 load_from_checkpoint = (
-    None  # "saved/checkpoint_nan_enc_load_debug_prints_nonclipped_epoch19.pt"
+    "checkpoint_transformer_no_NA_logits_epoch30"
 )
 amount_of_labels = 1
 
 # Hardware
+which_device = "0"
 device = (
-    "cpu"  # torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
-which_device = "1"
 
 # Training
 epochs = 400
 learning_rate = 3e-4  # 6e-6
-batch_size = 5  # 80
+batch_size = 80
 with_clip = False
 
 # Input data
 seq_len = 40
 input_dim = 159
-label_dim = 4
+label_dim = 3
 amount_of_labels = 1
 
 # LSTM VAE
@@ -53,6 +53,7 @@ h_dim = 8  # 384
 latent_dim = 8  # 256
 
 # Classifier
+classifier = 'transformer'
 h_dim_classif = 8  # 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

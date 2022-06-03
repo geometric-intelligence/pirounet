@@ -1,5 +1,5 @@
 """Architectures of DGM LSTM VAE."""
-
+import os
 import models.losses as losses
 import models.utils as utils
 import torch.nn
@@ -26,6 +26,7 @@ class DeepGenerativeModel(LstmVAE):
         n_layers_classif,
         bias,
         batch_norm,
+        classifier
     ):
 
         """
@@ -74,22 +75,24 @@ class DeepGenerativeModel(LstmVAE):
             batch_size=batch_size,
         )
 
-        self.classifier = LinearClassifier(
-            input_dim=input_dim,
-            h_dim=h_dim_classif,
-            label_dim=label_dim,
-            seq_len=seq_len,
-            neg_slope=neg_slope_classif,
-            n_layers=n_layers_classif,
-        )
+        if classifier == 'linear':
+            self.classifier = LinearClassifier(
+                input_dim=input_dim,
+                h_dim=h_dim_classif,
+                label_dim=label_dim,
+                seq_len=seq_len,
+                neg_slope=neg_slope_classif,
+                n_layers=n_layers_classif,
+            )
 
-        # self.classifier = ActorClassifier(
-        #     seq_len=seq_len,
-        #     label_dim=label_dim,
-        #     input_dim=input_dim,
-        #     embed_dim=16,
-        #     dim_feedforward=2,
-        # )
+        if classifier == 'transformer':
+            self.classifier = ActorClassifier(
+                seq_len=seq_len,
+                label_dim=label_dim,
+                input_dim=input_dim,
+                embed_dim=16,
+                dim_feedforward=2,
+            )
 
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
