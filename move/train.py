@@ -73,7 +73,7 @@ def run_train_dgm(
 
         # Train
         model.train()
-        total_loss, accuracy, recon_loss = (0, 0, 0)
+        total_loss, accuracy = (0, 0)
         labloss, unlabloss, class_loss = (0, 0, 0)
 
         batches_seen = 0
@@ -205,7 +205,7 @@ def run_train_dgm(
             U = -elbo(x)
 
             logits_v = model.classify(x)
-            classication_loss_v = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            classication_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
 
             J_alpha_v = L - alpha * classication_loss_v + U
 

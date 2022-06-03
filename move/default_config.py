@@ -21,14 +21,14 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "linear_compare"
+run_name = "CONF_transf"
 load_from_checkpoint = (
-    None #"checkpoint_piped_artifacts_epoch64"
+    "checkpoint_transformer_no_NA_logits_epoch30"
 )
 amount_of_labels = 1
 
 # Hardware
-which_device = "1"
+which_device = "0"
 device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
@@ -42,7 +42,7 @@ with_clip = False
 # Input data
 seq_len = 40
 input_dim = 159
-label_dim = 4
+label_dim = 3
 amount_of_labels = 1
 
 # LSTM VAE
@@ -53,7 +53,7 @@ h_dim = 8  # 384
 latent_dim = 8  # 256
 
 # Classifier
-classifier = 'linear'
+classifier = 'transformer'
 h_dim_classif = 8  # 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

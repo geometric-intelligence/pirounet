@@ -26,13 +26,14 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers_classif=config.n_layers_classif,
     bias=None,
     batch_norm=True,
+    classifier=config.classifier
 ).to(config.device)
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
     datasets.get_dgm_data(config)
 
-old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint)
+old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt")
 checkpoint = torch.load(old_checkpoint_filepath)
 model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']

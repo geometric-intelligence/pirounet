@@ -136,17 +136,17 @@ def load_labels(
     labels_with_index = np.loadtxt(file, delimiter=",")
 
     # Test: what happens when we take out all sequences labelled with N/A?
+    if amount_of_labels == 1:
+        labels_with_index = np.delete(labels_with_index, 1, axis=1)
+
     labels_with_index_noNA = []
-    for row in range(len(labels_with_index)):
-        if row[0] != 4:
+    for i in range(len(labels_with_index)):
+        row = labels_with_index[i]
+        if row[1] != 4.:
             labels_with_index_noNA.append(row)
 
-    labels_ind = labels_with_index_noNA[:,0]
-
-    if amount_of_labels == 2:
-        labels = np.delete(labels_with_index_noNA, 0, axis=1)
-    else:
-        labels = np.delete(np.delete(labels_with_index_noNA, 0, axis=1), 0, axis=1)
+    labels_ind = np.delete(labels_with_index_noNA, 1, axis=1)
+    labels = np.delete(labels_with_index_noNA, 0, axis=1)
 
     return labels, labels_ind
 
@@ -304,7 +304,7 @@ def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented labelled data has shape: {seq_data.shape}")
     
-    np.random.shuffle(seq_data)
+    #np.random.shuffle(seq_data)
 
     return seq_data
 
@@ -322,7 +322,7 @@ def get_dgm_data(config, augmentation_factor=1):
 
     # sequify both sets of data
     seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
-    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1) #WE"RE SENDING IN SEQ THAT HAVE LABELS, just without the labels
+    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))

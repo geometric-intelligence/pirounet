@@ -50,6 +50,8 @@ class LstmEncoder(torch.nn.Module):
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
         self.logvar_block = torch.nn.Linear(h_dim, latent_dim)
 
+        # self.leakyrelu = torch.nn.LeakyReLU(negative_slope=neg_slope)
+
     def reparametrize(self, z_mean, z_logvar):
         """Sample from a multivariate Gaussian.
         The multivariate Gaussian samples in the vector
