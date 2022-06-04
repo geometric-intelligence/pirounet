@@ -21,14 +21,13 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "CONF_transf"
+run_name = "debug_labels_spaceCONF"
 load_from_checkpoint = (
-    "checkpoint_transformer_no_NA_logits_epoch30"
+    "checkpoint_debug_labels_time_epoch80"
 )
-amount_of_labels = 1
 
 # Hardware
-which_device = "0"
+which_device = "1"
 device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
@@ -44,16 +43,17 @@ seq_len = 40
 input_dim = 159
 label_dim = 3
 amount_of_labels = 1
+effort = 'time'
 
 # LSTM VAE
-kl_weight = 0
+kl_weight = 1
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
 h_dim = 8  # 384
 latent_dim = 8  # 256
 
 # Classifier
-classifier = 'transformer'
+classifier = 'linear'
 h_dim_classif = 8  # 384
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

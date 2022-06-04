@@ -8,6 +8,7 @@ from glob import glob
 import numpy as np
 import torch
 
+import default_config
 
 def augment_by_rotations(seq_data, augmentation_factor):
     """Augment the dataset of sequences.
@@ -127,29 +128,102 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 
 def load_labels(
-    amount_of_labels=1,
-    filepath="/home/papillon/move/move/data/labels.csv",
-
+    effort,
+    filepath="/home/papillon/move/move/data/labels_mathilde.csv",
+    no_NA=True,
+    augment=True
 ):
 
     file = open(filepath)
     labels_with_index = np.loadtxt(file, delimiter=",")
 
-    # Test: what happens when we take out all sequences labelled with N/A?
-    if amount_of_labels == 1:
+    if effort == 'time':
         labels_with_index = np.delete(labels_with_index, 1, axis=1)
+        
+    if effort == 'space':
+        labels_with_index = np.delete(labels_with_index, 2, axis=1)
 
-    labels_with_index_noNA = []
-    for i in range(len(labels_with_index)):
-        row = labels_with_index[i]
-        if row[1] != 4.:
-            labels_with_index_noNA.append(row)
+    if augment:
+        labels_with_index = augment_labels(labels_with_index)
 
-    labels_ind = np.delete(labels_with_index_noNA, 1, axis=1)
-    labels = np.delete(labels_with_index_noNA, 0, axis=1)
+    if no_NA:
+        labels_with_index_noNA = []
+        for i in range(len(labels_with_index)):
+            row = labels_with_index[i]
+            if row[1] != 4.:
+                labels_with_index_noNA.append(row)
+
+        labels_ind = np.delete(labels_with_index_noNA, 1, axis=1)
+        labels = np.delete(labels_with_index_noNA, 0, axis=1)
+    
+    if not no_NA:
+        labels_ind = np.delete(labels_with_index, 1, axis=1)
+        labels = np.delete(labels_with_index, 0, axis=1)
+
 
     return labels, labels_ind
 
+
+def augment_labels(labels_with_index, seq_len=default_config.seq_len):
+    all_between_lab = np.zeros((1,2))
+
+    # Label sequences between two identically labelled block sequences
+    for j in range(len(labels_with_index)):
+        if j == 0:
+            continue
+
+        if j != 0:
+            bef_index = labels_with_index[j-1][0]
+            effort = labels_with_index[j][1]
+            bef_effort = labels_with_index[j-1][1]
+
+            if effort == bef_effort:
+                between_lab = np.zeros((int(seq_len), 2))
+
+                for i in range(int(seq_len)):
+                    between_lab[i][0] = int(bef_index + i + 1)
+                    between_lab[i][1] = int(effort)
+                    between_lab = np.array(between_lab).reshape((-1,2))
+
+                all_between_lab = np.append(all_between_lab, between_lab, axis=0)
+    all_between_lab = all_between_lab[1:,]
+    
+    # Label sequences starting a few poses before and after each block sequence
+    extra_frames = 5
+    fuzzy_labels = np.zeros((1,2))
+
+    for j in range(len(labels_with_index)):
+        index_labelled = labels_with_index[j][0]
+        effort = labels_with_index[j][1]
+
+        if index_labelled == 0:
+            for i in range(extra_frames + 2):
+                extra_label = np.expand_dims([i, effort], axis=0)
+                fuzzy_labels = np.append(fuzzy_labels, extra_label, axis=0)
+
+        if index_labelled != 0:
+            for i in range(extra_frames + 1):
+                i_rev = extra_frames - i
+                extra_label_neg = np.expand_dims([index_labelled - (i_rev + 1), effort], axis=0)
+                fuzzy_labels = np.append(fuzzy_labels, extra_label_neg, axis=0)
+
+            fuzzy_labels = np.append(fuzzy_labels, labels_with_index[j].reshape((1,2)), axis=0)
+
+            for i in range(extra_frames + 1):
+                extra_label_pos = np.expand_dims([index_labelled + (i + 1), effort], axis=0)
+                fuzzy_labels = np.append(fuzzy_labels, extra_label_pos, axis=0)
+    fuzzy_labels = fuzzy_labels[1:,]
+
+    nonunique = np.append(all_between_lab, fuzzy_labels, axis=0)
+
+    labels_with_index_aug = nonunique[np.unique(nonunique[:,0], axis=0, return_index=True)[1]]
+
+    # with open('smart_labels_mathilde.csv', 'w', newline='') as file:
+    #     writer = csv.writer(file, delimiter=',')
+    #     writer.writerows(labels_with_index_aug)
+    # file.close()
+
+    return labels_with_index_aug
 
 def load_aist_raw(pattern="data/aist/*.pkl"):
     """Load six datasets and perform minimal preprocessing.
@@ -316,7 +390,7 @@ def get_dgm_data(config, augmentation_factor=1):
     ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    labels_1_to_4, labels_ind = load_labels()
+    labels_1_to_4, labels_ind = load_labels(effort = config.effort)
     labels = labels_1_to_4 - 1.
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
 
