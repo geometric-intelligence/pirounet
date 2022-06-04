@@ -1,6 +1,7 @@
 """File that generate a confusion matrix from given checkpoint. Specify train/valid/test"""
-
 import os
+import sys
+sys.path.append(os. path. abspath('..'))
 
 import default_config as config
 import datasets
@@ -8,7 +9,7 @@ from models import dgm_lstm_vae
 
 import torch
 import torch.nn as nn
-from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
 model = dgm_lstm_vae.DeepGenerativeModel(
@@ -65,5 +66,6 @@ conf_mat = ConfusionMatrixDisplay.from_predictions(
     #cmap = 'Blues'
     )
 
+plt.title(str(purpose) + " for " + config.run_name + " at epoch" + str(latest_epoch))
 plt.savefig(fname="saved/confusion/conf_" + str(purpose) + "_" + 
         config.run_name + "_" + str(latest_epoch) + ".png")
