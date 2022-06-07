@@ -158,10 +158,10 @@ class LstmDecoder(torch.nn.Module):
         inputs : array-like
             Shape=[batch_size, latent_dim]
         """
-        if self.label_dim:
-            assert inputs.shape[-1] == self.latent_dim + self.label_dim
-        else:
-            assert inputs.shape[-1] == self.latent_dim
+        # if self.label_dim:
+        #     assert inputs.shape[-1] == self.latent_dim + self.label_dim
+        # else:
+        #     assert inputs.shape[-1] == self.latent_dim
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)

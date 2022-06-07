@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "debug_labels_spaceCONF"
+run_name = "lin_big_lstm_small_class_time"
 load_from_checkpoint = (
-    "checkpoint_debug_labels_time_epoch80"
+    None #"checkpoint_debug_labels_time_epoch80"
 )
 
 # Hardware
@@ -49,11 +49,11 @@ effort = 'time'
 kl_weight = 1
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
-h_dim = 8  # 384
-latent_dim = 8  # 256
+h_dim = 384
+latent_dim = 256
 
 # Classifier
 classifier = 'linear'
-h_dim_classif = 8  # 384
+h_dim_classif = 8
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2
