@@ -79,7 +79,6 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     bias=None,
     batch_norm=True,
     classifier=config.classifier,
-    effort=config.effort
 ).to(config.device)
 
 
