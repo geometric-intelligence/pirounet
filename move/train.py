@@ -156,6 +156,7 @@ def run_train_dgm(
                     input_label=y,
                     purpose="train",
                     config=config,
+                    log_to_wandb=True
                 )                
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
@@ -165,19 +166,19 @@ def run_train_dgm(
             )
         )
 
-        wandb.log({"epoch": epoch, "loss": total_loss / batches_seen}, step=epoch)
+        wandb.log({"epoch": epoch + latest_epoch, "loss": total_loss / batches_seen}, step=epoch)
         wandb.log(
-            {"epoch": epoch, "labelled_recon_loss": labloss / batches_seen}, step=epoch
+            {"epoch": epoch + latest_epoch, "labelled_recon_loss": labloss / batches_seen}, step=epoch
         )
         wandb.log(
-            {"epoch": epoch, "unlabelled_recon_loss": unlabloss / batches_seen},
+            {"epoch": epoch + latest_epoch, "unlabelled_recon_loss": unlabloss / batches_seen},
             step=epoch,
         )
         wandb.log(
-            {"epoch": epoch, "classification_loss": class_loss / batches_seen},
+            {"epoch": epoch + latest_epoch, "classification_loss": class_loss / batches_seen},
             step=epoch,
         )
-        wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
+        wandb.log({"epoch": epoch + latest_epoch, "accuracy": accuracy / batches_seen}, step=epoch)
 
         # Validation
         total_loss_valid, accuracy_valid, recon_loss_valid = (0, 0, 0)
@@ -235,6 +236,7 @@ def run_train_dgm(
                     input_label=y,
                     purpose="valid",
                     config=config,
+                    log_to_wandb=True
                 )
             if n_batches > 5 and i_batch != 0:
                 if i_batch % 5 == 0:
@@ -250,6 +252,7 @@ def run_train_dgm(
                         input_label=y,
                         purpose="valid",
                         config=config,
+                        log_to_wandb=True
                     )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
@@ -260,30 +263,32 @@ def run_train_dgm(
         )
 
         wandb.log(
-            {"epoch": epoch, "valid_loss": total_loss_valid / batches_v_seen},
+            {"epoch": epoch + latest_epoch, "valid_loss": total_loss_valid / batches_v_seen},
             step=epoch,
         )
         wandb.log(
-            {"epoch": epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
+            {"epoch": epoch + latest_epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
             step=epoch,
         )
 
         for label in range(config.label_dim):
             generate_f.generate_and_save(
                 model=model, 
+                purpose='valid'
                 epoch=epoch + latest_epoch, 
                 y_given=label, 
-                config=config
+                config=config,
+                log_to_wandb=True
             )
 
         logging.info("Save a checkpoint.")
         checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()),
-            "saved/checkpoint_{}_epoch{}.pt".format(config.run_name, epoch),
+            "saved/checkpoint_{}_epoch{}.pt".format(config.run_name, epoch + latest_epoch),
         )
         torch.save(
             {
-                "epoch": epoch,
+                "epoch": epoch + latest_epoch,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": (total_loss / batches_seen),

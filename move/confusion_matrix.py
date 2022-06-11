@@ -9,8 +9,9 @@ from models import dgm_lstm_vae
 
 import torch
 import torch.nn as nn
-from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 import matplotlib.pyplot as plt
+import matplotlib
 
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
@@ -39,7 +40,8 @@ checkpoint = torch.load(old_checkpoint_filepath)
 model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']
 
-purpose = 'train' #valid, test
+
+purpose = 'test' #valid, test
 
 if purpose == 'train':
     x = torch.from_numpy(labelled_data_train.dataset)
@@ -59,13 +61,32 @@ logits = model.classify(x)
 
 y_pred = (torch.max(logits, 1).indices).float()
 
-conf_mat = ConfusionMatrixDisplay.from_predictions(
+conf_mat = confusion_matrix(
     y.cpu().detach().numpy(), 
     y_pred.cpu().detach().numpy(),
-    #labels = ['Low', 'Medium', 'High', 'N/A'],
-    #cmap = 'Blues'
+    normalize = 'true'
     )
 
-plt.title(str(purpose) + " for " + config.run_name + " at epoch" + str(latest_epoch))
-plt.savefig(fname="saved/confusion/conf_" + str(purpose) + "_" + 
-        config.run_name + "_" + str(latest_epoch) + ".png")
+classes = ['Low', 'Medium', 'High']
+accuracies = conf_mat/conf_mat.sum(1)
+fig, ax = plt.subplots(figsize=(3,3))
+fig.set_figheight(6)
+fig.set_figwidth(6)
+
+cnorm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+
+cb = ax.imshow(accuracies, cmap='Blues', norm=cnorm)
+plt.xticks(range(len(classes)), classes,rotation=0)
+plt.yticks(range(len(classes)), classes)
+
+for i in range(len(classes)):
+    for j in range(len(classes)):
+        color='black' if accuracies[j,i] < 0.5 else 'white'
+        ax.annotate('{:.2f}'.format(conf_mat[j,i]), (i,j), 
+                    color=color, va='center', ha='center')
+
+plt.colorbar(cb, ax=ax, shrink=0.81)
+plt.title('Labanet\'s confusion matrix \n On ' + purpose + ' dataset')
+plt.ylabel('Ground truth')
+plt.xlabel('Predicted label')
+plt.savefig(fname="evaluate/confusion/conf_labanet_" + purpose + ".png")

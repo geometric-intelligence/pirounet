@@ -53,7 +53,7 @@ class LinearClassifier(nn.Module):
             for layer in self.layers[:-1]:
                 x = F.relu(layer(x))
 
-        logits = F.softmax(self.layers[-1](x))
+        logits = F.softmax(self.layers[-1](x), dim=1)
         return logits
 
 

@@ -127,10 +127,8 @@ class LstmDecoder(torch.nn.Module):
         self.leakyrelu = torch.nn.LeakyReLU(negative_slope=neg_slope)
 
         if label_dim:
-            input_dim_decoder = h_dim + label_dim
             total_latent_dim = latent_dim + label_dim
         else:
-            input_dim_decoder = h_dim
             total_latent_dim = latent_dim
 
         self.linear = torch.nn.Linear(total_latent_dim, h_dim)
@@ -158,10 +156,10 @@ class LstmDecoder(torch.nn.Module):
         inputs : array-like
             Shape=[batch_size, latent_dim]
         """
-        # if self.label_dim:
-        #     assert inputs.shape[-1] == self.latent_dim + self.label_dim
-        # else:
-        #     assert inputs.shape[-1] == self.latent_dim
+        if self.label_dim:
+            assert inputs.shape[-1] == self.latent_dim + self.label_dim
+        else:
+            assert inputs.shape[-1] == self.latent_dim
 
         h = self.linear(inputs)
         h = self.leakyrelu(h)

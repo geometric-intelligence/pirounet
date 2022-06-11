@@ -226,9 +226,9 @@ def animatestick(
     seq,
     fname,
     ghost=None,
-    ghost_shift=0,
+    ghost_shift=1,
     figsize=(12, 8),
-    zcolor=None,
+    zcolor=None, #'blue',
     pointer=None,
     ax_lims=(-0.4, 0.4),
     speed=45,
@@ -349,7 +349,10 @@ def reconstruct(
     input_data,
     input_label,
     purpose,
-    config=None,
+    config,
+    log_to_wandb=False,
+    single_epoch=None,
+    comic=False
 ):
     """
     Make and save stick video on seq from input_data dataset.
@@ -362,9 +365,7 @@ def reconstruct(
     if config is None:
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
-
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
-
+ 
     x = input_data
     y = input_label
     x_recon = model(x, y)  # has shape [batch_size, seq_len, 159]
@@ -377,8 +378,17 @@ def reconstruct(
         name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
     else:
         name = f"recon_{purpose}_{config.run_name}.gif"
+    
+    if single_epoch is None:
+        filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+        fname = os.path.join(filepath, name)
 
-    fname = os.path.join(filepath, name)
+    if single_epoch is not None:
+        fname = os.path.join(str(single_epoch), name)
+        plotname = f"comic_{purpose}_{config.run_name}"
+        comicname_recon = os.path.join(str(single_epoch), plotname + '_recon.png')
+        comicname = os.path.join(str(single_epoch), plotname + '.png')
+
     fname = animatestick(
         x_recon_formatted,
         fname=fname,
@@ -386,10 +396,23 @@ def reconstruct(
         dot_alpha=0.7,
         ghost_shift=0.2,
     )
-    animation_artifact = wandb.Artifact("animation", type="video")
-    animation_artifact.add_file(fname)
-    wandb.log_artifact(animation_artifact)
-    logging.info("ARTIFACT: logged reconstruction to wandb.")
+
+    if comic:
+        draw_comic(
+            x_recon_formatted,
+            comicname_recon,
+            recon=True
+        )
+        draw_comic(
+            x_formatted,
+            comicname,
+        )
+
+    if log_to_wandb:
+        animation_artifact = wandb.Artifact("animation", type="video")
+        animation_artifact.add_file(fname)
+        wandb.log_artifact(animation_artifact)
+        logging.info("ARTIFACT: logged reconstruction to wandb.")
 
 
 def generate(
@@ -430,9 +453,12 @@ def generate(
 
 def generate_and_save(
     model,
+    purpose=None,
     epoch=None,
     y_given=None,
     config=None,
+    single_epoch=None,
+    log_to_wandb=False
 ):
     """Generate a dance from a given label and save the corresponding artifact."""
     if config is None:
@@ -445,11 +471,17 @@ def generate_and_save(
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"gen_label{y_title}_epoch_{epoch}_{config.run_name}.gif"
+        name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
     else:
-        name = f"gen_label{y_title}_{config.run_name}.gif"
+        name = f"recon_{purpose}_{config.run_name}.gif"
+    
+    if single_epoch is None:
+        filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+        fname = os.path.join(filepath, name)
 
-    fname = os.path.join(filepath, name)
+    if single_epoch is not None:
+        fname=os.path.join(str(single_epoch), name)
+
     fname = animatestick(
         x_create_formatted,
         fname=fname,
@@ -458,8 +490,79 @@ def generate_and_save(
         ghost_shift=0.2,
         condition=y_title,
     )
+    if log_to_wandb:
+        animation_artifact = wandb.Artifact("animation", type="video")
+        animation_artifact.add_file(fname)
+        wandb.log_artifact(animation_artifact)
+        logging.info("ARTIFACT: logged conditional generation to wandb.")
 
-    animation_artifact = wandb.Artifact("animation", type="video")
-    animation_artifact.add_file(fname)
-    wandb.log_artifact(animation_artifact)
-    logging.info("ARTIFACT: logged conditional generation to wandb.")
+def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, dot_size=0, lw=0.8, zcolor=None,recon=False):
+    
+    frames = frames.cpu().data.numpy()
+    frames = frames[::4, :, :]
+
+    if recon:
+        cmap = 'cool_r'
+    if not recon:
+        cmap = 'autumn'
+    #cmap = 'cool_r'
+    fig = plt.figure(figsize=figsize)
+    ax = p3.Axes3D(fig)
+    ax.view_init(30, 0)
+    shift_size=0.6
+    
+    ax.set_xlim(-window_size,window_size)
+    ax.set_ylim(0, 6)  #(-window_size,2*len(frames)*window_size)
+    ax.set_zlim(-0.1,0.6)
+    ax.set_box_aspect([1,8,0.8])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    
+    cm = matplotlib.cm.get_cmap(cmap)
+    
+    if angles is not None:
+        vR = 0.15
+        zidx = point_labels.index("CLAV")
+        X = frames[:,zidx,0]
+        Y = frames[:,zidx,1]
+        dX,dY = vR*np.cos(angles), vR*np.sin(angles)
+        Z = frames[:,zidx,2]
+        #Z = frames[:,2,2]
+    n_frame=0
+    for iframe,frame in enumerate(frames):
+        n_frame += 1
+        ax.scatter(frame[:,0],
+                       frame[:,1]+n_frame*shift_size,
+                       frame[:,2],
+                       #alpha=0.3,
+                       c= frame[:, 2], #'black', #zcolor,np.arange(0, 53),#
+                       cmap=cm,
+                       s=dot_size,
+                       depthshade=True)
+
+        zcolor = frame[:, 2] * 4
+        
+        if angles is not None:
+            ax.quiver(X[iframe],iframe*shift_size+Y[iframe],Z[iframe],dX[iframe],dY[iframe],0, color='black')
+        
+        for i,(g1,g2) in enumerate(skeleton_lines):
+            g1_idx = [point_labels.index(l) for l in g1]
+            g2_idx = [point_labels.index(l) for l in g2]
+
+            if zcolor is not None:
+                color = cm(0.5*(zcolor[g1_idx].mean() + zcolor[g2_idx].mean()))
+            else:
+                color = None
+
+            x1 = np.mean(frame[g1_idx],axis=0)
+            x2 = np.mean(frame[g2_idx],axis=0)
+            
+            ax.plot(np.linspace(x1[0],x2[0],10),
+                    np.linspace(x1[1],x2[1],10)+iframe*shift_size,
+                    np.linspace(x1[2],x2[2],10),
+                    color=color,
+                    lw=lw)
+        plt.savefig(comicname)

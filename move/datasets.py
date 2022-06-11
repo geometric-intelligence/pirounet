@@ -7,6 +7,7 @@ from glob import glob
 
 import numpy as np
 import torch
+from torch.utils.data import ConcatDataset
 
 import default_config
 
@@ -345,7 +346,7 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
 
     for i in range((pose_data.shape[0] - seq_len)):
         seq_data[i] = pose_data[i : i + seq_len]
-    logging.info(f"Preprocessing: Load seq_data_lab of shape {seq_data.shape}")
+    logging.info(f"Preprocessing: Load seq_data of shape {seq_data.shape}")
 
     if augmentation_factor > 1:
         logging.info(
@@ -353,7 +354,7 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
             f"factor = {augmentation_factor}"
         )
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq_data_lab has shape: {seq_data.shape}")
+        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
 
     np.random.shuffle(seq_data)
 
@@ -404,12 +405,27 @@ def get_dgm_data(config, augmentation_factor=1):
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
     labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
+    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
+
+    # labelled_data_valid_ds = seq_data_lab[(12*five_perc_lab):(13*five_perc_lab), :, :]
+    # train1 = seq_data_lab[:(12*five_perc_lab), :, :]
+    # train2 = seq_data_lab[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labelled_data_train_ds = np.append(train1, train2, axis=0)
+    # labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
     #divide labels into 90% training, 5% validating, and 5% testing sets
     labels_valid_ds = labels[:(five_perc_lab), :, :]
     labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
+    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
+    # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]
+    # train1l = labels[:(12*five_perc_lab), :, :]
+    # train2l = labels[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labels_train_ds = np.append(train1l, train2l)
+    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
     # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
@@ -452,7 +468,9 @@ def get_dgm_data(config, augmentation_factor=1):
     unlabelled_data_test = torch.utils.data.DataLoader(
         unlabelled_data_test_ds, batch_size=1,
         )
-
+    # double_test = torch.utils.data.DataLoader(
+    #     double_test_ds, batch_size=1,
+    #     )
 
     return labelled_data_train, labels_train, unlabelled_data_train, \
             labelled_data_valid, labels_valid, labelled_data_test, labels_test,\

@@ -21,19 +21,19 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "lin_big_lstm_small_class_time"
+run_name = "comics2_report_gen"
 load_from_checkpoint = (
-    None #"checkpoint_debug_labels_time_epoch80"
+    "checkpoint_smaller_lstm_contd_epoch144"
 )
 
 # Hardware
-which_device = "1"
+which_device = "0"
 device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
 
 # Training
-epochs = 400
+epochs = 600
 learning_rate = 3e-4  # 6e-6
 batch_size = 80
 with_clip = False
@@ -49,11 +49,11 @@ effort = 'time'
 kl_weight = 1
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
-h_dim = 384
+h_dim = 100
 latent_dim = 256
 
 # Classifier
 classifier = 'linear'
-h_dim_classif = 8
+h_dim_classif = 100
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2
