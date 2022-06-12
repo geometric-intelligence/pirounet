@@ -21,7 +21,7 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "comics2_report_gen"
+run_name = "GOOD_COMICS_test"
 load_from_checkpoint = (
     "checkpoint_smaller_lstm_contd_epoch144"
 )
