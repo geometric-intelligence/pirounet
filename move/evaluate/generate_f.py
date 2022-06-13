@@ -453,12 +453,12 @@ def generate(
 
 def generate_and_save(
     model,
-    purpose=None,
     epoch=None,
     y_given=None,
     config=None,
     single_epoch=None,
-    log_to_wandb=False
+    log_to_wandb=False,
+    comic=False
 ):
     """Generate a dance from a given label and save the corresponding artifact."""
     if config is None:
@@ -471,16 +471,19 @@ def generate_and_save(
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
+        name = f"create_epoch_{epoch}_{config.run_name}.gif"
     else:
-        name = f"recon_{purpose}_{config.run_name}.gif"
+        name = f"create_{y_given}_{config.run_name}.gif"
     
-    if single_epoch is None:
+    if single_epoch is None:    
         filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
         fname = os.path.join(filepath, name)
 
     if single_epoch is not None:
-        fname=os.path.join(str(single_epoch), name)
+        fname = os.path.join(str(single_epoch), name)
+        plotname = f"comic_create_{y_given}_{epoch}_{config.run_name}.png"
+        comicname = os.path.join(str(single_epoch), plotname)
+
 
     fname = animatestick(
         x_create_formatted,
@@ -490,6 +493,14 @@ def generate_and_save(
         ghost_shift=0.2,
         condition=y_title,
     )
+
+    if comic:
+        draw_comic(
+            x_create_formatted,
+            comicname,
+            recon=True
+        )
+
     if log_to_wandb:
         animation_artifact = wandb.Artifact("animation", type="video")
         animation_artifact.add_file(fname)
@@ -502,18 +513,18 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
     frames = frames[::4, :, :]
 
     if recon:
-        cmap = 'cool_r'
+        cmap = 'autumn' #'cool_r'
     if not recon:
-        cmap = 'autumn'
+        cmap = 'cool_r'
     #cmap = 'cool_r'
     fig = plt.figure(figsize=figsize)
     ax = p3.Axes3D(fig)
     ax.view_init(30, 0)
     shift_size=0.6
     
-    ax.set_xlim(-window_size,window_size)
+    ax.set_xlim(-0.4*window_size,0.4*window_size)
     ax.set_ylim(0, 6)  #(-window_size,2*len(frames)*window_size)
-    ax.set_zlim(-0.1,0.6)
+    ax.set_zlim(-0.1,0.5)
     ax.set_box_aspect([1,8,0.8])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
@@ -535,7 +546,7 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
     for iframe,frame in enumerate(frames):
         n_frame += 1
         ax.scatter(frame[:,0],
-                       frame[:,1]+n_frame*shift_size,
+                       frame[:,1]+0.4+n_frame*shift_size,
                        frame[:,2],
                        #alpha=0.3,
                        c= frame[:, 2], #'black', #zcolor,np.arange(0, 53),#
@@ -543,7 +554,7 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
                        s=dot_size,
                        depthshade=True)
 
-        zcolor = frame[:, 2] * 4
+        zcolor = frame[:, 2] * 2
         
         if angles is not None:
             ax.quiver(X[iframe],iframe*shift_size+Y[iframe],Z[iframe],dX[iframe],dY[iframe],0, color='black')

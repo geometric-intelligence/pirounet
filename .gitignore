@@ -14,6 +14,8 @@ move/saved
 move/*.out
 *.out
 tests/
+evaluate/generate/
+evaluate/reconstruct/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
