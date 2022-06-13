@@ -274,7 +274,6 @@ def run_train_dgm(
         for label in range(config.label_dim):
             generate_f.generate_and_save(
                 model=model, 
-                purpose='valid'
                 epoch=epoch + latest_epoch, 
                 y_given=label, 
                 config=config,
