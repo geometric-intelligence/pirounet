@@ -93,18 +93,5 @@ if purpose == 'blind':
 
     # DO NOT RE-SAVE NEW SEQUENCES, MUST MATCH SEQUENCES IN APP
     # save shuffles sequences and labels. We will plot these sequences in the shuffled order
-    #np.savetxt('shuffled_seq.txt', set_of_blind_sequences_shuffled, fmt='%d')
     # np.save('shuffled_seq', set_of_blind_sequences_shuffled)
-
-    # #np.savetxt('shuffled_labels.txt', associated_labels_shuffled, fmt='%d')
-    # np.save('shuffled_labels', associated_labels_shuffled)
-
-    # checking     
-
-    # with open('shuffled_seq.csv', 'w', newline='') as file:
-    #     writer = csv.writer(file, delimiter=',')
-    #     writer.writerows(set_of_blind_sequences_shuffled)
-
-    # with open('shuffled_labels.csv', 'w', newline='') as file:
-    #     writer = csv.writer(file, delimiter=',')
-    #     writer.writerow(associated_labels_shuffled)
+    # np.save('shuffled_labels', associated_labels_shuffled)    
