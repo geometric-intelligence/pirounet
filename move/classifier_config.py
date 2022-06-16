@@ -9,7 +9,7 @@ The Classifier maps:
 """
 import torch
 
-run_name = 'classifier_sweep_no_gen' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'classifier_lstm' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
    None #"checkpoint_smaller_lstm_contd_epoch144"
 )
@@ -21,9 +21,9 @@ device = (
 )
 
 # Training
-epochs = 150
+epochs = 200
 learning_rate = 3e-4  # 6e-6
-batch_size = 40
+batch_size = 8
 
 # Input data
 seq_len = 40
@@ -32,7 +32,11 @@ label_dim = 3
 amount_of_labels = 1
 effort = 'time'
 
-# Classifier
-h_dim_classif = 100
-neg_slope_classif = 0  # 0.5 #0.1 # 0.05
-n_layers_classif = 2
+# Classifier's linear layers
+h_dim_class = 100
+neg_slope_classif = 0.05  # 0.5 #0.1 # 0.05
+n_layers_class = 2
+
+# Classifier's LSTM layers
+h_dim = 100
+n_layers = 5

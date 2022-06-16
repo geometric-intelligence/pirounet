@@ -41,7 +41,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']
 
 
-purpose = 'test' #valid, test
+purpose = 'valid' #valid, test
 
 if purpose == 'train':
     x = torch.from_numpy(labelled_data_train.dataset)
@@ -89,4 +89,4 @@ plt.colorbar(cb, ax=ax, shrink=0.81)
 plt.title('Labanet\'s confusion matrix \n On ' + purpose + ' dataset')
 plt.ylabel('Ground truth')
 plt.xlabel('Predicted label')
-plt.savefig(fname="evaluate/confusion/conf_labanet_" + purpose + ".png")
+plt.savefig(fname="evaluate/confusion/conf_labanet_half_lab_" + purpose + ".png")

@@ -50,8 +50,6 @@ def run_train_dgm(
 
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
-    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
-
     if config.load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt"
@@ -95,13 +93,7 @@ def run_train_dgm(
 
             batches_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, config.label_dim))
-            for y_i in y:
-                y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
-                batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-
-            batch_one_hot = batch_one_hot[1:, :, :]
+            batch_one_hot = utils.batch_one_hot(y, config.label_dim)
             y = batch_one_hot.to(config.device)
 
             if i_batch == 0:
@@ -194,12 +186,7 @@ def run_train_dgm(
 
             batches_v_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, config.label_dim))
-            for y_i in y:
-                y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
-                batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-            batch_one_hot = batch_one_hot[1:, :, :]
+            batch_one_hot = utils.batch_one_hot(y, config.label_dim)
             y = batch_one_hot.to(config.device)
 
             L = -elbo(x, y)

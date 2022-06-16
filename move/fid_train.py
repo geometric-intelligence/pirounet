@@ -69,13 +69,7 @@ def run_train_classifier(
 
             batches_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, config.label_dim))
-            for y_i in y:
-                y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
-                batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-
-            batch_one_hot = batch_one_hot[1:, :, :]
+            batch_one_hot = utils.batch_one_hot(y, config.label_dim)
             y = batch_one_hot.to(config.device)
 
             if i_batch == 0:
@@ -84,14 +78,16 @@ def run_train_classifier(
             logits = model.forward(x)
 
             # classification loss is averaged on minibatch
-            classication_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
-            class_loss += classication_loss
+            classification_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            class_loss += classification_loss
 
             # J_alpha is averaged on minibatch
-            J_alpha = classication_loss
+            J_alpha = classification_loss
 
             J_alpha.backward()
             optimizer.step()
+
+            print(model.weight.grad)
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()
@@ -140,12 +136,7 @@ def run_train_classifier(
 
             batches_v_seen += 1
 
-            batch_one_hot = torch.zeros((1, 1, config.label_dim))
-            for y_i in y:
-                y_i_enc = onehot_encoder(y_i.item())
-                y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
-                batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-            batch_one_hot = batch_one_hot[1:, :, :]
+            batch_one_hot = utils.batch_one_hot(y, config.label_dim)
             y = batch_one_hot.to(config.device)
 
             logits_v = model.forward(x)

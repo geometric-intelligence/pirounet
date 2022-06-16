@@ -401,17 +401,13 @@ def get_dgm_data(config, augmentation_factor=1):
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
-
-    
     five_perc_lab = int(one_perc_lab * 5)
+    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 3))
+    new_stopping_point = int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    # labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 8)), :, :]
-
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : new_stopping_point, :, :]
     labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
-
-    #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
 
     # labelled_data_valid_ds = seq_data_lab[(12*five_perc_lab):(13*five_perc_lab), :, :]
     # train1 = seq_data_lab[:(12*five_perc_lab), :, :]
@@ -419,13 +415,12 @@ def get_dgm_data(config, augmentation_factor=1):
     # labelled_data_train_ds = np.append(train1, train2, axis=0)
     # labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
-    #divide labels into 90% training, 5% validating, and 5% testing sets
+    #divide labels into training, validating, and testing sets
+
     labels_valid_ds = labels[:(five_perc_lab), :, :]
-    # labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 8)), :, :]
+    labels_train_ds = labels[(five_perc_lab) : new_stopping_point, :, :]
     labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
-    #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
     # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]
     # train1l = labels[:(12*five_perc_lab), :, :]
     # train2l = labels[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
