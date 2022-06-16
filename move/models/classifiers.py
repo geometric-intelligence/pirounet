@@ -46,17 +46,17 @@ class LinearClassifier(nn.Module):
         batch_size = x.shape[0]
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
-        print('went through relu activation')
-        if self.neg_slope is not None and not 0:
-            for layer in self.layers[:-1]:
+        # if self.neg_slope is not None and not 0:
+        #     for layer in self.layers[:-1]:
                 
-                x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
+        #         x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
 
-        else:
-            for layer in self.layers[:-1]:
-                print('went through 1 layer')
-                x = F.relu(layer(x))
-        print('got to last layers')
+        # else:
+        #     for layer in self.layers[:-1]:
+        #         print('went through 1 layer')
+        #         x = F.relu(layer(x))
+        for layer in self.layers[:-1]:
+            x = F.relu(layer(x))        
         logits = F.softmax(self.layers[-1](x), dim=1)
 
         if not self.return_activation:
@@ -76,11 +76,9 @@ class FID_Classifier(LinearClassifier):
         n_layers,
         return_activation
     ):
-
         """
         Model that runs classifier for FID, diversity, and multimodul diversity
         """
-
         super(FID_Classifier, self).__init__()
         self.label_dim = label_dim
         self.seq_len = seq_len

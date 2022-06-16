@@ -70,7 +70,7 @@ if purpose == 'blind':
     set_of_blind_sequences = []
     for label in range(config.label_dim):
         one_label_seq = []
-        for i in range(100):
+        for i in range(3000):
             x_create, y_title = generate_f.generate(
                                             model=model, 
                                             y_given=label, 
@@ -93,5 +93,5 @@ if purpose == 'blind':
 
     # DO NOT RE-SAVE NEW SEQUENCES, MUST MATCH SEQUENCES IN APP
     # save shuffles sequences and labels. We will plot these sequences in the shuffled order
-    # np.save('shuffled_seq', set_of_blind_sequences_shuffled)
-    # np.save('shuffled_labels', associated_labels_shuffled)    
+    np.save('shuffled_seq_for_classifier', set_of_blind_sequences_shuffled)
+    np.save('shuffled_labels_for_classifier', associated_labels_shuffled)    

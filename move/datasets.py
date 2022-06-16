@@ -518,3 +518,88 @@ def get_aist_data(config, augmentation_factor=1):
     )
     data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
     return data_train_torch, data_valid_torch, data_test_torch
+
+def get_classifier_data(config, augmentation_factor=1):
+    """Transform mariel data into train/val/test torch loaders.
+
+    Note: Pettee 2019 keeps augmentation_factor=1.
+    """
+    ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
+    pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
+
+    labels_1_to_4, labels_ind = load_labels(effort = config.effort)
+    labels = labels_1_to_4 - 1.
+    labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
+
+    # sequify both sets of data
+    seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
+    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
+
+    # divide labelled data into 90% training, 5% validating, and 5% testing sets
+    one_perc_lab = int(round(len(labels_ind) * 0.01))
+    five_perc_lab = int(one_perc_lab * 5)
+
+    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
+
+    # labelled_data_valid_ds = seq_data_lab[(12*five_perc_lab):(13*five_perc_lab), :, :]
+    # train1 = seq_data_lab[:(12*five_perc_lab), :, :]
+    # train2 = seq_data_lab[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labelled_data_train_ds = np.append(train1, train2, axis=0)
+    # labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
+
+    #divide labels into 90% training, 5% validating, and 5% testing sets
+    labels_valid_ds = labels[:(five_perc_lab), :, :]
+    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
+    # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]
+    # train1l = labels[:(12*five_perc_lab), :, :]
+    # train2l = labels[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labels_train_ds = np.append(train1l, train2l)
+    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
+
+    logging.info("Get generated data")
+    labelled_data_gen = np.load('data/shuffled_seq_for_classifier.npy')
+    labelled_data_gen = labelled_data_gen.reshape(-1, config.seq_len, config.input_dim)
+    labelled_data_train_ds = np.append(labelled_data_train,labelled_data_gen)
+    labels_train_gen = np.load('data/shuffled_labels_for_classifier.npy')
+    labels_train_gen = labelled_data_gen.reshape(-1, 1, 1)
+    labels_train_ds = np.append(labels_train_ds, labels_train_gen)
+
+    print(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
+    print(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
+    print(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
+    print(f">> Labels train ds has shape {labels_train_ds.shape}")
+    print(f">> Labels valid ds has shape {labels_valid_ds.shape}")
+    print(f">> Labels test ds has shape {labels_test_ds.shape}")
+
+    logging.info("Preprocessing: Convert into torch dataloader")
+
+    labelled_data_train = torch.utils.data.DataLoader(
+        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
+        )
+    labels_train = torch.utils.data.DataLoader(
+        labels_train_ds, batch_size=config.batch_size, drop_last=True
+        )
+    labelled_data_valid = torch.utils.data.DataLoader(
+        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
+        )
+    labels_valid = torch.utils.data.DataLoader(
+        labels_valid_ds, batch_size=config.batch_size, drop_last=True
+        )
+    labelled_data_test = torch.utils.data.DataLoader(
+        labelled_data_test_ds, batch_size=1, drop_last=True
+        )
+    labels_test = torch.utils.data.DataLoader(
+        labels_test_ds, batch_size=config.batch_size, drop_last=True
+        )
+
+    return labelled_data_train, labels_train, \
+            labelled_data_valid, labels_valid, labelled_data_test, labels_test,\
+            
+

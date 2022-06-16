@@ -37,6 +37,13 @@ def run_train_classifier(
 
     loss_epoch = average loss per sequence.
     """
+    if config.load_from_checkpoint is not None:
+        old_checkpoint_filepath = os.path.join(
+            os.path.abspath(os.getcwd()), "saved/classifier/" + config.load_from_checkpoint + ".pt"
+        )
+        checkpoint = torch.load(old_checkpoint_filepath)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     onehot_encoder = utils.make_onehot_encoder(config.label_dim)
 
@@ -48,21 +55,19 @@ def run_train_classifier(
         class_loss = 0
 
         batches_seen = 0
-        n_batches = len(unlabelled_data_train)
+        n_batches = len(labelled_data_train)
         n_batches_valid = len(labelled_data_valid)
 
-        for i_batch, (x, y, u) in enumerate(
+        for i_batch, (x, y) in enumerate(
             zip(
                 itertools.cycle(labelled_data_train),
                 itertools.cycle(labels_train),
-                unlabelled_data_train,
             )
         ):
 
             # Wrap in variables
-            x, y, u = Variable(x), Variable(y), Variable(u)
+            x, y = Variable(x), Variable(y)
             x, y = x.to(config.device), y.to(config.device)
-            u = u.to(config.device)
 
             batches_seen += 1
 
