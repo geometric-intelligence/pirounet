@@ -9,7 +9,7 @@ The Classifier maps:
 """
 import torch
 
-run_name = 'classifier_sweep' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'classifier_sweep_no_gen' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
    None #"checkpoint_smaller_lstm_contd_epoch144"
 )
@@ -33,7 +33,6 @@ amount_of_labels = 1
 effort = 'time'
 
 # Classifier
-classifier = 'linear'
 h_dim_classif = 100
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

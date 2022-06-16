@@ -21,13 +21,13 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'blind_gen' # "hdim100_hclass100_batch40_lr3e4"
+run_name = '10_perc_labelled' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-   "checkpoint_smaller_lstm_contd_epoch144"
+   "checkpoint_10_perc_labelled_epoch567"
 )
 
 # Hardware
-which_device = "0"
+which_device = "1"
 device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
@@ -35,7 +35,7 @@ device = (
 # Training
 epochs = 600
 learning_rate = 3e-4  # 6e-6
-batch_size = 1 #40
+batch_size = 80 #40
 with_clip = False
 
 # Input data

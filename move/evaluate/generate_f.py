@@ -471,7 +471,7 @@ def generate_and_save(
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
 
     if epoch is not None:
-        name = f"create_epoch_{epoch}_{config.run_name}.gif"
+        name = f"create_{y_given}_epoch_{epoch}_{config.run_name}.gif"
     else:
         name = f"create_{y_given}_{config.run_name}.gif"
     
@@ -481,7 +481,7 @@ def generate_and_save(
 
     if single_epoch is not None:
         fname = os.path.join(str(single_epoch), name)
-        plotname = f"comic_create_{y_given}_{epoch}_{config.run_name}.png"
+        plotname = f"comic_{y_given}_{epoch}_{config.run_name}.png"
         comicname = os.path.join(str(single_epoch), plotname)
 
 

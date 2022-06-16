@@ -4,10 +4,10 @@ import logging
 import os
 from os.path import exists
 
-import default_config
+import classifier_config
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+os.environ["CUDA_VISIBLE_DEVICES"] = classifier_config.which_device
 
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
@@ -24,7 +24,6 @@ def run_train_classifier(
     model,
     labelled_data_train,
     labels_train,
-    unlabelled_data_train,
     labelled_data_valid,
     labels_valid,
     optimizer,
@@ -37,13 +36,17 @@ def run_train_classifier(
 
     loss_epoch = average loss per sequence.
     """
-    if config.load_from_checkpoint is not None:
-        old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()), "saved/classifier/" + config.load_from_checkpoint + ".pt"
-        )
-        checkpoint = torch.load(old_checkpoint_filepath)
-        model.load_state_dict(checkpoint["model_state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    # if config.load_from_checkpoint is not None:
+    #     old_checkpoint_filepath = os.path.join(
+    #         os.path.abspath(os.getcwd()), "saved/classifier/" + config.load_from_checkpoint + ".pt"
+    #     )
+    #     checkpoint = torch.load(old_checkpoint_filepath)
+    #     model.load_state_dict(checkpoint["model_state_dict"])
+    #     optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    #     print('loaded from checkpoint')
+    
+    # if config.load_from_checkpoint is None:
+    #     print('from scratch')
 
     onehot_encoder = utils.make_onehot_encoder(config.label_dim)
 
@@ -58,12 +61,7 @@ def run_train_classifier(
         n_batches = len(labelled_data_train)
         n_batches_valid = len(labelled_data_valid)
 
-        for i_batch, (x, y) in enumerate(
-            zip(
-                itertools.cycle(labelled_data_train),
-                itertools.cycle(labels_train),
-            )
-        ):
+        for i_batch, (x, y) in enumerate(zip(labelled_data_train, labels_train)):
 
             # Wrap in variables
             x, y = Variable(x), Variable(y)

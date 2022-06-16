@@ -401,10 +401,14 @@ def get_dgm_data(config, augmentation_factor=1):
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
+
+    
     five_perc_lab = int(one_perc_lab * 5)
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 8)), :, :]
+
     labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
     #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
@@ -417,7 +421,8 @@ def get_dgm_data(config, augmentation_factor=1):
 
     #divide labels into 90% training, 5% validating, and 5% testing sets
     labels_valid_ds = labels[:(five_perc_lab), :, :]
-    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    # labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
+    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 8)), :, :]
     labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
     #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
@@ -533,7 +538,6 @@ def get_classifier_data(config, augmentation_factor=1):
 
     # sequify both sets of data
     seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
-    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
@@ -563,13 +567,13 @@ def get_classifier_data(config, augmentation_factor=1):
     # labels_train_ds = np.append(train1l, train2l)
     # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
-    logging.info("Get generated data")
-    labelled_data_gen = np.load('data/shuffled_seq_for_classifier.npy')
-    labelled_data_gen = labelled_data_gen.reshape(-1, config.seq_len, config.input_dim)
-    labelled_data_train_ds = np.append(labelled_data_train,labelled_data_gen)
-    labels_train_gen = np.load('data/shuffled_labels_for_classifier.npy')
-    labels_train_gen = labelled_data_gen.reshape(-1, 1, 1)
-    labels_train_ds = np.append(labels_train_ds, labels_train_gen)
+    # logging.info("Get generated data")
+    # labelled_data_gen = np.load('data/shuffled_seq_for_classifier.npy')
+    # labelled_data_gen = labelled_data_gen.reshape(-1, config.seq_len, config.input_dim)
+    # labelled_data_train_ds = np.append(labelled_data_train_ds,labelled_data_gen, axis=0)
+    # labels_train_gen = np.load('data/shuffled_labels_for_classifier.npy')
+    # labels_train_gen = labels_train_gen.reshape(-1, 1, 1)
+    # labels_train_ds = np.append(labels_train_ds, labels_train_gen, axis=0)
 
     print(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
     print(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")

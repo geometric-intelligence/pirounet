@@ -45,7 +45,6 @@ wandb.init(
         "h_dim_classif": fid_classifier_config.h_dim_classif,
         "label_dim": fid_classifier_config.label_dim,
         "device": fid_classifier_config.device,
-        "classifier": fid_classifier_config.classifier,
         "effort": fid_classifier_config.effort,
     },
 )
@@ -53,7 +52,7 @@ config = wandb.config
 logging.info(f"Config: {config}")
 logging.info(f"---> Using device {config.device}")
 
-wandb.run.name = fid_classifier_config.run_name
+#wandb.run.name = fid_classifier_config.run_name
 
 logging.info("Initialize classifier model")
 model = classifiers.LinearClassifier(
@@ -71,31 +70,26 @@ logging.info("Get original data")
 (
     labelled_data_train,
     labels_train,
-    unlabelled_data_train,
     labelled_data_valid,
     labels_valid,
     labelled_data_test,
     labels_test,
-    unlabelled_data_test,
-) = datasets.get_dgm_data(config)
+) = datasets.get_classifier_data(config)
 
+# wandb.watch(model, train.get_loss, log="all", log_freq=100)
+optimizer = torch.optim.Adam(
+    model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
+)
 
-
-# # wandb.watch(model, train.get_loss, log="all", log_freq=100)
-# optimizer = torch.optim.Adam(
-#     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
-# )
-
-# logging.info("Train")
-# fid_train.run_train_classifier(
-#     model,
-#     labelled_data_train,
-#     labels_train,
-#     unlabelled_data_train,
-#     labelled_data_valid,
-#     labels_valid,
-#     optimizer,
-#     config=config,
-# )
+logging.info("Train")
+fid_train.run_train_classifier(
+    model,
+    labelled_data_train,
+    labels_train,
+    labelled_data_valid,
+    labels_valid,
+    optimizer,
+    config=config,
+)
 
 wandb.finish()

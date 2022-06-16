@@ -46,10 +46,11 @@ latest_epoch = checkpoint['epoch']
 # 2. make default_config match classifier, h_dim, h_dim_class, batch_size
 # 3. pick empty device
 ####################################################
-purpose = 'blind'
+purpose = 'artifact'
 
 if purpose == 'artifact':
     for label in range(config.label_dim):
+        print(f"doing label {label}")
         filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "evaluate/generate/" + config.run_name + '_lab' + str(label))
 
         if exists(filepath_for_artifacts) is False:
@@ -81,10 +82,10 @@ if purpose == 'blind':
         
         set_of_blind_sequences.append(one_label_seq)
 
-    set_of_blind_sequences = np.array(set_of_blind_sequences).reshape(300, config.seq_len, 53, 3 )
+    set_of_blind_sequences = np.array(set_of_blind_sequences).reshape(-1, config.seq_len, 53, 3 )
 
     # make array of original labels with size [300, 1]
-    associated_labels = np.concatenate((np.zeros(100), np.ones(100), 2 * np.ones(100)))
+    associated_labels = np.concatenate((np.zeros(3000), np.ones(3000), 2 * np.ones(3000)))
     
     # reshuffle sequences and labels along the first axis
     shuffler = np.random.permutation(len(associated_labels))
@@ -93,5 +94,5 @@ if purpose == 'blind':
 
     # DO NOT RE-SAVE NEW SEQUENCES, MUST MATCH SEQUENCES IN APP
     # save shuffles sequences and labels. We will plot these sequences in the shuffled order
-    np.save('shuffled_seq_for_classifier', set_of_blind_sequences_shuffled)
-    np.save('shuffled_labels_for_classifier', associated_labels_shuffled)    
+    # np.save('shuffled_seq_for_classifier', set_of_blind_sequences_shuffled)
+    # np.save('shuffled_labels_for_classifier', associated_labels_shuffled)    
