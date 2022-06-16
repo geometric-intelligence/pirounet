@@ -14,6 +14,7 @@ class LinearClassifier(nn.Module):
         seq_len,
         neg_slope,
         n_layers,
+        return_activation
     ):
         """
         Multi hidden layer classifier
@@ -26,6 +27,7 @@ class LinearClassifier(nn.Module):
 
         self.n_layers = n_layers
         self.neg_slope = neg_slope
+        self.return_activation = return_activation
 
         self.layers = nn.ModuleList()
         for i in range(int(n_layers)):
@@ -44,16 +46,76 @@ class LinearClassifier(nn.Module):
         batch_size = x.shape[0]
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
-
+        print('went through relu activation')
         if self.neg_slope is not None and not 0:
             for layer in self.layers[:-1]:
+                
                 x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
 
         else:
             for layer in self.layers[:-1]:
+                print('went through 1 layer')
                 x = F.relu(layer(x))
-
+        print('got to last layers')
         logits = F.softmax(self.layers[-1](x), dim=1)
+
+        if not self.return_activation:
+            return logits
+        if self.return_activation:
+            return logits
+
+
+class FID_Classifier(LinearClassifier):
+    def __init__(
+        self,
+        input_dim,
+        h_dim,
+        label_dim,
+        seq_len,
+        neg_slope,
+        n_layers,
+        return_activation
+    ):
+
+        """
+        Model that runs classifier for FID, diversity, and multimodul diversity
+        """
+
+        super(FID_Classifier, self).__init__()
+        self.label_dim = label_dim
+        self.seq_len = seq_len
+
+        self.classifier = LinearClassifier(
+            input_dim=input_dim,
+            h_dim=h_dim,
+            label_dim=label_dim,
+            seq_len=seq_len,
+            neg_slope=neg_slope,
+            n_layers=n_layers,
+            return_activation=return_activation
+        )
+
+        for m in self.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal_(m.weight.data)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+
+
+    def forward(self, x):
+        """Classify input x into logits.
+
+        Parameters
+        ----------
+        x : array-like
+            Shape=[batch_size, seq_len, input_dim]
+
+        Returns
+        -------
+        logits : array-like
+                 Shape=[batch_size, label_dim]
+        """
+        logits = self.classifier(x)
         return logits
 
 

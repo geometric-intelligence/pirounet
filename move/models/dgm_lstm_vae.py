@@ -83,6 +83,7 @@ class DeepGenerativeModel(LstmVAE):
                 seq_len=seq_len,
                 neg_slope=neg_slope_classif,
                 n_layers=n_layers_classif,
+                return_activation=False
             )
 
         if classifier == 'transformer':
