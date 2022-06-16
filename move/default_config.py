@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = "GOOD_COMICS_test"
+run_name = 'blind_gen' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-    "checkpoint_smaller_lstm_contd_epoch144"
+   "checkpoint_smaller_lstm_contd_epoch144"
 )
 
 # Hardware
@@ -35,7 +35,7 @@ device = (
 # Training
 epochs = 600
 learning_rate = 3e-4  # 6e-6
-batch_size = 80
+batch_size = 1 #40
 with_clip = False
 
 # Input data
