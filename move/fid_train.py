@@ -87,7 +87,6 @@ def run_train_classifier(
             J_alpha.backward()
             optimizer.step()
 
-            print(model.weight.grad)
             optimizer.zero_grad()
 
             total_loss += J_alpha.item()

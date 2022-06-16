@@ -104,6 +104,11 @@ class FID_lstm_Classifier(nn.Module):
 
         self.lin_layers.append(nn.Linear(h_dim_class, label_dim))
 
+        for m in self.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal_(m.weight.data)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
     def forward(self, inputs):
         """Classify input x into logits.
@@ -128,12 +133,12 @@ class FID_lstm_Classifier(nn.Module):
         h_last_t = h_last_t_all[self.n_layers - 1, :, :]
         assert h_last_t.shape == (batch_size, self.h_dim)
 
-        x = F.relu(self.dense(h_last_t))
+        x = self.dense(h_last_t)
         for layer in self.lin_layers[:(self.n_layers_class - 1)]:
-            x = F.relu(layer(x)) 
+            x = F.leaky_relu(layer(x), negative_slope=0.01) 
 
         logits = F.softmax(self.lin_layers[-1](x), dim=1)
-
+        # print(self.dense.weight.grad)
         if not self.return_activation:
             return logits
         if self.return_activation:
