@@ -55,8 +55,9 @@ class LinearClassifier(nn.Module):
         #     for layer in self.layers[:-1]:
         #         print('went through 1 layer')
         #         x = F.relu(layer(x))
-        for layer in self.layers[:-1]:
-            x = F.relu(layer(x))        
+        for layer in self.layers[:(self.n_layers - 1)]:
+
+            x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)        
         logits = F.softmax(self.layers[-1](x), dim=1)
 
         if not self.return_activation:
@@ -65,33 +66,43 @@ class LinearClassifier(nn.Module):
             return logits
 
 
-class FID_Classifier(LinearClassifier):
+class FID_lstm_Classifier(nn.Module):
     def __init__(
         self,
         input_dim,
         h_dim,
+        h_dim_class,
         label_dim,
-        seq_len,
-        neg_slope,
         n_layers,
+        n_layers_class,
         return_activation
     ):
         """
         Model that runs classifier for FID, diversity, and multimodul diversity
         """
-        super(FID_Classifier, self).__init__()
+        super(FID_lstm_Classifier, self).__init__()
+        
+        self.n_layers = n_layers
+        self.input_dim = input_dim
+        self.h_dim = h_dim
         self.label_dim = label_dim
-        self.seq_len = seq_len
+        self.n_layers_class = n_layers_class
+        self.return_activation = return_activation
 
-        self.classifier = LinearClassifier(
-            input_dim=input_dim,
-            h_dim=h_dim,
-            label_dim=label_dim,
-            seq_len=seq_len,
-            neg_slope=neg_slope,
-            n_layers=n_layers,
-            return_activation=return_activation
+        self.lstm = torch.nn.LSTM(
+            input_size=input_dim,
+            hidden_size=h_dim,
+            batch_first=True,
+            num_layers=n_layers,
         )
+
+        self.dense = nn.Linear(h_dim, h_dim_class)
+
+        self.lin_layers = nn.ModuleList()
+        for i in range(int(n_layers_class)):
+            self.lin_layers.append(nn.Linear(h_dim_class, h_dim_class))
+
+        self.lin_layers.append(nn.Linear(h_dim_class, label_dim))
 
         for m in self.modules():
             if isinstance(m, torch.nn.Linear):
@@ -99,13 +110,12 @@ class FID_Classifier(LinearClassifier):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
-
-    def forward(self, x):
+    def forward(self, inputs):
         """Classify input x into logits.
 
         Parameters
         ----------
-        x : array-like
+        inputs : array-like
             Shape=[batch_size, seq_len, input_dim]
 
         Returns
@@ -113,9 +123,26 @@ class FID_Classifier(LinearClassifier):
         logits : array-like
                  Shape=[batch_size, label_dim]
         """
-        logits = self.classifier(x)
-        return logits
 
+        batch_size, seq_len, _ = inputs.shape
+
+        h, (h_last_t_all, c_last_t) = self.lstm(inputs.float())
+
+        assert h.shape == (batch_size, seq_len, self.h_dim)
+        assert h_last_t_all.shape == (self.n_layers, batch_size, self.h_dim)
+        h_last_t = h_last_t_all[self.n_layers - 1, :, :]
+        assert h_last_t.shape == (batch_size, self.h_dim)
+
+        x = self.dense(h_last_t)
+        for layer in self.lin_layers[:(self.n_layers_class - 1)]:
+            x = F.leaky_relu(layer(x), negative_slope=0.01) 
+
+        logits = F.softmax(self.lin_layers[-1](x), dim=1)
+        # print(self.dense.weight.grad)
+        if not self.return_activation:
+            return logits
+        if self.return_activation:
+            return logits
 
 class TransformerClassifier(PositionalEncoding):
     def __init__(self, input_dim, label_dim):

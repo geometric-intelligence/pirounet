@@ -11,7 +11,7 @@ def make_onehot_encoder(label_features):
     Parameters
     ----------
     label_features: int
-        Length of vector
+        Amount of label categories
 
     Returns
     -------
@@ -26,6 +26,29 @@ def make_onehot_encoder(label_features):
 
     return onehot_encode
 
+def batch_one_hot(y, label_dim):
+    """Convert a batch of integer labels to a tensor of one-hot labels.
+
+    Parameters
+    ----------
+    y: shape [batch_size, ]
+        Batch of integer labels
+    label_dim: int
+        Amount of label categories
+
+    Returns
+    -------
+    batch_one_hot : tensor with shape [batch_size, 1, label_dim]
+    """
+    onehot_encoder = make_onehot_encoder(label_dim)
+    batch_one_hot = torch.zeros((1, 1, label_dim))
+    for y_i in y:
+        y_i_enc = onehot_encoder(y_i)
+        y_i_enc = y_i_enc.reshape((1, 1, label_dim))
+        batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
+
+    batch_one_hot = batch_one_hot[1:, :, :]
+    return batch_one_hot
 
 def log_standard_categorical(p):
     """

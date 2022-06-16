@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = '10_perc_labelled' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'perc_labelled_sweep' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-   "checkpoint_10_perc_labelled_epoch567"
+   None #"checkpoint_10_perc_labelled_epoch468"
 )
 
 # Hardware
@@ -33,7 +33,7 @@ device = (
 )
 
 # Training
-epochs = 600
+epochs = 500
 learning_rate = 3e-4  # 6e-6
 batch_size = 80 #40
 with_clip = False
@@ -44,6 +44,7 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = 'time'
+fraction_label = 0.2
 
 # LSTM VAE
 kl_weight = 1

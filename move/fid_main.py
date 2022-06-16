@@ -41,8 +41,10 @@ wandb.init(
         "seq_len": fid_classifier_config.seq_len,
         "input_dim": fid_classifier_config.input_dim,
         "neg_slope_classif": fid_classifier_config.neg_slope_classif,
-        "n_layers_classif": fid_classifier_config.n_layers_classif,
-        "h_dim_classif": fid_classifier_config.h_dim_classif,
+        "n_layers_class": fid_classifier_config.n_layers_class,
+        "h_dim_class": fid_classifier_config.h_dim_class,
+        "h_dim": fid_classifier_config.h_dim,
+        "n_layers": fid_classifier_config.n_layers,
         "label_dim": fid_classifier_config.label_dim,
         "device": fid_classifier_config.device,
         "effort": fid_classifier_config.effort,
@@ -55,13 +57,13 @@ logging.info(f"---> Using device {config.device}")
 #wandb.run.name = fid_classifier_config.run_name
 
 logging.info("Initialize classifier model")
-model = classifiers.LinearClassifier(
+model = classifiers.FID_lstm_Classifier(
     input_dim=config.input_dim,
-    h_dim=config.h_dim_classif,
+    h_dim=config.h_dim,
+    h_dim_class=config.h_dim_class,
     label_dim=config.label_dim,
-    seq_len=config.seq_len,
-    neg_slope=config.neg_slope_classif,
-    n_layers=config.n_layers_classif,
+    n_layers=config.n_layers,
+    n_layers_class=config.n_layers_class,
     return_activation=False
 ).to(config.device)
 
