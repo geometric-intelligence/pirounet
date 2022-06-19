@@ -48,8 +48,6 @@ def run_train_classifier(
     # if config.load_from_checkpoint is None:
     #     print('from scratch')
 
-    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
-
     for epoch in range(config.epochs):
 
         # Train
@@ -75,10 +73,10 @@ def run_train_classifier(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
-            logits = model.forward(x)
+            logits, _ = model.forward(x)
 
             # classification loss is averaged on minibatch
-            classification_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            classification_loss = - torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
             class_loss += classification_loss
 
             # J_alpha is averaged on minibatch
@@ -86,6 +84,7 @@ def run_train_classifier(
 
             J_alpha.backward()
             optimizer.step()
+
 
             optimizer.zero_grad()
 
@@ -138,7 +137,7 @@ def run_train_classifier(
             batch_one_hot = utils.batch_one_hot(y, config.label_dim)
             y = batch_one_hot.to(config.device)
 
-            logits_v = model.forward(x)
+            logits_v, _ = model.forward(x)
             classication_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
 
             J_alpha_v = classication_loss_v

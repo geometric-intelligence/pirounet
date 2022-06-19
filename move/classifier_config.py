@@ -9,9 +9,9 @@ The Classifier maps:
 """
 import torch
 
-run_name = 'classifier_lstm' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'classifier_metrics_test' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-   None #"checkpoint_smaller_lstm_contd_epoch144"
+   "checkpoint_classifier_fid_epoch206"
 )
 
 # Hardware
@@ -21,9 +21,9 @@ device = (
 )
 
 # Training
-epochs = 200
+epochs = 400
 learning_rate = 3e-4  # 6e-6
-batch_size = 8
+batch_size = 55
 
 # Input data
 seq_len = 40
@@ -33,9 +33,9 @@ amount_of_labels = 1
 effort = 'time'
 
 # Classifier's linear layers
-h_dim_class = 100
-neg_slope_classif = 0.05  # 0.5 #0.1 # 0.05
-n_layers_class = 2
+h_dim_class = 250
+neg_slope_classif = 0.42950429805116874  # 0.5 #0.1 # 0.05
+n_layers_class = 13
 
 # Classifier's LSTM layers
 h_dim = 100

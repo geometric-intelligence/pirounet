@@ -57,16 +57,23 @@ logging.info(f"---> Using device {config.device}")
 #wandb.run.name = fid_classifier_config.run_name
 
 logging.info("Initialize classifier model")
-model = classifiers.FID_lstm_Classifier(
+# model = classifiers.FID_lstm_Classifier(
+#     input_dim=config.input_dim,
+#     h_dim=config.h_dim,
+#     h_dim_class=config.h_dim_class,
+#     label_dim=config.label_dim,
+#     n_layers=config.n_layers,
+#     n_layers_class=config.n_layers_class,
+#     return_activation=False
+# ).to(config.device)
+model = classifiers.LinearClassifier(
     input_dim=config.input_dim,
-    h_dim=config.h_dim,
-    h_dim_class=config.h_dim_class,
+    h_dim=config.h_dim_class,
     label_dim=config.label_dim,
-    n_layers=config.n_layers,
-    n_layers_class=config.n_layers_class,
-    return_activation=False
+    seq_len=config.seq_len,
+    neg_slope=config.neg_slope_classif,
+    n_layers=config.n_layers_class,
 ).to(config.device)
-
 
 logging.info("Get original data")
 (

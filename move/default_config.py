@@ -21,13 +21,14 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'perc_labelled_sweep' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'get_figs' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-   None #"checkpoint_10_perc_labelled_epoch468"
+    "checkpoint_15_perc_labelled_epoch489"
 )
+# perc_labelled_sweep_epoch85
 
 # Hardware
-which_device = "1"
+which_device = "0" #CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
 device = (
     torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
@@ -44,7 +45,7 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = 'time'
-fraction_label = 0.2
+fraction_label = 0.789
 
 # LSTM VAE
 kl_weight = 1

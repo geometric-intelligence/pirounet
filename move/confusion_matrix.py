@@ -41,7 +41,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']
 
 
-purpose = 'valid' #valid, test
+purpose = 'test' #valid, test
 
 if purpose == 'train':
     x = torch.from_numpy(labelled_data_train.dataset)
@@ -69,6 +69,9 @@ conf_mat = confusion_matrix(
 
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
+
+plt.rcParams.update({'font.family':'serif'})
+plt.rcParams.update({'font.size':'13'})
 fig, ax = plt.subplots(figsize=(3,3))
 fig.set_figheight(6)
 fig.set_figwidth(6)
@@ -88,5 +91,5 @@ for i in range(len(classes)):
 plt.colorbar(cb, ax=ax, shrink=0.81)
 plt.title('Labanet\'s confusion matrix \n On ' + purpose + ' dataset')
 plt.ylabel('Ground truth')
-plt.xlabel('Predicted label')
-plt.savefig(fname="evaluate/confusion/conf_labanet_half_lab_" + purpose + ".png")
+plt.xlabel('LabaNet predicts')
+plt.savefig(fname="evaluate/confusion/conf_labanet_" + purpose + ".png", dpi=1200)

@@ -83,7 +83,6 @@ class DeepGenerativeModel(LstmVAE):
                 seq_len=seq_len,
                 neg_slope=neg_slope_classif,
                 n_layers=n_layers_classif,
-                return_activation=False
             )
 
         if classifier == 'transformer':
@@ -136,7 +135,7 @@ class DeepGenerativeModel(LstmVAE):
         logits : array-like
                  Shape=[batch_size, label_dim]
         """
-        logits = self.classifier(x)
+        logits, _ = self.classifier(x)
         return logits
 
     def sample(self, z, y):
