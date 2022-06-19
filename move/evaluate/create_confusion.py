@@ -3,7 +3,7 @@ from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay,
 import matplotlib.pyplot as plt
 import matplotlib
 
-filepath="/home/papillon/move/move/data/labels_gen_mathilde.csv"
+filepath="/home/papillon/move/move/data/labels_gen_mathilde_789.csv"
 file = open(filepath)
 
 all_labels_mathilde = np.loadtxt(file, delimiter=",")
@@ -14,12 +14,13 @@ all_labels_mathilde = np.loadtxt(file, delimiter=",")
 dance_qual = all_labels_mathilde[:,1]
 labels_mathilde = np.delete(all_labels_mathilde, 1, axis=1)
 
-count_dancable = np.count_nonzero(dance_qual==0)
-
+count_dancable = np.count_nonzero(dance_qual==0)/225
+print(count_dancable)
 
 ## Of the dancable material, what fraction of it does not respect some physical constraint?
-count_no_gravity = np.count_nonzero(dance_qual==2) / (300 - np.count_nonzero(dance_qual==0))
-# 21% of the dancable material does not respect some assumed physical constraint
+count_no_gravity = np.count_nonzero(dance_qual==2) / (225 - np.count_nonzero(dance_qual==0))
+print(count_no_gravity)
+# for 23% labelled, 21% of the dancable material does not respect some assumed physical constraint
 # that LabaNet does not have access to, such as gravity, or uniform ground layer.
 # the movement itself respects the constraints of the humna body, and technically
 # would be reproducibile.
@@ -27,8 +28,9 @@ count_no_gravity = np.count_nonzero(dance_qual==2) / (300 - np.count_nonzero(dan
 
 ## Of the dancable material, what fraction of it is jumpy and shows some artificial behaviour?
 
-count_jumpy = np.count_nonzero(dance_qual==3) / (300 - np.count_nonzero(dance_qual==0))
-# 25% of the danacble material shows some noticeable artificial effects that are
+count_jumpy = np.count_nonzero(dance_qual==3) / (225 - np.count_nonzero(dance_qual==0))
+print(count_jumpy)
+# for 23% labelled, 25% of the danacble material shows some noticeable artificial effects that are
 # not artifacts of the human body. A head getting  large, lack of continuity between
 # very first or very last poses.
 # We still consider this to be dancable as one can ignore these artifacts and 
@@ -39,7 +41,8 @@ count_jumpy = np.count_nonzero(dance_qual==3) / (300 - np.count_nonzero(dance_qu
 # Only do this for dancable material. Must remove the zero quality first
 
 # Load LabaNet's labels
-all_labels_LN = np.load('shuffled_labels.npy')
+all_labels_LN = np.load('shuffled_labels_789.npy')
+
 all_labels_LN = np.array(all_labels_LN) + 1.
 
 all_labels_mathilde_no0 = []
@@ -55,9 +58,8 @@ labels_ind_m = np.array(all_labels_mathilde_no0)[:,0]
 labels_m = np.array(all_labels_mathilde_no0)[:,2]
 labels_ln = np.array(labels_LN_no0)
 
-print(labels_m)
-print(labels_ln)
-
+plt.rcParams.update({'font.family':'serif'})
+plt.rcParams.update({'font.size':'13'})
 conf_mat = confusion_matrix(
     labels_ln,
     labels_m, 
@@ -65,7 +67,7 @@ conf_mat = confusion_matrix(
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
-fig, ax = plt.subplots(figsize=(3,3))
+fig, ax = plt.subplots(figsize=(4,3))
 fig.set_figheight(6)
 fig.set_figwidth(7)
 
@@ -84,6 +86,6 @@ for i in range(len(classes)):
 plt.colorbar(cb, ax=ax, shrink=0.935)
 plt.xlabel('Labeler\'s blind classification')
 plt.ylabel('Condition given to LabaNet')
-plt.title('Labeler versus LabaNet confusion matrix \n On danceable portion of generated dataset')
+plt.title('Labeler versus LabaNet confusion matrix')
 purpose = 'self_create'
-plt.savefig(fname="confusion/conf_" + str(purpose) + ".png")
+plt.savefig(fname="confusion/conf_" + str(purpose) + "_789.png", dpi=1200)

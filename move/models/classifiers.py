@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from models.transformer import PositionalEncoding
 
-
 class LinearClassifier(nn.Module):
     def __init__(
         self,
@@ -14,7 +13,6 @@ class LinearClassifier(nn.Module):
         seq_len,
         neg_slope,
         n_layers,
-        return_activation
     ):
         """
         Multi hidden layer classifier
@@ -27,7 +25,56 @@ class LinearClassifier(nn.Module):
 
         self.n_layers = n_layers
         self.neg_slope = neg_slope
-        self.return_activation = return_activation
+
+        self.layers = nn.ModuleList()
+        for i in range(int(n_layers)):
+            self.layers.append(nn.Linear(h_dim, h_dim))
+
+        self.layers.append(nn.Linear(h_dim, label_dim))
+
+    def forward(self, x):
+        """Perform forward pass of the linear classifier.
+        Parameters
+        ----------
+        x : array-like, shape=[batch_size, seq_len, input_dim]
+        """
+
+        batch_size = x.shape[0]
+        x = x.reshape((batch_size, -1)).float()
+        x = F.relu(self.dense(x))
+
+        if self.neg_slope is not None and not 0:
+            for layer in self.layers[:-1]:
+                x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
+
+        else:
+            for layer in self.layers[:-1]:
+                x = F.relu(layer(x))
+
+        logits = F.softmax(self.layers[-1](x), dim=1)
+        return logits, 0
+
+class FID_LinearClassifier(nn.Module):
+    def __init__(
+        self,
+        input_dim,
+        h_dim,
+        label_dim,
+        seq_len,
+        neg_slope,
+        n_layers,
+    ):
+        """
+        Multi hidden layer classifier
+        with softmax output.
+        Can be ReLu or LeakyRelu
+        activated.
+        """
+        super(FID_LinearClassifier, self).__init__()
+        self.dense = nn.Linear(seq_len * input_dim, h_dim)
+
+        self.n_layers = n_layers
+        self.neg_slope = neg_slope
 
         self.layers = nn.ModuleList()
         for i in range(int(n_layers)):
@@ -46,24 +93,15 @@ class LinearClassifier(nn.Module):
         batch_size = x.shape[0]
         x = x.reshape((batch_size, -1)).float()
         x = F.relu(self.dense(x))
-        # if self.neg_slope is not None and not 0:
-        #     for layer in self.layers[:-1]:
-                
-        #         x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)
 
-        # else:
-        #     for layer in self.layers[:-1]:
-        #         print('went through 1 layer')
-        #         x = F.relu(layer(x))
         for layer in self.layers[:(self.n_layers - 1)]:
 
-            x = F.leaky_relu(layer(x), negative_slope=self.neg_slope)        
+            x = F.leaky_relu(layer(x), negative_slope=self.neg_slope) 
+
+        activation = x #[batch_size, h_dim_class]
         logits = F.softmax(self.layers[-1](x), dim=1)
 
-        if not self.return_activation:
-            return logits
-        if self.return_activation:
-            return logits
+        return logits, activation
 
 
 class FID_lstm_Classifier(nn.Module):

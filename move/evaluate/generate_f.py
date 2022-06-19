@@ -16,7 +16,6 @@ import torch
 import wandb
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
-from torch.autograd import Variable
 
 point_labels = [
     "ARIEL",

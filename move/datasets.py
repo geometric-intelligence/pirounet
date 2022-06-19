@@ -402,7 +402,7 @@ def get_dgm_data(config, augmentation_factor=1):
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
-    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 3))
+    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 1))
     new_stopping_point = int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
@@ -433,14 +433,14 @@ def get_dgm_data(config, augmentation_factor=1):
     unlabelled_data_train_ds = seq_data_unlab[:(ninety_perc_unlab + five_perc_unlab), :, :]
     unlabelled_data_test_ds = seq_data_unlab[(ninety_perc_unlab + five_perc_unlab) :, :, :]
 
-    print(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
-    print(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
-    print(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
-    print(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
-    print(f">> Unlabelled Test ds has shape {unlabelled_data_test_ds.shape}")
-    print(f">> Labels train ds has shape {labels_train_ds.shape}")
-    print(f">> Labels valid ds has shape {labels_valid_ds.shape}")
-    print(f">> Labels test ds has shape {labels_test_ds.shape}")
+    logging.info(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
+    logging.info(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
+    logging.info(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
+    logging.info(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
+    logging.info(f">> Unlabelled Test ds has shape {unlabelled_data_test_ds.shape}")
+    logging.info(f">> Labels train ds has shape {labels_train_ds.shape}")
+    logging.info(f">> Labels valid ds has shape {labels_valid_ds.shape}")
+    logging.info(f">> Labels test ds has shape {labels_test_ds.shape}")
 
     logging.info("Preprocessing: Convert into torch dataloader")
 

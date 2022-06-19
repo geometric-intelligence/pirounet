@@ -66,12 +66,7 @@ if purpose=='valid':
         x, y = Variable(x), Variable(y)
         x, y = x.to(config.device), y.to(config.device)
 
-        batch_one_hot = torch.zeros((1, 1, config.label_dim))
-        for y_i in y:
-            y_i_enc = onehot_encoder(y_i.item())
-            y_i_enc = y_i_enc.reshape((1, 1, config.label_dim))
-            batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-        batch_one_hot = batch_one_hot[1:, :, :]
+        batch_one_hot = utils.batch_one_hot(y, config.label_dim)
         y = batch_one_hot.to(config.device)
 
         generate_f.reconstruct(

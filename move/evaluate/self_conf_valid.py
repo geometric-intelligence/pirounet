@@ -32,25 +32,26 @@ labels_now, labels_now_ind = datasets.load_labels(
 labels_before = labels_before - 1.
 labels_now = labels_now - 1.
 
-one_perc_lab = int(round(len(labels_before) * 0.01))
-five_perc_lab = int(one_perc_lab * 5)
+one_perc_lab = int(round(len(labels_now) * 0.01))
+five_perc_lab = int(one_perc_lab * 3)
 
 
-a=0
-b=a+1
-labels_now = labels_now[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :][:,0]
-labels_now_ind = labels_now_ind[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :][:,0]
+purpose = 'test'
+print(labels_now.shape)
+print(labels_before.shape)
+print((five_perc_lab * 19) + (one_perc_lab * 3))
+if purpose == 'test':
+    labels_now = labels_now[((five_perc_lab * 19) + (one_perc_lab * 3)) :,][:,0]
+    print(labels_now.shape)
+    labels_now_ind = labels_now_ind[((five_perc_lab * 19) + (one_perc_lab * 3)) :,][:,0]
 
-# labels_now = labels_now[a*five_perc_lab:b*five_perc_lab,][:,0]
-# labels_now_ind = labels_now_ind[a*five_perc_lab:b*five_perc_lab,][:,0]
-# print(len(labels_before))
-# print('five perc')
-# print(five_perc_lab)
-# labels_now = labels_now[((five_perc_lab * 19) + (one_perc_lab * 3)):,][:,0]
-# labels_now_ind = labels_now_ind[((five_perc_lab * 19) + (one_perc_lab * 3)) :,][:,0]
-# print(((five_perc_lab * 19) + (one_perc_lab * 3)))
-# print(((five_perc_lab * 19) + (one_perc_lab * 3)))
-# print(labels_now.shape)
+if purpose == 'valid':
+    labels_now = labels_now[:five_perc_lab,][:,0]
+    labels_now_ind = labels_now_ind[:five_perc_lab,][:,0]
+
+if purpose=='all':
+    labels_now = labels_now[:,0]
+    labels_now_ind = labels_now_ind[:,0]
 
 #find the matching labels in the second labelled set.
 # We want to match labels from the first 5% o the augmented set Harold uses
@@ -70,27 +71,16 @@ new_ind_bef = np.array(new_ind_bef)[:,0,0]
 v_labels_now_new = labels_now[new_ind_now]#[:,0]
 v_labels_before_new = labels_before[new_ind_bef][:,0]
 
-
-# conf_mat = ConfusionMatrixDisplay.from_predictions(
-#     v_labels_now_new,
-#     v_labels_before_new, 
-#     display_labels = ['Low', 'Medium', 'High'],
-#     cmap = 'Blues',
-#     normalize = 'true'
-#     )
-# plt.xlabel('Relabelled')
-# plt.ylabel('Ground truth')
-# plt.title('Labeler\'s confusion matrix \n On entire dataset')
-# purpose = 'self_all'
-# plt.savefig(fname="evaluate/confusion/conf_" + str(purpose) + ".png")
-
 conf_mat = confusion_matrix(
     v_labels_now_new,
     v_labels_before_new, 
-    normalize = 'true'
+    #normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
+
+plt.rcParams.update({'font.family':'serif'})
+plt.rcParams.update({'font.size':'13'})
 fig, ax = plt.subplots(figsize=(3,3))
 fig.set_figheight(6)
 fig.set_figwidth(6)
@@ -108,8 +98,7 @@ for i in range(len(classes)):
                     color=color, va='center', ha='center')
 
 plt.colorbar(cb, ax=ax, shrink=0.81)
-plt.xlabel('Relabelled')
+plt.xlabel('LabaNet predicts')
 plt.ylabel('Ground truth')
-plt.title('Labeler\'s confusion matrix \n On comparable test dataset')
-purpose = 'self_test'
-plt.savefig(fname="evaluate/confusion/conf_" + str(purpose) + ".png")
+plt.title('Labeler\'s confusion matrix \n On comparable ' + str(purpose) + ' dataset')
+plt.savefig(fname="evaluate/confusion/conf_self_" + str(purpose) + ".png", dpi=1200)

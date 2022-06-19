@@ -61,7 +61,7 @@ config = wandb.config
 logging.info(f"Config: {config}")
 logging.info(f"---> Using device {config.device}")
 
-# wandb.run.name = default_config.run_name
+wandb.run.name = default_config.run_name
 
 logging.info("Initialize model")
 model = dgm_lstm_vae.DeepGenerativeModel(
