@@ -37,9 +37,7 @@ five_perc_lab = int(one_perc_lab * 3)
 
 
 purpose = 'all'
-print(labels_now.shape)
-print(labels_before.shape)
-print((five_perc_lab * 19) + (one_perc_lab * 3))
+
 if purpose == 'test':
     labels_now = labels_now[((five_perc_lab * 19) + (one_perc_lab * 3)) :,][:,0]
     print(labels_now.shape)
@@ -74,7 +72,7 @@ v_labels_before_new = labels_before[new_ind_bef][:,0]
 conf_mat = confusion_matrix(
     v_labels_now_new,
     v_labels_before_new, 
-    #normalize = 'true'
+    normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)

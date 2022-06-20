@@ -14,11 +14,16 @@ import models.utils as utils
 
 import evaluate.metrics as metrics
 
+# Run this script to get all evaluation metrics necessary
+# for row in Table (except Danceability and Recognition Accuracy).
+# Steps:
+#   1. Change checkpoint in default_config
+#   2. Set device to 0
+#   3. Run main_evaluate.py
+
 evaluation_device = (
     torch.device("cuda:"+str(classifier_config.which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
-
-num_gen_per_lab = 152
 
 fid_classifier_model = classifiers.FID_LinearClassifier(
     input_dim=classifier_config.input_dim,
@@ -64,8 +69,12 @@ model.load_state_dict(checkpoint['model_state_dict'])
     labels_test,
 ) = datasets.get_classifier_data(classifier_config)
 
-# Generate dance
+####################################################
+
 # start for loop here for distribution of fid / diversity / multimodality
+
+# MAKE DANCE
+num_gen_per_lab = 152
 set_of_blind_sequences = []
 for label in range(classifier_config.label_dim):
     one_label_seq = []
@@ -86,7 +95,7 @@ set_of_blind_sequences = np.array(set_of_blind_sequences).reshape((
 ))
 set_of_blind_sequences = torch.tensor(set_of_blind_sequences).to(evaluation_device)
 
-# Get labels on generated dataset and validation dataset
+# LABELS
 gen_labels = torch.tensor(
     np.concatenate((
         np.zeros(num_gen_per_lab, dtype=int), 
@@ -95,22 +104,16 @@ gen_labels = torch.tensor(
         ))).to(evaluation_device)
 ground_truth_labels = np.squeeze(labels_valid.dataset).astype('int')
 
-# Send through classifier and recuperate activations in the process
+# ACTIVATIONS
 _, gen_activations = fid_classifier_model.forward(set_of_blind_sequences)
-
-# Send validation data through classifier and recuperate activations in the process
-
 _, ground_truth_activations = fid_classifier_model.forward(
     torch.tensor(labelled_data_valid.dataset).to(evaluation_device))
 
-
-_, all_ground_truth_activations = fid_classifier_model.forward(
-    torch.tensor(labelled_data_train.dataset).to(evaluation_device))
-###############################################################
-
+# STATISTICS
 gen_statistics = metrics.calculate_activation_statistics(gen_activations.cpu().detach().numpy())
 ground_truth_statistics = metrics.calculate_activation_statistics(ground_truth_activations.cpu().detach().numpy())
 
+# FID
 fid = metrics.calculate_frechet_distance(
     ground_truth_statistics[0], 
     ground_truth_statistics[1],
@@ -118,17 +121,19 @@ fid = metrics.calculate_frechet_distance(
     gen_statistics[1]
     )
 
-# Compute diversity and multimodality for generated sequences
+# GEN AND MULTIMOD
 gen_diversity, gen_multimodality = metrics.calculate_diversity_multimodality(
     gen_activations, 
     torch.tensor(gen_labels).cpu().detach().numpy(), 
     classifier_config.label_dim)
-
-# Compute diversity and multimodality for ground truth sequences
 ground_truth_diversity, ground_truth_multimodality = metrics.calculate_diversity_multimodality(
-    all_ground_truth_activations, 
+    ground_truth_activations, 
     torch.tensor(ground_truth_labels).cpu().detach().numpy(), 
     classifier_config.label_dim)
+
+# end distribution loop here
+
+####################################################
 
 # Compute average joint distance for validation data
 ajd_valid = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, default_config.label_dim)
@@ -186,11 +191,13 @@ ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels
 # Write text file with all of the metrics
 
 ####################################################
+
 # Measure classification accuracy
 acc_valid = metrics.calc_accuracy(model, evaluation_device, labelled_data_valid, labels_valid)
 acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
 
 ####################################################
+
 # Log everything
 row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(acc_test*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
 evaluate_file = f'evaluate/log_files/evaluation_{default_config.load_from_checkpoint}.txt'
