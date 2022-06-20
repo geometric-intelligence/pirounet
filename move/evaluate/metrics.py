@@ -2,6 +2,7 @@ import numpy as np
 from scipy import linalg
 import torch
 from torch.autograd import Variable
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 import models.utils as utils
 
@@ -209,3 +210,26 @@ def ajd_test(model, device, labelled_data_valid, labels_valid, label_dim):
     D_valid = D_total/ (batches_seen * batch_size)
 
     return D_valid
+
+def calc_accuracy(model, device, labelled_data, labels):
+
+    x = torch.from_numpy(labelled_data.dataset)
+    y = torch.squeeze(torch.from_numpy(labels.dataset))
+
+    x = x.to(device)
+
+    logits = model.classify(x)
+
+    y_pred = (torch.max(logits, 1).indices).float()
+
+    conf_mat = confusion_matrix(
+        y.cpu().detach().numpy(), 
+        y_pred.cpu().detach().numpy(),
+        # normalize = 'true'
+        )
+
+    num = conf_mat[0][0] + conf_mat[1][1] + conf_mat[2][2]
+    den = np.concatenate(conf_mat).sum
+    accuracy = num/den
+    
+    return accuracy

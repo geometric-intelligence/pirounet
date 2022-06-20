@@ -65,6 +65,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 ) = datasets.get_classifier_data(classifier_config)
 
 # Generate dance
+# start for loop here for distribution of fid / diversity / multimodality
 set_of_blind_sequences = []
 for label in range(classifier_config.label_dim):
     one_label_seq = []
@@ -84,12 +85,15 @@ set_of_blind_sequences = np.array(set_of_blind_sequences).reshape((
     -1
 ))
 set_of_blind_sequences = torch.tensor(set_of_blind_sequences).to(evaluation_device)
+
+# Get labels on generated dataset and validation dataset
 gen_labels = torch.tensor(
     np.concatenate((
         np.zeros(num_gen_per_lab, dtype=int), 
         np.ones(num_gen_per_lab, dtype=int), 
         2 * np.ones(num_gen_per_lab, dtype=int)
         ))).to(evaluation_device)
+ground_truth_labels = np.squeeze(labels_valid.dataset).astype('int')
 
 # Send through classifier and recuperate activations in the process
 _, gen_activations = fid_classifier_model.forward(set_of_blind_sequences)
@@ -121,11 +125,9 @@ gen_diversity, gen_multimodality = metrics.calculate_diversity_multimodality(
     classifier_config.label_dim)
 
 # Compute diversity and multimodality for ground truth sequences
-ground_truth_labels = np.squeeze(labels_valid.dataset).astype('int')
-all_ground_truth_labels = np.squeeze(labels_train.dataset).astype('int')
 ground_truth_diversity, ground_truth_multimodality = metrics.calculate_diversity_multimodality(
     all_ground_truth_activations, 
-    torch.tensor(all_ground_truth_labels).cpu().detach().numpy(), 
+    torch.tensor(ground_truth_labels).cpu().detach().numpy(), 
     classifier_config.label_dim)
 
 # Compute average joint distance for validation data
@@ -183,17 +185,34 @@ ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels
 
 # Write text file with all of the metrics
 
+####################################################
+# Measure classification accuracy
+acc_valid = metrics.calc_accuracy(model, evaluation_device, labelled_data_valid, labels_valid)
+acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
+
+####################################################
+# Log everything
+row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(acc_test*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
 evaluate_file = f'evaluate/log_files/evaluation_{default_config.load_from_checkpoint}.txt'
 with open(evaluate_file, 'w') as f:
     f.write(
         f'========== Metrics for checkpoint {default_config.load_from_checkpoint} ========== \n'
     )
+    f.write(f'Classif Accuracy (Valid): {acc_valid} \n')
+    f.write(f'Classif Accuracy (Test): {acc_test} \n')
+    f.write(f'------------------------------ \n')
     f.write(f'FID: {fid} \n')
     f.write(f'Diversity: {ground_truth_diversity} \n')
-    f.write(f'Gen Diversity: {gen_diversity} \n')
     f.write(f'Multimodality: {ground_truth_multimodality} \n')
+    f.write(f'------------------------------ \n')
+    f.write(f'Gen Diversity: {gen_diversity} \n')
     f.write(f'Gen Multimodality: {gen_multimodality} \n')
+    f.write(f'------------------------------ \n')
     f.write(f'AJD valid (recon loss): {ajd_valid}\n')
     f.write(f'AJD train (recon loss): {ajd_train}\n')
     f.write(f'AJD test (recon loss): {ajd_test}')
+    f.write(f'------------------------------ \n')
+    f.write(f'Row in table: \n')
+    f.write(f'{row_in_table}\n')
+    f.write(f'------------------------------ \n')
     f.write(f'Amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}')
