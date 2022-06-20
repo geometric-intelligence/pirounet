@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'hdim100_150' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'distribution_stats' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-    None #"checkpoint_15_perc_labelled_epoch489"
+    "checkpoint_15_perc_labelled_epoch489"
 )
 # checkpoint_perc_labelled_sweep_epoch85
 # checkpoint_perc_labelled_3_epoch483
@@ -39,7 +39,7 @@ device = (
 # Training
 epochs = 500
 learning_rate = 3e-4  # 6e-6
-batch_size = 40 #40
+batch_size = 80 #40
 with_clip = False
 
 # Input data

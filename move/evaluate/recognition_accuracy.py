@@ -15,11 +15,11 @@ dance_qual = all_labels_mathilde[:,1]
 labels_mathilde = np.delete(all_labels_mathilde, 1, axis=1)
 
 count_dancable = np.count_nonzero(dance_qual==0)/225
-print(count_dancable)
+print(f'{(1-count_dancable) * 100} % of the dataset is danceable.')
 
 ## Of the dancable material, what fraction of it does not respect some physical constraint?
 count_no_gravity = np.count_nonzero(dance_qual==2) / (225 - np.count_nonzero(dance_qual==0))
-print(count_no_gravity)
+print(f'{(1-count_no_gravity) * 100} % of the dataset respects physical env.')
 # for 23% labelled, 21% of the dancable material does not respect some assumed physical constraint
 # that LabaNet does not have access to, such as gravity, or uniform ground layer.
 # the movement itself respects the constraints of the humna body, and technically
@@ -29,7 +29,7 @@ print(count_no_gravity)
 ## Of the dancable material, what fraction of it is jumpy and shows some artificial behaviour?
 
 count_jumpy = np.count_nonzero(dance_qual==3) / (225 - np.count_nonzero(dance_qual==0))
-print(count_jumpy)
+print(f'{(count_jumpy) * 100} % of the dataset is jumpy.')
 # for 23% labelled, 25% of the danacble material shows some noticeable artificial effects that are
 # not artifacts of the human body. A head getting  large, lack of continuity between
 # very first or very last poses.
