@@ -129,7 +129,9 @@ ground_truth_diversity, ground_truth_multimodality = metrics.calculate_diversity
     classifier_config.label_dim)
 
 # Compute average joint distance for validation data
-ajd = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, default_config.label_dim)
+ajd_valid = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, default_config.label_dim)
+ajd_train = metrics.ajd(model, evaluation_device, labelled_data_train, labels_train, default_config.label_dim)
+ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels_test, default_config.label_dim)
 
 # # Plot latent space via PCA
 # x = torch.tensor(labelled_data_train.dataset).to(evaluation_device)
@@ -191,4 +193,7 @@ with open(evaluate_file, 'w') as f:
     f.write(f'Gen Diversity: {gen_diversity} \n')
     f.write(f'Multimodality: {ground_truth_multimodality} \n')
     f.write(f'Gen Multimodality: {gen_multimodality} \n')
-    f.write(f'AJD (recon loss): {ajd}')
+    f.write(f'AJD valid (recon loss): {ajd_valid}\n')
+    f.write(f'AJD train (recon loss): {ajd_train}\n')
+    f.write(f'AJD test (recon loss): {ajd_test}')
+    f.write(f'Amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}')

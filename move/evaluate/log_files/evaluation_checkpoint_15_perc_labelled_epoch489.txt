@@ -1,7 +1,9 @@
 ========== Metrics for checkpoint checkpoint_15_perc_labelled_epoch489 ========== 
-FID: 1341.9204505650132 
-Diversity: 53.913841247558594 
-Gen Diversity: 24.87320327758789 
-Multimodality: 32.64814376831055 
-Gen Multimodality: 22.693288803100586 
-AJD (recon loss): 0.027778495089783695
+FID: 695.6047262910379 
+Diversity: 48.81242752075195 
+Gen Diversity: 27.17654037475586 
+Multimodality: 27.774511337280273 
+Gen Multimodality: 26.492420196533203 
+AJD valid (recon loss): 0.027778556288318445
+AJD train (recon loss): 0.017872291028919258
+AJD test (recon loss): 0.017618553309484867Amount of sequences (train, valid, test): (8463, 40, 159), (455, 40, 159), (249, 40, 159)

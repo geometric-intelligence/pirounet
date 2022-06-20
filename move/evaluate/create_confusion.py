@@ -63,7 +63,7 @@ plt.rcParams.update({'font.size':'13'})
 conf_mat = confusion_matrix(
     labels_ln,
     labels_m, 
-    normalize = 'true'
+    #normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)

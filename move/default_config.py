@@ -21,7 +21,7 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'get_figs' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'get_ajd' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
     "checkpoint_15_perc_labelled_epoch489"
 )

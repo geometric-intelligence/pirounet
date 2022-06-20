@@ -36,7 +36,7 @@ one_perc_lab = int(round(len(labels_now) * 0.01))
 five_perc_lab = int(one_perc_lab * 3)
 
 
-purpose = 'test'
+purpose = 'all'
 print(labels_now.shape)
 print(labels_before.shape)
 print((five_perc_lab * 19) + (one_perc_lab * 3))

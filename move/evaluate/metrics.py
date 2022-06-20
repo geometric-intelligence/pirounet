@@ -113,7 +113,7 @@ def calculate_diversity_multimodality(activations, labels, num_labels):
 
 def ajd(model, device, labelled_data_valid, labels_valid, label_dim):
     """
-    Computes the Average Joint Distance (AJD) over validation data
+    Computes the Average Joint Distance (AJD) over data
     for a given model.
 
     """
@@ -148,6 +148,58 @@ def ajd(model, device, labelled_data_valid, labels_valid, label_dim):
             D = d.reshape(-1)
             D = np.mean(D)
             D_this_batch += D # make D for all sequences in batch, [batchsize,]
+
+        #D for all batches
+        batches_seen += 1
+        D_total += D_this_batch
+
+    # average D for valid dataset
+    D_valid = D_total/ (batches_seen * batch_size)
+
+    return D_valid
+
+def ajd_test(model, device, labelled_data_valid, labels_valid, label_dim):
+    """
+    Computes the Average Joint Distance (AJD) over test data
+    for a given model. Adapted too 1 batch
+
+    """
+
+    D_total = 0
+    batches_seen = 0
+    print('in ajd')
+    print(labelled_data_valid.dataset.shape)
+    print(labels_valid.dataset.shape)
+
+    x = labelled_data_valid.dataset
+    y = labels_valid.dataset
+
+    
+    batch_size, seq_len, _ = x.shape
+
+    batch_one_hot = utils.batch_one_hot(y, label_dim)
+    y = batch_one_hot.to(device)
+
+    print(x.shape)
+    print(y.shape)
+    x_recon = model(torch.tensor(x).to(device), y)  # has shape [batch_size, seq_len, 159]
+        # sum over all 159 coordinates and 
+
+    D_this_batch = 0
+
+    for i in range(len(x)):
+        x_seq = x[i]  #pick one sequence in batch
+        x_seq = x_seq.reshape((seq_len, -1, 3))#.cpu().data.numpy()
+        x_recon_seq = x_recon[i]
+        x_recon_seq = x_recon_seq.reshape((seq_len, -1, 3))
+        x_recon_seq= x_recon_seq.cpu().data.numpy()
+
+        d = (x_seq - x_recon_seq)**2
+        d = np.sum(d, axis = 2)
+        d = np.sqrt(d) # shape [40,53]
+        D = d.reshape(-1)
+        D = np.mean(D)
+        D_this_batch += D # make D for all sequences in batch, [batchsize,]
 
         #D for all batches
         batches_seen += 1
