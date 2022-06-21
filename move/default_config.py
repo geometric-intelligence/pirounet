@@ -21,14 +21,18 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'distribution_stats' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'model_class_stats' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-    "checkpoint_15_perc_labelled_epoch489"
+    "checkpoint_perc_labelled_3_epoch483"
 )
+# checkpoint_smaller_lstm_contd_epoch144
+# checkpoint_15_perc_labelled_epoch489
+
 # checkpoint_perc_labelled_sweep_epoch85
 # checkpoint_perc_labelled_3_epoch483
-# checkpoint_15_perc_labelled_3_epoch489
-# checkpoint_small_lstm_contd_epoch144
+# checkpoint_15_perc_labelled_epoch30
+# checkpoint_smaller_lstm_epoch108
+# checkpoint_10_perc_labelled_epoch599
 
 # Hardware
 which_device = "0" #CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
@@ -54,11 +58,11 @@ fraction_label = 0.789
 kl_weight = 1
 neg_slope = 0  # 0.1,0.5 LeakyRelu
 n_layers = 5  # ,5,6
-h_dim = 150
+h_dim = 100
 latent_dim = 256
 
 # Classifier
 classifier = 'linear'
-h_dim_classif = 10
+h_dim_classif = 100
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

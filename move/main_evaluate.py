@@ -139,11 +139,11 @@ for i in range(stat_sampling_size):
         torch.tensor(ground_truth_labels).cpu().detach().numpy(), 
         classifier_config.label_dim)
     
-    all_gen_diversity.append(gen_diversity)
-    all_gen_multimodality.append(gen_multimodality)
-    all_ground_truth_diversity.append(all_ground_truth_diversity)
-    all_ground_truth_multimodality.append(all_ground_truth_multimodality)
-    all_fid.append(all_fid)
+    all_gen_diversity.append(gen_diversity.cpu().data.numpy())
+    all_gen_multimodality.append(gen_multimodality.cpu().data.numpy())
+    all_ground_truth_diversity.append(ground_truth_diversity.cpu().data.numpy())
+    all_ground_truth_multimodality.append(ground_truth_multimodality.cpu().data.numpy())
+    all_fid.append(fid)
 
 gen_diversity = np.mean(np.array(all_gen_diversity))
 gen_multimodality = np.mean(np.array(all_gen_multimodality))
@@ -151,11 +151,11 @@ ground_truth_diversity = np.mean(np.array(all_ground_truth_diversity))
 ground_truth_multimodality = np.mean(np.array(all_ground_truth_multimodality))
 fid = np.mean(np.array(all_fid))
 
-vargen_diversity = np.var(np.array(all_gen_diversity))
-vargen_multimodality = np.var(np.array(all_gen_multimodality))
-varground_truth_diversity = np.var(np.array(all_ground_truth_diversity))
-varground_truth_multimodality = np.var(np.array(all_ground_truth_multimodality))
-varfid = np.var(np.array(all_fid))
+vargen_diversity = np.sqrt(np.var(np.array(all_gen_diversity)))
+vargen_multimodality = np.sqrt(np.var(np.array(all_gen_multimodality)))
+varground_truth_diversity = np.sqrt(np.var(np.array(all_ground_truth_diversity)))
+varground_truth_multimodality = np.sqrt(np.var(np.array(all_ground_truth_multimodality)))
+varfid = np.sqrt(np.var(np.array(all_fid)))
 
 ####################################################
 
@@ -218,19 +218,19 @@ ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels
 
 # Measure classification accuracy
 acc_valid = metrics.calc_accuracy(model, evaluation_device, labelled_data_valid, labels_valid)
-acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
+# acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
 
 ####################################################
 
 # Log everything
-row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(acc_test*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
-evaluate_file = f'evaluate/log_files/evaluation_{default_config.load_from_checkpoint}.txt'
+row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(0*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
+evaluate_file = f'evaluate/log_files/evaluation_new_{default_config.load_from_checkpoint}.txt'
 with open(evaluate_file, 'w') as f:
     f.write(
         f'========== Metrics for checkpoint {default_config.load_from_checkpoint} ========== \n'
     )
     f.write(f'Classif Accuracy (Valid): {acc_valid} \n')
-    f.write(f'Classif Accuracy (Test): {acc_test} \n')
+    #f.write(f'Classif Accuracy (Test): {acc_test} \n')
     f.write(f'------------------------------ \n')
     f.write(f'FID: {fid} +/- {varfid} \n')
     f.write(f'Diversity: {ground_truth_diversity} +/- {varground_truth_diversity}\n')
@@ -246,4 +246,4 @@ with open(evaluate_file, 'w') as f:
     f.write(f'Row in table: \n')
     f.write(f'{row_in_table}\n')
     f.write(f'------------------------------ \n')
-    f.write(f'Amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}')
+    f.write(f'Total amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}')

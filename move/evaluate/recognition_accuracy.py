@@ -63,7 +63,7 @@ plt.rcParams.update({'font.size':'13'})
 conf_mat = confusion_matrix(
     labels_ln,
     labels_m, 
-    #normalize = 'true'
+    normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
@@ -84,8 +84,8 @@ for i in range(len(classes)):
                     color=color, va='center', ha='center')
 
 plt.colorbar(cb, ax=ax, shrink=0.935)
-plt.xlabel('Labeler\'s blind classification')
-plt.ylabel('Condition given to LabaNet')
-plt.title('Labeler versus LabaNet confusion matrix')
-purpose = 'self_create'
-plt.savefig(fname="confusion/conf_" + str(purpose) + "_789.png", dpi=1200)
+plt.xlabel('Labeler blindly predicts')
+plt.ylabel('Condition given to PirouNet')
+plt.title('Labeler versus PirouNet confusion matrix')
+purpose = 'create'
+plt.savefig(fname="confusion/conf_" + str(purpose) + ".png", dpi=1200)

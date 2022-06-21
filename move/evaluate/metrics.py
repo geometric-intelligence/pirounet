@@ -228,8 +228,10 @@ def calc_accuracy(model, device, labelled_data, labels):
         # normalize = 'true'
         )
 
-    num = conf_mat[0][0] + conf_mat[1][1] + conf_mat[2][2]
-    den = np.concatenate(conf_mat).sum
-    accuracy = num/den
+    numerator = conf_mat[0][0] + conf_mat[1][1] + conf_mat[2][2]
+    print(numerator)
+    denom = np.concatenate(conf_mat).sum()
+    print(denom)
+    accuracy = numerator / denom
     
     return accuracy
