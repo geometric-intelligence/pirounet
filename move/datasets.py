@@ -130,7 +130,7 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
 
 def load_labels(
     effort,
-    filepath="/home/papillon/move/move/data/labels_mathilde.csv",
+    filepath="/home/papillon/move/move/data/labels_from_app.csv",
     no_NA=True,
     augment=True
 ):
@@ -399,35 +399,23 @@ def get_dgm_data(config, augmentation_factor=1):
     seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
     seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
-    # divide labelled data into 90% training, 5% validating, and 5% testing sets
+    # divide labelled data into training, validating, and testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
-    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 1))
+    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 2))
     new_stopping_point = int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
     labelled_data_train_ds = seq_data_lab[(five_perc_lab) : new_stopping_point, :, :]
-    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labelled_data_test_ds = seq_data_lab[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
-    # labelled_data_valid_ds = seq_data_lab[(12*five_perc_lab):(13*five_perc_lab), :, :]
-    # train1 = seq_data_lab[:(12*five_perc_lab), :, :]
-    # train2 = seq_data_lab[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    # labelled_data_train_ds = np.append(train1, train2, axis=0)
-    # labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
 
     #divide labels into training, validating, and testing sets
-
     labels_valid_ds = labels[:(five_perc_lab), :, :]
     labels_train_ds = labels[(five_perc_lab) : new_stopping_point, :, :]
-    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labels_test_ds = labels[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
-    # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]
-    # train1l = labels[:(12*five_perc_lab), :, :]
-    # train2l = labels[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    # labels_train_ds = np.append(train1l, train2l)
-    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
-
-    # divide unlabelled data into 95% training and 5% testing sets (associated labels?)
+    # divide unlabelled data into training and testing sets
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
     ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
     unlabelled_data_train_ds = seq_data_unlab[:(ninety_perc_unlab + five_perc_unlab), :, :]
@@ -534,13 +522,17 @@ def get_classifier_data(config, augmentation_factor=1):
     # sequify both sets of data
     seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
 
+    one_perc_lab = int(round(len(labels_ind) * 0.01))
+    five_perc_lab = int(one_perc_lab * 5)
+    new_stopping_point = int(round(len(labels_ind) * default_config.fraction_label)) + five_perc_lab
+
     # divide labelled data into 90% training, 5% validating, and 5% testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : new_stopping_point, :, :]
+    labelled_data_test_ds = seq_data_lab[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
     #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
 
@@ -552,8 +544,9 @@ def get_classifier_data(config, augmentation_factor=1):
 
     #divide labels into 90% training, 5% validating, and 5% testing sets
     labels_valid_ds = labels[:(five_perc_lab), :, :]
-    labels_train_ds = labels[(five_perc_lab) : ((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labels_train_ds = labels[(five_perc_lab) : new_stopping_point, :, :]
+    labels_test_ds = labels[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
 
     #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
     # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]

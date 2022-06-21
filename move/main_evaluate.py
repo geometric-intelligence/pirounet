@@ -14,11 +14,16 @@ import models.utils as utils
 
 import evaluate.metrics as metrics
 
+# Run this script to get all evaluation metrics necessary
+# for row in Table (except Danceability and Recognition Accuracy).
+# Steps:
+#   1. Change checkpoint in default_config
+#   2. Set device to 0
+#   3. Run main_evaluate.py
+
 evaluation_device = (
     torch.device("cuda:"+str(classifier_config.which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
-
-num_gen_per_lab = 152
 
 fid_classifier_model = classifiers.FID_LinearClassifier(
     input_dim=classifier_config.input_dim,
@@ -64,72 +69,100 @@ model.load_state_dict(checkpoint['model_state_dict'])
     labels_test,
 ) = datasets.get_classifier_data(classifier_config)
 
-# Generate dance
-set_of_blind_sequences = []
-for label in range(classifier_config.label_dim):
-    one_label_seq = []
-    for i in range(num_gen_per_lab):
-        x_create, y_title = generate_f.generate(
-                                        model=model, 
-                                        y_given=label, 
-                                        )
-        x_create_formatted = x_create[0].reshape((default_config.seq_len, -1, 3))
-        x_create_formatted = x_create_formatted.cpu().data.numpy()
-        one_label_seq.append(x_create_formatted) # shape [100, 40, 53, 3]
+####################################################
+
+# BOOTSTRAP LOOP TO TAKE DISTRIBUTION ON STATS
+
+stat_sampling_size = 100
+
+all_gen_diversity = []
+all_gen_multimodality = []
+all_ground_truth_diversity = []
+all_ground_truth_multimodality = []
+all_fid = []
+for i in range(stat_sampling_size):
+    # MAKE DANCE
+    num_gen_per_lab = 152
+    set_of_blind_sequences = []
+    for label in range(classifier_config.label_dim):
+        one_label_seq = []
+        for i in range(num_gen_per_lab):
+            x_create, y_title = generate_f.generate(
+                                            model=model, 
+                                            y_given=label, 
+                                            )
+            x_create_formatted = x_create[0].reshape((default_config.seq_len, -1, 3))
+            x_create_formatted = x_create_formatted.cpu().data.numpy()
+            one_label_seq.append(x_create_formatted) # shape [100, 40, 53, 3]
+        
+        set_of_blind_sequences.append(one_label_seq)
+    set_of_blind_sequences = np.array(set_of_blind_sequences).reshape((
+        default_config.label_dim * num_gen_per_lab,
+        default_config.seq_len,
+        -1
+    ))
+    set_of_blind_sequences = torch.tensor(set_of_blind_sequences).to(evaluation_device)
+
+    # LABELS
+    gen_labels = torch.tensor(
+        np.concatenate((
+            np.zeros(num_gen_per_lab, dtype=int), 
+            np.ones(num_gen_per_lab, dtype=int), 
+            2 * np.ones(num_gen_per_lab, dtype=int)
+            ))).to(evaluation_device)
+    ground_truth_labels = np.squeeze(labels_valid.dataset).astype('int')
+
+    # ACTIVATIONS
+    _, gen_activations = fid_classifier_model.forward(set_of_blind_sequences)
+    _, ground_truth_activations = fid_classifier_model.forward(
+        torch.tensor(labelled_data_valid.dataset).to(evaluation_device))
+
+    # STATISTICS
+    gen_statistics = metrics.calculate_activation_statistics(gen_activations.cpu().detach().numpy())
+    ground_truth_statistics = metrics.calculate_activation_statistics(ground_truth_activations.cpu().detach().numpy())
+
+    # FID
+    fid = metrics.calculate_frechet_distance(
+        ground_truth_statistics[0], 
+        ground_truth_statistics[1],
+        gen_statistics[0], 
+        gen_statistics[1]
+        )
+
+    # GEN AND MULTIMOD
+    gen_diversity, gen_multimodality = metrics.calculate_diversity_multimodality(
+        gen_activations, 
+        torch.tensor(gen_labels).cpu().detach().numpy(), 
+        classifier_config.label_dim)
+    ground_truth_diversity, ground_truth_multimodality = metrics.calculate_diversity_multimodality(
+        ground_truth_activations, 
+        torch.tensor(ground_truth_labels).cpu().detach().numpy(), 
+        classifier_config.label_dim)
     
-    set_of_blind_sequences.append(one_label_seq)
-set_of_blind_sequences = np.array(set_of_blind_sequences).reshape((
-    default_config.label_dim * num_gen_per_lab,
-    default_config.seq_len,
-    -1
-))
-set_of_blind_sequences = torch.tensor(set_of_blind_sequences).to(evaluation_device)
-gen_labels = torch.tensor(
-    np.concatenate((
-        np.zeros(num_gen_per_lab, dtype=int), 
-        np.ones(num_gen_per_lab, dtype=int), 
-        2 * np.ones(num_gen_per_lab, dtype=int)
-        ))).to(evaluation_device)
+    all_gen_diversity.append(gen_diversity.cpu().data.numpy())
+    all_gen_multimodality.append(gen_multimodality.cpu().data.numpy())
+    all_ground_truth_diversity.append(ground_truth_diversity.cpu().data.numpy())
+    all_ground_truth_multimodality.append(ground_truth_multimodality.cpu().data.numpy())
+    all_fid.append(fid)
 
-# Send through classifier and recuperate activations in the process
-_, gen_activations = fid_classifier_model.forward(set_of_blind_sequences)
+gen_diversity = np.mean(np.array(all_gen_diversity))
+gen_multimodality = np.mean(np.array(all_gen_multimodality))
+ground_truth_diversity = np.mean(np.array(all_ground_truth_diversity))
+ground_truth_multimodality = np.mean(np.array(all_ground_truth_multimodality))
+fid = np.mean(np.array(all_fid))
 
-# Send validation data through classifier and recuperate activations in the process
+vargen_diversity = np.sqrt(np.var(np.array(all_gen_diversity)))
+vargen_multimodality = np.sqrt(np.var(np.array(all_gen_multimodality)))
+varground_truth_diversity = np.sqrt(np.var(np.array(all_ground_truth_diversity)))
+varground_truth_multimodality = np.sqrt(np.var(np.array(all_ground_truth_multimodality)))
+varfid = np.sqrt(np.var(np.array(all_fid)))
 
-_, ground_truth_activations = fid_classifier_model.forward(
-    torch.tensor(labelled_data_valid.dataset).to(evaluation_device))
-
-
-_, all_ground_truth_activations = fid_classifier_model.forward(
-    torch.tensor(labelled_data_train.dataset).to(evaluation_device))
-###############################################################
-
-gen_statistics = metrics.calculate_activation_statistics(gen_activations.cpu().detach().numpy())
-ground_truth_statistics = metrics.calculate_activation_statistics(ground_truth_activations.cpu().detach().numpy())
-
-fid = metrics.calculate_frechet_distance(
-    ground_truth_statistics[0], 
-    ground_truth_statistics[1],
-    gen_statistics[0], 
-    gen_statistics[1]
-    )
-
-# Compute diversity and multimodality for generated sequences
-gen_diversity, gen_multimodality = metrics.calculate_diversity_multimodality(
-    gen_activations, 
-    torch.tensor(gen_labels).cpu().detach().numpy(), 
-    classifier_config.label_dim)
-
-# Compute diversity and multimodality for ground truth sequences
-ground_truth_labels = np.squeeze(labels_valid.dataset).astype('int')
-all_ground_truth_labels = np.squeeze(labels_train.dataset).astype('int')
-ground_truth_diversity, ground_truth_multimodality = metrics.calculate_diversity_multimodality(
-    all_ground_truth_activations, 
-    torch.tensor(all_ground_truth_labels).cpu().detach().numpy(), 
-    classifier_config.label_dim)
+####################################################
 
 # Compute average joint distance for validation data
-ajd = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, default_config.label_dim)
+ajd_valid = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, default_config.label_dim)
+ajd_train = metrics.ajd(model, evaluation_device, labelled_data_train, labels_train, default_config.label_dim)
+ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels_test, default_config.label_dim)
 
 # # Plot latent space via PCA
 # x = torch.tensor(labelled_data_train.dataset).to(evaluation_device)
@@ -181,14 +214,36 @@ ajd = metrics.ajd(model, evaluation_device, labelled_data_valid, labels_valid, d
 
 # Write text file with all of the metrics
 
-evaluate_file = f'evaluate/log_files/evaluation_{default_config.load_from_checkpoint}.txt'
+####################################################
+
+# Measure classification accuracy
+acc_valid = metrics.calc_accuracy(model, evaluation_device, labelled_data_valid, labels_valid)
+# acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
+
+####################################################
+
+# Log everything
+row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(0*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
+evaluate_file = f'evaluate/log_files/evaluation_new_{default_config.load_from_checkpoint}.txt'
 with open(evaluate_file, 'w') as f:
     f.write(
         f'========== Metrics for checkpoint {default_config.load_from_checkpoint} ========== \n'
     )
-    f.write(f'FID: {fid} \n')
-    f.write(f'Diversity: {ground_truth_diversity} \n')
-    f.write(f'Gen Diversity: {gen_diversity} \n')
-    f.write(f'Multimodality: {ground_truth_multimodality} \n')
-    f.write(f'Gen Multimodality: {gen_multimodality} \n')
-    f.write(f'AJD (recon loss): {ajd}')
+    f.write(f'Classif Accuracy (Valid): {acc_valid} \n')
+    #f.write(f'Classif Accuracy (Test): {acc_test} \n')
+    f.write(f'------------------------------ \n')
+    f.write(f'FID: {fid} +/- {varfid} \n')
+    f.write(f'Diversity: {ground_truth_diversity} +/- {varground_truth_diversity}\n')
+    f.write(f'Multimodality: {ground_truth_multimodality} +/- {varground_truth_multimodality} \n')
+    f.write(f'------------------------------ \n')
+    f.write(f'Gen Diversity: {gen_diversity} +/- {vargen_diversity} \n')
+    f.write(f'Gen Multimodality: {gen_multimodality} +/- {vargen_multimodality} \n')
+    f.write(f'------------------------------ \n')
+    f.write(f'AJD valid (recon loss): {ajd_valid}\n')
+    f.write(f'AJD train (recon loss): {ajd_train}\n')
+    f.write(f'AJD test (recon loss): {ajd_test}')
+    f.write(f'------------------------------ \n')
+    f.write(f'Row in table: \n')
+    f.write(f'{row_in_table}\n')
+    f.write(f'------------------------------ \n')
+    f.write(f'Total amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}')
