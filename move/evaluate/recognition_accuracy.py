@@ -86,6 +86,6 @@ for i in range(len(classes)):
 plt.colorbar(cb, ax=ax, shrink=0.935)
 plt.xlabel('Labeler blindly predicts')
 plt.ylabel('Condition given to PirouNet')
-plt.title('Labeler versus PirouNet confusion matrix')
+#plt.title('Labeler versus PirouNet confusion matrix')
 purpose = 'create'
 plt.savefig(fname="confusion/conf_" + str(purpose) + ".png", dpi=1200)

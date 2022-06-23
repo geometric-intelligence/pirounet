@@ -240,7 +240,8 @@ def animatestick(
 ):
     """Create skeleton animation."""
     # Put data on CPU and convert to numpy array
-    seq = seq.cpu().data.numpy()
+    if torch.is_tensor(seq):
+        seq = seq.cpu().data.numpy()
     if ghost is not None:
         ghost = ghost.cpu().data.numpy()
 
@@ -450,6 +451,38 @@ def generate(
     return x_create, y_title
 
 
+def generate_one_move(
+    model,
+    config=None,
+):
+    """
+    Generate a dance from the same body-motion latent variable
+    with all possible different labels.
+
+    """
+
+    if config is None:
+        logging.info("!! Parameter config is not given: Using default_config")
+        config = default_config
+
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
+    z_create = torch.randn(size=(1, config.latent_dim)).to(config.device)
+
+    all_moves = []
+    all_labels = []
+    for y in range(config.label_dim):
+        y_onehot = onehot_encoder(y)
+        
+        y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+        print(y_onehot)
+        y_onehot = y_onehot.to(config.device)
+
+        x_create = model.sample(z_create, y_onehot)
+        all_moves.append(x_create.cpu().data.numpy())
+        all_labels.append(y)
+
+    return all_moves, all_labels
+
 def generate_and_save(
     model,
     epoch=None,
@@ -457,7 +490,7 @@ def generate_and_save(
     config=None,
     single_epoch=None,
     log_to_wandb=False,
-    comic=False
+    comic=False,
 ):
     """Generate a dance from a given label and save the corresponding artifact."""
     if config is None:
@@ -468,7 +501,7 @@ def generate_and_save(
 
     x_create, y_title = generate(model, y_given)
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
-
+    
     if epoch is not None:
         name = f"create_{y_given}_epoch_{epoch}_{config.run_name}.gif"
     else:
@@ -508,7 +541,8 @@ def generate_and_save(
 
 def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, dot_size=0, lw=0.8, zcolor=None,recon=False):
     
-    frames = frames.cpu().data.numpy()
+    if torch.is_tensor(frames):
+        frames = frames.cpu().data.numpy()
     frames = frames[::4, :, :]
 
     if recon:
@@ -576,3 +610,38 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
                     color=color,
                     lw=lw)
         plt.savefig(comicname)
+
+def generate_and_save_one_move(
+    model,
+    config,
+    path,
+):
+    """
+    Generate label_dim dances using the 
+    samebody motion latent variable and different labels.
+    Save the corresponding artifacts.
+    """
+
+    all_moves, all_labels = generate_one_move(model, config)
+
+    for i, y in enumerate(all_labels):
+        x_create_formatted = all_moves[y].reshape((config.seq_len, -1, 3))
+        name = f"one_move_{y}.gif"
+        fname = os.path.join(path, name)
+        plotname = f"comic_{y}.png"
+        comicname = os.path.join(str(path), plotname)
+
+        fname = animatestick(
+            x_create_formatted,
+            fname=fname,
+            ghost=None,
+            dot_alpha=0.7,
+            ghost_shift=0.2,
+            condition=y,
+        )
+
+        draw_comic(
+            x_create_formatted,
+            comicname,
+            recon=True
+        )

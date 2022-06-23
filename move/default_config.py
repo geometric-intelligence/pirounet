@@ -21,13 +21,27 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'model_class_stats' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'one_move' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-    "checkpoint_perc_labelled_3_epoch483"
+    "checkpoint_hdim100_150_epoch492"
 )
+# ablation study
+# checkpoint_hdim100_10_epoch183
+# checkpoint_hdim100_10_epoch305
+# checkpoint_ablation_100_80_epoch262
+# checkpoint_ablation_100_80_epoch313
+# checkpoint_ablation_sweep_epoch289
+# checkpoint_ablation_sweep_epoch376
+# checkpoint_hdim100_150_epoch363
+# checkpoint_hdim100_150_epoch492
+
+
+
+# models in paper
 # checkpoint_smaller_lstm_contd_epoch144
 # checkpoint_15_perc_labelled_epoch489
 
+# for semi-supervised study
 # checkpoint_perc_labelled_sweep_epoch85
 # checkpoint_perc_labelled_3_epoch483
 # checkpoint_15_perc_labelled_epoch30
@@ -63,6 +77,6 @@ latent_dim = 256
 
 # Classifier
 classifier = 'linear'
-h_dim_classif = 100
+h_dim_classif = 150
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

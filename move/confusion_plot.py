@@ -41,7 +41,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 latest_epoch = checkpoint['epoch']
 
 
-purpose = 'valid' #valid, test
+purpose = 'test' #valid, test
 
 if purpose == 'train':
     x = torch.from_numpy(labelled_data_train.dataset)
@@ -92,4 +92,4 @@ plt.colorbar(cb, ax=ax, shrink=0.81)
 plt.title('PirouNet\'s confusion matrix \n On ' + purpose + ' dataset')
 plt.ylabel('Ground truth')
 plt.xlabel('PirouNet predicts')
-plt.savefig(fname="evaluate/confusion/conf_pirounet_" + purpose + ".png", dpi=1200)
+plt.savefig(fname="evaluate/confusion/arch_impact_" + purpose + ".png", dpi=1200)
