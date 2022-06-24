@@ -3,15 +3,16 @@ import os
 import sys
 #sys.path.append(os. path. abspath('..'))
 from os.path import exists
-import default_config as config
-import datasets
-from models import dgm_lstm_vae
 
 import torch
 from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
+import default_config as config
+import datasets
+from models import dgm_lstm_vae
 from evaluate import generate_f
 
 model = dgm_lstm_vae.DeepGenerativeModel(
@@ -46,7 +47,7 @@ latest_epoch = checkpoint['epoch']
 # 3. pick empty device
 # 4. pick purpose of generation
 ####################################################
-purpose = 'one_move' # artifact, blind, one_move
+purpose = 'one_move' # artifact, blind, one_move, debug
 ####################################################
 
 num_gen_lab = 75 # number of sequences to generate per label
@@ -194,3 +195,30 @@ if purpose == 'one_move':
             ghost_shift=0.2,
             condition=y,
         )
+
+if purpose == 'debug':
+    all_moves_one_move = []
+    all_moves_blind = []
+    all_labels = []
+
+    z_create_one_move = torch.randn(size=(1, config.latent_dim)).to(config.device)
+    one_label_blind = []
+    one_label_one_move = []
+
+    for y in range(config.label_dim):
+        y_one_hot_create = F.one_hot(y, num_classes=config.label_dim)
+
+        x_create_one_move = model.sample(z_create_one_move, y_one_hot_create)
+        x_create_one_move_formatted = x_create_one_move[0].reshape((config.seq_len, -1, 3))
+        x_create_one_move_formatted = x_create_one_move_formatted.cpu().data.numpy()
+        one_label_one_move.append(x_create_one_move)
+
+        z_create_blind = z_create_one_move # torch.randn(size=(1, config.latent_dim))
+        x_create_blind = model.sample(z_create_blind, y_one_hot_create)
+        x_create_blind_formatted = x_create_blind[0].reshape((config.seq_len, -1, 3))
+        x_create_blind_formatted = x_create_blind_formatted.cpu().data.numpy()
+        one_label_blind.append(x_create_blind_formatted) 
+        
+        all_moves_one_move.append(x_create_one_move.cpu().data.numpy())
+        all_moves_blind.append(x_create_blind.cpu().data.numpy())
+        all_labels.append(y)
