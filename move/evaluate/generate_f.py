@@ -474,7 +474,7 @@ def generate_one_move(
         y_onehot = onehot_encoder(y)
         
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-        print(y_onehot)
+
         y_onehot = y_onehot.to(config.device)
 
         x_create = model.sample(z_create, y_onehot)
@@ -624,7 +624,7 @@ def generate_and_save_one_move(
     all_moves, all_labels = generate_one_move(model, config)
 
     for i, y in enumerate(all_labels):
-        print(y)
+
         x_create_formatted = all_moves[y].reshape((config.seq_len, -1, 3))
         name = f"one_move_{y}.gif"
         fname = os.path.join(path, name)

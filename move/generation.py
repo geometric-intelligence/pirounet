@@ -10,10 +10,9 @@ from models import dgm_lstm_vae
 import torch
 from torch.autograd import Variable
 import numpy as np
-import csv
+import matplotlib.pyplot as plt
 
 from evaluate import generate_f
-import models.utils as utils
 
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
@@ -47,7 +46,7 @@ latest_epoch = checkpoint['epoch']
 # 3. pick empty device
 # 4. pick purpose of generation
 ####################################################
-purpose = 'blind' # artifact, blind, one_move
+purpose = 'one_move' # artifact, blind, one_move
 ####################################################
 
 num_gen_lab = 75 # number of sequences to generate per label
@@ -101,14 +100,59 @@ if purpose == 'blind':
     np.save('shuffled_labels_gen2', associated_labels_shuffled)    
 
 if purpose == 'one_move':
+    amount_of_one_moves = 75
+
+    filepath_for_one_move = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}")
     
-    filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "evaluate/one_move/" + config.load_from_checkpoint)
-    
-    if exists(filepath_for_artifacts) is False:
-        os.mkdir(filepath_for_artifacts)
-    
-    generate_f.generate_and_save_one_move(
-        model=model, 
-        config=config,
-        path=filepath_for_artifacts,
-    )
+    if exists(filepath_for_one_move) is False:
+        os.mkdir(filepath_for_one_move)
+
+    # # make artifacts
+    # for i in range(10):
+    #     filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}/n_{i}")
+    #     if exists(filepath_for_artifacts) is False:
+    #         os.mkdir(filepath_for_artifacts)
+        
+    #     generate_f.generate_and_save_one_move(
+    #         model=model, 
+    #         config=config,
+    #         path=filepath_for_artifacts,
+    #     )
+
+    # compute historgram of differences between each dance
+    all_dist_01 = []
+    all_dist_12 = []
+    all_dist_02 = []
+
+    all_ajd_01 = []
+    all_ajd_12 = []
+    all_ajd_02 = []
+
+    for i in range (amount_of_one_moves):
+        all_moves, _ = generate_f.generate_one_move(model, config)
+        all_moves = np.array(all_moves).reshape((3, config.seq_len, -1, 3))
+
+        dist_01 = np.linalg.norm(all_moves[0] - all_moves[1])
+        dist_02 = np.linalg.norm(all_moves[0] - all_moves[2])
+        dist_12 = np.linalg.norm(all_moves[1] - all_moves[2])
+
+        ajd_01 = np.mean(np.sqrt(np.sum((all_moves[0] - all_moves[1])**2, axis=2)).reshape(-1))
+        ajd_02= np.mean(np.sqrt(np.sum((all_moves[0] - all_moves[2])**2, axis=2)).reshape(-1))
+        ajd_12= np.mean(np.sqrt(np.sum((all_moves[1] - all_moves[2])**2, axis=2)).reshape(-1))
+
+        all_dist_01.append(dist_01)
+        all_dist_12.append(dist_12)
+        all_dist_02.append(dist_02)
+
+        all_ajd_01.append(ajd_01)
+        all_ajd_12.append(ajd_12)
+        all_ajd_02.append(ajd_02)
+
+    fig, ax = plt.subplots()
+    x = range(75)
+    ax.scatter(x, all_ajd_01, c='blue', label='AJD Low-Med')
+    ax.scatter(x, all_ajd_12, c='orange', label='AJD Med-High')
+    ax.scatter(x, all_ajd_02, c='green', label='AJD Low-High')
+    plt.legend()
+    plt.savefig(f"evaluate/one_move/{config.load_from_checkpoint}/scatter.png")
+
