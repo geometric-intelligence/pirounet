@@ -21,9 +21,9 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'one_move' # "hdim100_hclass100_batch40_lr3e4"
+run_name = 'from_z' # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = (
-    "checkpoint_hdim100_150_epoch492"
+    "checkpoint_15_perc_labelled_epoch489"
 )
 # ablation study
 # checkpoint_hdim100_10_epoch183
@@ -57,7 +57,7 @@ device = (
 # Training
 epochs = 500
 learning_rate = 3e-4  # 6e-6
-batch_size = 80 #40
+batch_size = 1 #40
 with_clip = False
 
 # Input data
@@ -77,6 +77,6 @@ latent_dim = 256
 
 # Classifier
 classifier = 'linear'
-h_dim_classif = 150
+h_dim_classif = 100
 neg_slope_classif = 0  # 0.5 #0.1 # 0.05
 n_layers_classif = 2

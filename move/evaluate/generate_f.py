@@ -516,7 +516,6 @@ def generate_and_save(
         plotname = f"comic_{y_given}_{epoch}_{config.run_name}.png"
         comicname = os.path.join(str(single_epoch), plotname)
 
-
     fname = animatestick(
         x_create_formatted,
         fname=fname,
@@ -625,6 +624,7 @@ def generate_and_save_one_move(
     all_moves, all_labels = generate_one_move(model, config)
 
     for i, y in enumerate(all_labels):
+        print(y)
         x_create_formatted = all_moves[y].reshape((config.seq_len, -1, 3))
         name = f"one_move_{y}.gif"
         fname = os.path.join(path, name)
