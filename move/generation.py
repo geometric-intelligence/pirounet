@@ -1,4 +1,4 @@
-"""File that generate a confusion matrix from given checkpoint. Specify train/valid/test"""
+"""File that generates a confusion matrix from given checkpoint. Specify train/valid/test"""
 import os
 import sys
 #sys.path.append(os. path. abspath('..'))
@@ -45,8 +45,11 @@ latest_epoch = checkpoint['epoch']
 # 1. change default_config to load desired checkpoint.
 # 2. make default_config match classifier, h_dim, h_dim_class, batch_size
 # 3. pick empty device
+# 4. pick purpose of generation
 ####################################################
-purpose = 'blind'
+purpose = 'blind' # artifact, blind, one_move
+####################################################
+
 num_gen_lab = 75 # number of sequences to generate per label
 if purpose == 'artifact':
     for label in range(config.label_dim):
@@ -64,7 +67,7 @@ if purpose == 'artifact':
                 config=config,
                 log_to_wandb=False,
                 single_epoch=filepath_for_artifacts,
-                comic=True,
+                comic=False,
             )
 
 if purpose == 'blind':
@@ -94,5 +97,18 @@ if purpose == 'blind':
 
     # DO NOT RE-SAVE NEW SEQUENCES, MUST MATCH SEQUENCES IN APP
     # save shuffles sequences and labels. We will plot these sequences in the shuffled order
-    np.save('shuffled_seq_789', set_of_blind_sequences_shuffled)
-    np.save('shuffled_labels_789', associated_labels_shuffled)    
+    np.save('shuffled_seq_gen2', set_of_blind_sequences_shuffled)
+    np.save('shuffled_labels_gen2', associated_labels_shuffled)    
+
+if purpose == 'one_move':
+    
+    filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "evaluate/one_move/" + config.load_from_checkpoint)
+    
+    if exists(filepath_for_artifacts) is False:
+        os.mkdir(filepath_for_artifacts)
+    
+    generate_f.generate_and_save_one_move(
+        model=model, 
+        config=config,
+        path=filepath_for_artifacts,
+    )

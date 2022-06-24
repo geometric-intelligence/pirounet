@@ -17,7 +17,7 @@ import evaluate.metrics as metrics
 # Run this script to get all evaluation metrics necessary
 # for row in Table (except Danceability and Recognition Accuracy).
 # Steps:
-#   1. Change checkpoint in default_config
+#   1. Change checkpoint in default_config and change any hyperparams to match
 #   2. Set device to 0
 #   3. Run main_evaluate.py
 
@@ -218,19 +218,19 @@ ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels
 
 # Measure classification accuracy
 acc_valid = metrics.calc_accuracy(model, evaluation_device, labelled_data_valid, labels_valid)
-# acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
+acc_test = metrics.calc_accuracy(model, evaluation_device, labelled_data_test, labels_test)
 
 ####################################################
-
+print(round(acc_valid*100,1))
 # Log everything
 row_in_table = f'P\%   & {round(acc_valid*100,1)}\%   & {round(0*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- '
-evaluate_file = f'evaluate/log_files/evaluation_new_{default_config.load_from_checkpoint}.txt'
+evaluate_file = f'evaluate/log_files/arch_impact/evaluation_{default_config.load_from_checkpoint}.txt'
 with open(evaluate_file, 'w') as f:
     f.write(
         f'========== Metrics for checkpoint {default_config.load_from_checkpoint} ========== \n'
     )
     f.write(f'Classif Accuracy (Valid): {acc_valid} \n')
-    #f.write(f'Classif Accuracy (Test): {acc_test} \n')
+    f.write(f'Classif Accuracy (Test): {acc_test} \n')
     f.write(f'------------------------------ \n')
     f.write(f'FID: {fid} +/- {varfid} \n')
     f.write(f'Diversity: {ground_truth_diversity} +/- {varground_truth_diversity}\n')

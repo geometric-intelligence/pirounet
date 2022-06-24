@@ -122,6 +122,23 @@ class DeepGenerativeModel(LstmVAE):
 
         return x_mu
 
+    def encode(self, x, y):
+        """
+        Parameters
+        ---
+        x : array-like
+            input sequence
+            Shape = [batchsize, seq_len, input_dim]
+        y : array-like
+            input label
+            Shape = [batchsize, 1,label_dim]
+        """
+
+        y_for_encoder = y.repeat((1, self.seq_len, 1))
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+
+        return z, z_mu, z_log_var
+
     def classify(self, x):
         """Classify input x into logits.
 
@@ -236,9 +253,9 @@ class SVI(torch.nn.Module):
             return torch.mean(L)
 
         logits = self.model.classify(x)
-        assert xs.shape == (batch_size * self.model.label_dim, x.shape[1], x.shape[2])
-        assert L.shape == (batch_size * self.model.label_dim,)
-        assert logits.shape == (batch_size, self.model.label_dim)
+        # assert xs.shape == (batch_size * self.model.label_dim, x.shape[1], x.shape[2])
+        # assert L.shape == (batch_size * self.model.label_dim,)
+        # assert logits.shape == (batch_size, self.model.label_dim)
 
         L = L.reshape((batch_size, self.model.label_dim))
 

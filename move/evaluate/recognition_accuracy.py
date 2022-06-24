@@ -3,54 +3,63 @@ from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay,
 import matplotlib.pyplot as plt
 import matplotlib
 
-filepath="/home/papillon/move/move/data/labels_gen_mathilde_789.csv"
+qualit_analysis = False
+
+filepath="/home/papillon/move/move/data/gen_2.csv"
 file = open(filepath)
 
-all_labels_mathilde = np.loadtxt(file, delimiter=",")
+all_labels_mathilde = np.genfromtxt(file, delimiter=",",dtype=None)
+
+print('mathilde')
+print(all_labels_mathilde.shape)
 
 # Let's start by looking at the overall quality of the dance put out. 
+if qualit_analysis:
+    ## 1. Determine fraction of dancable material versus non dancable (2nd label is 0)
+    dance_qual = all_labels_mathilde[:,1]
+    labels_mathilde = np.delete(all_labels_mathilde, 1, axis=1)
 
-## 1. Determine fraction of dancable material versus non dancable (2nd label is 0)
-dance_qual = all_labels_mathilde[:,1]
-labels_mathilde = np.delete(all_labels_mathilde, 1, axis=1)
+    count_dancable = np.count_nonzero(dance_qual==0)/225
+    print(f'{(1-count_dancable) * 100} % of the dataset is danceable.')
 
-count_dancable = np.count_nonzero(dance_qual==0)/225
-print(f'{(1-count_dancable) * 100} % of the dataset is danceable.')
-
-## Of the dancable material, what fraction of it does not respect some physical constraint?
-count_no_gravity = np.count_nonzero(dance_qual==2) / (225 - np.count_nonzero(dance_qual==0))
-print(f'{(1-count_no_gravity) * 100} % of the dataset respects physical env.')
-# for 23% labelled, 21% of the dancable material does not respect some assumed physical constraint
-# that LabaNet does not have access to, such as gravity, or uniform ground layer.
-# the movement itself respects the constraints of the humna body, and technically
-# would be reproducibile.
+    ## Of the dancable material, what fraction of it does not respect some physical constraint?
+    count_no_gravity = np.count_nonzero(dance_qual==2) / (225 - np.count_nonzero(dance_qual==0))
+    print(f'{(1-count_no_gravity) * 100} % of the dataset respects physical env.')
+    # for 23% labelled, 21% of the dancable material does not respect some assumed physical constraint
+    # that LabaNet does not have access to, such as gravity, or uniform ground layer.
+    # the movement itself respects the constraints of the humna body, and technically
+    # would be reproducibile.
 
 
-## Of the dancable material, what fraction of it is jumpy and shows some artificial behaviour?
+    ## Of the dancable material, what fraction of it is jumpy and shows some artificial behaviour?
 
-count_jumpy = np.count_nonzero(dance_qual==3) / (225 - np.count_nonzero(dance_qual==0))
-print(f'{(count_jumpy) * 100} % of the dataset is jumpy.')
-# for 23% labelled, 25% of the danacble material shows some noticeable artificial effects that are
-# not artifacts of the human body. A head getting  large, lack of continuity between
-# very first or very last poses.
-# We still consider this to be dancable as one can ignore these artifacts and 
-# still reproduce the core of the movement. 
+    count_jumpy = np.count_nonzero(dance_qual==3) / (225 - np.count_nonzero(dance_qual==0))
+    print(f'{(count_jumpy) * 100} % of the dataset is jumpy.')
+    # for 23% labelled, 25% of the danacble material shows some noticeable artificial effects that are
+    # not artifacts of the human body. A head getting  large, lack of continuity between
+    # very first or very last poses.
+    # We still consider this to be dancable as one can ignore these artifacts and 
+    # still reproduce the core of the movement. 
 
-#####################################################
-# Now we can compare the efforts as labelled by me versus LabaNet
-# Only do this for dancable material. Must remove the zero quality first
+    #####################################################
+    # Now we can compare the efforts as labelled by me versus LabaNet
+    # Only do this for dancable material. Must remove the zero quality first
 
 # Load LabaNet's labels
-all_labels_LN = np.load('shuffled_labels_789.npy')
+all_labels_LN = np.load('shuffled_labels_gen2.npy')
 
-all_labels_LN = np.array(all_labels_LN) + 1.
+all_labels_LN = np.array(all_labels_LN) #+ 1.
+
+print('pirounet')
+print(all_labels_LN.shape)
 
 all_labels_mathilde_no0 = []
 labels_LN_no0 = []
 for i in range(len(all_labels_mathilde + 1)):
     row_m = all_labels_mathilde[i]
     row_LN = all_labels_LN[i]
-    if row_m[1] != 0 and row_m[2] !=0.: # if quality is not 0
+    # if row_m[1] != 0 and row_m[2] !=0.: # if quality is not 0
+    if row_m[2] != 4.: # if there is effort label
         all_labels_mathilde_no0.append(row_m)
         labels_LN_no0.append(row_LN)
 
@@ -63,7 +72,7 @@ plt.rcParams.update({'font.size':'13'})
 conf_mat = confusion_matrix(
     labels_ln,
     labels_m, 
-    normalize = 'true'
+    #normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
@@ -86,6 +95,6 @@ for i in range(len(classes)):
 plt.colorbar(cb, ax=ax, shrink=0.935)
 plt.xlabel('Labeler blindly predicts')
 plt.ylabel('Condition given to PirouNet')
-plt.title('Labeler versus PirouNet confusion matrix')
-purpose = 'create'
+#plt.title('Labeler versus PirouNet confusion matrix')
+purpose = 'create_gen2'
 plt.savefig(fname="confusion/conf_" + str(purpose) + ".png", dpi=1200)
