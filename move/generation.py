@@ -10,10 +10,9 @@ from models import dgm_lstm_vae
 import torch
 from torch.autograd import Variable
 import numpy as np
-import csv
+import matplotlib.pyplot as plt
 
 from evaluate import generate_f
-import models.utils as utils
 
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
@@ -47,7 +46,7 @@ latest_epoch = checkpoint['epoch']
 # 3. pick empty device
 # 4. pick purpose of generation
 ####################################################
-purpose = 'blind' # artifact, blind, one_move
+purpose = 'one_move' # artifact, blind, one_move
 ####################################################
 
 num_gen_lab = 75 # number of sequences to generate per label
@@ -101,14 +100,41 @@ if purpose == 'blind':
     np.save('shuffled_labels_gen2', associated_labels_shuffled)    
 
 if purpose == 'one_move':
-    
-    filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "evaluate/one_move/" + config.load_from_checkpoint)
-    
-    if exists(filepath_for_artifacts) is False:
-        os.mkdir(filepath_for_artifacts)
-    
-    generate_f.generate_and_save_one_move(
-        model=model, 
-        config=config,
-        path=filepath_for_artifacts,
-    )
+    amount_of_one_moves = 75
+
+    for i in range(10):
+        filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/n{i}_{config.load_from_checkpoint}")
+        
+        if exists(filepath_for_artifacts) is False:
+            os.mkdir(filepath_for_artifacts)
+        
+        # make artifacts
+        generate_f.generate_and_save_one_move(
+            model=model, 
+            config=config,
+            path=filepath_for_artifacts,
+        )
+
+        # compute historgram of differences between each dance
+        all_dist_01 = []
+        all_dist_12 = []
+        all_dist_02 = []
+        for i in range (amount_of_one_moves):
+            all_moves, _ = generate_f.generate_one_move(model, config)
+
+            dist_01 = np.linalg.norm(all_moves[0] - all_moves[1])
+            dist_02 = np.linalg.norm(all_moves[0] - all_moves[2])
+            dist_12 = np.linalg.norm(all_moves[1] - all_moves[2])
+
+            all_dist_01.append(dist_01)
+            all_dist_12.append(dist_12)
+            all_dist_02.append(dist_02)
+
+        fig, ax = plt.subplots()
+        x = np.arange(0,1, amount_of_one_moves)
+        ax.plot(x, all_dist_01, c='blue', label='Dist Low-Med')
+        ax.plot(x, all_dist_12, c='orange', label='Dist Med-High')
+        ax.plot(x, all_dist_02, c='green', label='Dist Low-High')
+        plt.legend()
+        plt.savefig(f"evaluate/one_move/scatter_{config.load_from_checkpoint}.png")
+
