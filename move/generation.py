@@ -128,9 +128,11 @@ if purpose == 'one_move':
     all_ajd_12 = []
     all_ajd_02 = []
 
+    all_moves_boot = []
     for i in range (amount_of_one_moves):
         all_moves, _ = generate_f.generate_one_move(model, config)
         all_moves = np.array(all_moves).reshape((3, config.seq_len, -1, 3))
+        all_moves_boot.append(all_moves)
 
         dist_01 = np.linalg.norm(all_moves[0] - all_moves[1])
         dist_02 = np.linalg.norm(all_moves[0] - all_moves[2])
@@ -156,3 +158,39 @@ if purpose == 'one_move':
     plt.legend()
     plt.savefig(f"evaluate/one_move/{config.load_from_checkpoint}/scatter.png")
 
+    #take maximum AJD and look at dances
+    max_ajd = [
+        max(all_ajd_01),
+        max(all_ajd_02),
+        max(all_ajd_12)]
+
+    inds_to_pick_from = [
+        all_ajd_01.index(max(all_ajd_01)), 
+        all_ajd_02.index(max(all_ajd_02)),
+        all_ajd_12.index(max(all_ajd_12))]
+
+    ind_to_pick = max_ajd.index(max(max_ajd))
+    seq_ind = inds_to_pick_from[ind_to_pick]
+    print(f'max indices are {inds_to_pick_from}')
+    print(f'we look at one_move {seq_ind}')
+    seq = np.array(all_moves_boot[seq_ind])
+
+    filepath_for_max_ajd_artifacts = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}/max_ajd")
+    if exists(filepath_for_max_ajd_artifacts) is False:
+        os.mkdir(filepath_for_max_ajd_artifacts)
+
+    for y in range(config.label_dim):
+        x_create_formatted = seq[y].reshape((config.seq_len, -1, 3))
+        name = f"one_move_{y}_max.gif"
+        fname = os.path.join(filepath_for_max_ajd_artifacts, name)
+        plotname = f"comic_{y}_max.png"
+        comicname = os.path.join(str(filepath_for_max_ajd_artifacts), plotname)
+
+        fname = generate_f.animatestick(
+            x_create_formatted,
+            fname=fname,
+            ghost=None,
+            dot_alpha=0.7,
+            ghost_shift=0.2,
+            condition=y,
+        )
