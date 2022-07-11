@@ -31,10 +31,32 @@ def run_train_dgm(
 ):
     """Run training and track it with wandb.
 
-    The loss is given average on the number of examples (i.e. sequences)
-    that have been seen until the current minibatch.
+    The loss given is averaged on the number 
+    of examples (i.e. sequences) that have been 
+    seen until the current minibatch.
 
-    loss_epoch = average loss per sequence.
+    Parameters
+    ----------
+    model : class,
+        Deep generative Torch model
+    labelled_data_train : DataLoader
+        Shape = []
+        Batched sequences that have a label associated and
+        that have been reserved for training.
+    labels_train : DataLoader
+        Shape = []
+        Batched labels associated to labelled_data_train.
+    labelled_data_valid : DataLoader
+        Shape = []
+        Batched sequences that have a label associated and
+        that have been reserved for validation.
+    labels_valid : DataLoader
+        Shape = []
+        Batched labels associated to labelled_data_valid.
+    optimizer : class
+        Implementation of optimizer algorithm.
+    config : dict
+        Configuration for the run as inherited from wandb.config
     """
 
     elbo = dgm_lstm_vae.SVI(model)
@@ -133,7 +155,7 @@ def run_train_dgm(
                 logging.info(f"        Recon labeled-loss {labloss / (batches_seen)}")
 
                 logging.info(f"        Recon unlabeled-loss {unlabloss / (batches_seen)}")
-                
+
                 generate_f.reconstruct(
                     model=model,
                     epoch=epoch + latest_epoch,
