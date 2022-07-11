@@ -72,6 +72,8 @@ model.load_state_dict(checkpoint['model_state_dict'])
 ####################################################
 
 # BOOTSTRAP LOOP TO TAKE DISTRIBUTION ON STATS
+seq = np.load('shuffled_neighb.npy')
+print(seq.shape)
 
 stat_sampling_size = 100
 
@@ -165,52 +167,52 @@ ajd_train = metrics.ajd(model, evaluation_device, labelled_data_train, labels_tr
 ajd_test = metrics.ajd_test(model, evaluation_device, labelled_data_test, labels_test, default_config.label_dim)
 
 # # Plot latent space via PCA
-# x = torch.tensor(labelled_data_train.dataset).to(evaluation_device)
-# y = torch.tensor(labels_train.dataset).to(evaluation_device)
-# batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
-# y = batch_one_hot.to(evaluation_device)
-# y_for_encoder = y.repeat((1, default_config.seq_len, 1))
-# y_for_encoder = 0.33 * torch.ones_like(y_for_encoder).to(evaluation_device)
-# z, _, _ = model.encoder(torch.cat([x, y_for_encoder], dim=2).float())
-# index = np.arange(0, len(y), 1.)
-# pca = PCA(n_components=10).fit(z.cpu().detach().numpy())
-# fig, axs = plt.subplots(1, 1, figsize=(8, 8))
-# axs.plot(pca.explained_variance_ratio_)
-# axs.set_xlabel("Number of Principal Components")
-# axs.set_ylabel("Explained variance")
-# z_transformed = pca.transform(z.cpu().data.numpy())
+x = torch.tensor(labelled_data_train.dataset).to(evaluation_device)
+y = torch.tensor(labels_train.dataset).to(evaluation_device)
+batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
+y = batch_one_hot.to(evaluation_device)
+y_for_encoder = y.repeat((1, default_config.seq_len, 1))
+y_for_encoder = 0.33 * torch.ones_like(y_for_encoder).to(evaluation_device)
+z, _, _ = model.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+index = np.arange(0, len(y), 1.)
+pca = PCA(n_components=10).fit(z.cpu().detach().numpy())
+fig, axs = plt.subplots(1, 1, figsize=(8, 8))
+axs.plot(pca.explained_variance_ratio_)
+axs.set_xlabel("Number of Principal Components")
+axs.set_ylabel("Explained variance")
+z_transformed = pca.transform(z.cpu().data.numpy())
 
-# plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_PC_nolab_train.png')
+plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_PC_nolab_train.png')
 
-# fig = plt.figure()
-# axs = fig.add_subplot(projection='3d')
+fig = plt.figure()
+axs = fig.add_subplot(projection='3d')
 
-# sc = axs.scatter(
-#         z_transformed[:, 0],
-#         z_transformed[:, 1],
-#         z_transformed[:, 2],
-#         c=np.squeeze(labels_train.dataset),
-#         alpha=0.4,
-#         s=0.5
+sc = axs.scatter(
+        z_transformed[:, 0],
+        z_transformed[:, 1],
+        z_transformed[:, 2],
+        c=np.squeeze(labels_train.dataset),
+        alpha=0.4,
+        s=0.5
         
-#     )
-# lp = lambda i: plt.plot([],[],[],color=sc.cmap(sc.norm(i)), ms=np.sqrt(5), mec="none",
-#                         label="Laban Effort {:g}".format(i), ls="", marker="o")[0]
-# handles = [lp(i) for i in np.unique(np.squeeze(labels_train.dataset))]
+    )
+lp = lambda i: plt.plot([],[],[],color=sc.cmap(sc.norm(i)), ms=np.sqrt(5), mec="none",
+                        label="Laban Effort {:g}".format(i), ls="", marker="o")[0]
+handles = [lp(i) for i in np.unique(np.squeeze(labels_train.dataset))]
 
-# plt.legend(handles=handles)
-# plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_indexednolab_train.png')
+plt.legend(handles=handles)
+plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_indexednolab_train.png')
 
-# fig, axs = plt.subplots(1, 1, figsize=(8, 8))
+fig, axs = plt.subplots(1, 1, figsize=(8, 8))
 
-# axs.scatter(
-#         z_transformed[:, 0],
-#         z_transformed[:, 1],
-#         c=index, #np.squeeze(labels_valid.dataset),
-#         alpha=0.2,
-#         s=0.1
-#     )
-# plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_effortnolab_train.png')
+axs.scatter(
+        z_transformed[:, 0],
+        z_transformed[:, 1],
+        c=index, #np.squeeze(labels_valid.dataset),
+        alpha=0.2,
+        s=0.1
+    )
+plt.savefig(f'evaluate/log_files/latent_space_{default_config.load_from_checkpoint}_effortnolab_train.png')
 
 # Write text file with all of the metrics
 

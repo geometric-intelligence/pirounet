@@ -1,28 +1,22 @@
-"""Training functions."""
-import itertools
-import logging
+"""Defines the training function for the deep generative model."""
+
 import os
 from os.path import exists
-
-import default_config
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
-
-import evaluate.generate_f as generate_f
-import models.dgm_lstm_vae as dgm_lstm_vae
-import models.utils as utils
-
+import itertools
+import logging
 import torch
 import torch.autograd
 import torch.nn
 from torch.autograd import Variable
 import wandb
 
-def binary_cross_entropy(r, x):
-    in_sum = x * torch.log(r + 1e-8) + (1 - x) * torch.log(1 - r + 1e-8)
+import default_config
+import evaluate.generate_f as generate_f
+import models.dgm_lstm_vae as dgm_lstm_vae
+import models.utils as utils
 
-    return -torch.sum(in_sum, dim=-1)
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 
 def run_train_dgm(
@@ -32,9 +26,6 @@ def run_train_dgm(
     unlabelled_data_train,
     labelled_data_valid,
     labels_valid,
-    labelled_data_test,
-    labels_test,
-    unlabelled_data_test,
     optimizer,
     config,
 ):
@@ -99,23 +90,21 @@ def run_train_dgm(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
-            L = -elbo(x, y)  # check that averaged on minibatch
+            L = -elbo(x, y) 
             labloss += L
             U = -elbo(u)
             unlabloss += U
 
             logits = model.classify(x)
 
-            # classification loss is averaged on minibatch
-            classication_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
-            class_loss += classication_loss
+            classification_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            class_loss += classification_loss
 
-            # J_alpha is averaged on minibatch
-            J_alpha = L - alpha * classication_loss + U
+            J_alpha = L - alpha * classification_loss + U
 
             J_alpha.backward()
 
-            # gradient clipping
+            # Gradient clipping
             if config.with_clip:
                 torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
 
@@ -131,7 +120,8 @@ def run_train_dgm(
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy += torch.mean(
                 (
-                    torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices
+                    torch.max(logits, 1).indices == 
+                    torch.max(y_like_logits, 1).indices
                 ).float()
             )
 
@@ -139,8 +129,11 @@ def run_train_dgm(
                 logging.info(
                     f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
                 )
-                logging.info(f"        Recon lab-loss {labloss / (batches_seen)}")
-                logging.info(f"        Recon unlab-loss {unlabloss / (batches_seen)}")
+
+                logging.info(f"        Recon labeled-loss {labloss / (batches_seen)}")
+
+                logging.info(f"        Recon unlabeled-loss {unlabloss / (batches_seen)}")
+                
                 generate_f.reconstruct(
                     model=model,
                     epoch=epoch + latest_epoch,
@@ -152,6 +145,7 @@ def run_train_dgm(
                 )                
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
+
         logging.info(
             "[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
                 total_loss / batches_seen, accuracy / batches_seen
@@ -173,7 +167,7 @@ def run_train_dgm(
         wandb.log({"epoch": epoch + latest_epoch, "accuracy": accuracy / batches_seen}, step=epoch)
 
         # Validation
-        total_loss_valid, accuracy_valid, recon_loss_valid = (0, 0, 0)
+        total_loss_valid, accuracy_valid = (0, 0)
         model.eval()
 
         batches_v_seen = 0
@@ -193,14 +187,11 @@ def run_train_dgm(
             U = -elbo(x)
 
             logits_v = model.classify(x)
-            classication_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
+            classification_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
 
-            J_alpha_v = L - alpha * classication_loss_v + U
+            J_alpha_v = L - alpha * classification_loss_v + U
 
             total_loss_valid += J_alpha_v.item()
-
-            _, pred_idx = torch.max(logits_v, 1)
-            _, lab_idx = torch.max(y, 1)
 
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy_valid += torch.mean(
@@ -215,7 +206,9 @@ def run_train_dgm(
                     f"Valid batch {i_batch}/{total_v_batches} at loss \
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                 )
+
                 logging.info(f"Artifacts for epoch {epoch}")
+
                 generate_f.reconstruct(
                     model=model,
                     epoch=epoch + latest_epoch,
@@ -225,13 +218,16 @@ def run_train_dgm(
                     config=config,
                     log_to_wandb=True
                 )
+
             if n_batches > 5 and i_batch != 0:
                 if i_batch % 5 == 0:
                     logging.info(
                         f"Valid batch {i_batch}/{total_v_batches} at loss \
                         {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                     )
+
                     logging.info(f"Artifacts for epoch {epoch}")
+
                     generate_f.reconstruct(
                         model=model,
                         epoch=epoch + latest_epoch,
@@ -243,6 +239,7 @@ def run_train_dgm(
                     )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
+
         logging.info(
             "[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
                 total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen
@@ -268,10 +265,12 @@ def run_train_dgm(
             )
 
         logging.info("Save a checkpoint.")
+
         checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()),
             "saved/checkpoint_{}_epoch{}.pt".format(config.run_name, epoch + latest_epoch),
         )
+
         torch.save(
             {
                 "epoch": epoch + latest_epoch,

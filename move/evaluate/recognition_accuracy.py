@@ -3,9 +3,9 @@ from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay,
 import matplotlib.pyplot as plt
 import matplotlib
 
-qualit_analysis = False
+qualit_analysis = True
 
-filepath="/home/papillon/move/move/data/gen_2.csv"
+filepath="/home/papillon/move/move/data/labels_shuffled_neighb.csv"
 file = open(filepath)
 
 all_labels_mathilde = np.genfromtxt(file, delimiter=",",dtype=None)
@@ -46,7 +46,7 @@ if qualit_analysis:
     # Only do this for dancable material. Must remove the zero quality first
 
 # Load LabaNet's labels
-all_labels_LN = np.load('shuffled_labels_gen2.npy')
+all_labels_LN = np.load('shuffled_labels_variations.npy')
 
 all_labels_LN = np.array(all_labels_LN) #+ 1.
 
@@ -72,7 +72,7 @@ plt.rcParams.update({'font.size':'13'})
 conf_mat = confusion_matrix(
     labels_ln,
     labels_m, 
-    #normalize = 'true'
+    normalize = 'true'
     )
 classes = ['Low', 'Medium', 'High']
 accuracies = conf_mat/conf_mat.sum(1)
@@ -94,7 +94,7 @@ for i in range(len(classes)):
 
 plt.colorbar(cb, ax=ax, shrink=0.935)
 plt.xlabel('Labeler blindly predicts')
-plt.ylabel('Condition given to PirouNet')
+plt.ylabel('Neighborhood sampled from')
 #plt.title('Labeler versus PirouNet confusion matrix')
-purpose = 'create_gen2'
-plt.savefig(fname="confusion/conf_" + str(purpose) + ".png", dpi=1200)
+purpose = 'create'
+plt.savefig(fname="confusion/conf_neighb_" + str(purpose) + ".png", dpi=1200)
