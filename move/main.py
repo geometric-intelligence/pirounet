@@ -6,30 +6,22 @@ logging.basicConfig(level=logging.INFO)
 
 import os
 import warnings
-
-import default_config
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+import torch
+import wandb
 
 import datasets
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import train
+import default_config
 
-import torch
-import wandb
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 logging.info(f"Using PyTorch version: {torch. __version__}")
 
-# Can be replaced by logging.DEBUG or logging.WARNING
 warnings.filterwarnings("ignore")
 
-# The config put in wandb.init is treated as default:
-# - it is filled with values from the default_config.py file
-# - it will be overwritten by any sweep
-# After wandb is initialized, use wandb.config (and not default_config)
-# to get the config parameters of the run, potentially coming from a sweep.
 wandb.init(
     project="move_labelled_nina",
     entity="bioshape-lab",
@@ -54,16 +46,18 @@ wandb.init(
         "device": default_config.device,
         "classifier": default_config.classifier,
         "effort": default_config.effort,
-        "fraction_label":default_config.fraction_label
+        "fraction_label":default_config.fraction_label,
+        "generate_after_training": default_config.generate_after_training
     },
 )
-config = wandb.config
-logging.info(f"Config: {config}")
-logging.info(f"---> Using device {config.device}")
 
+config = wandb.config
 wandb.run.name = default_config.run_name
 
+logging.info(f"Config: {config}")
+logging.info(f"---> Using device {config.device}")
 logging.info("Initialize model")
+
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
     input_dim=config.input_dim,
@@ -82,7 +76,6 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     classifier=config.classifier,
 ).to(config.device)
 
-
 logging.info("Get data")
 (
     labelled_data_train,
@@ -95,7 +88,6 @@ logging.info("Get data")
     unlabelled_data_test,
 ) = datasets.get_dgm_data(config)
 
-# wandb.watch(model, train.get_loss, log="all", log_freq=100)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)
 )
@@ -108,15 +100,12 @@ train.run_train_dgm(
     unlabelled_data_train,
     labelled_data_valid,
     labels_valid,
-    labelled_data_test,
-    labels_test,
-    unlabelled_data_test,
     optimizer,
     config=config,
 )
 
-# generate
-for label in range(config.label_dim):
-    generate_f.generate(model, y_given=label, config=config)
+if config.generate_after_training:
+    for label in range(config.label_dim):
+        generate_f.generate(model, y_given=label, config=config)
 
 wandb.finish()

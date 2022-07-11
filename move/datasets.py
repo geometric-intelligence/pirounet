@@ -156,6 +156,9 @@ def load_labels(
 
         labels_ind = np.delete(labels_with_index_noNA, 1, axis=1)
         labels = np.delete(labels_with_index_noNA, 0, axis=1)
+        # count1 = np.count_nonzero(labels==1)
+        # count2 = np.count_nonzero(labels==2)
+        # count3 = np.count_nonzero(labels==3)
     
     if not no_NA:
         labels_ind = np.delete(labels_with_index, 1, axis=1)

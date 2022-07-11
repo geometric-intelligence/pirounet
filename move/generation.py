@@ -47,7 +47,7 @@ latest_epoch = checkpoint['epoch']
 # 3. pick empty device
 # 4. pick purpose of generation
 ####################################################
-purpose = 'one_move' # artifact, blind, one_move, debug
+purpose = 'artifact' # artifact, blind, one_move, debug
 ####################################################
 
 num_gen_lab = 75 # number of sequences to generate per label

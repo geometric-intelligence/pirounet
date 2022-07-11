@@ -72,6 +72,8 @@ model.load_state_dict(checkpoint['model_state_dict'])
 ####################################################
 
 # BOOTSTRAP LOOP TO TAKE DISTRIBUTION ON STATS
+seq = np.load('shuffled_neighb.npy')
+print(seq.shape)
 
 stat_sampling_size = 100
 
