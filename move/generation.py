@@ -35,7 +35,7 @@ model = dgm_lstm_vae.DeepGenerativeModel(
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(config)
+    datasets.get_model_data(config)
 
 old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt")
 checkpoint = torch.load(old_checkpoint_filepath)

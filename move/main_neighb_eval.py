@@ -64,7 +64,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 
 labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
     labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(default_config)
+    datasets.get_model_data(default_config)
 
 ####################################################
 

@@ -31,6 +31,7 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = 'time'
+fraction_label = 0.92
 
 # Classifier's linear layers
 h_dim_class = 250

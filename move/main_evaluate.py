@@ -61,13 +61,15 @@ checkpoint = torch.load(old_checkpoint_filepath)
 model.load_state_dict(checkpoint['model_state_dict'])
 
 (
-    labelled_data_train,
-    labels_train,
-    labelled_data_valid,
-    labels_valid,
-    labelled_data_test,
-    labels_test,
-) = datasets.get_classifier_data(classifier_config)
+labelled_data_train, 
+labels_train, 
+_, 
+labelled_data_valid, 
+labels_valid, 
+labelled_data_test, 
+labels_test,
+_
+) = datasets.get_model_data(classifier_config)
 
 ####################################################
 

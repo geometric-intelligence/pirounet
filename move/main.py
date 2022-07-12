@@ -86,7 +86,7 @@ logging.info("Get data")
     labelled_data_test,
     labels_test,
     unlabelled_data_test,
-) = datasets.get_dgm_data(config)
+) = datasets.get_model_data(config)
 
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)

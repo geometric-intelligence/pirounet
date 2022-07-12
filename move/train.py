@@ -39,19 +39,19 @@ def run_train_dgm(
     ----------
     model : class,
         Deep generative Torch model
-    labelled_data_train : DataLoader
-        Shape = []
+    labelled_data_train : DataLoader iterator
+        Shape = [n_seq_train, seq_len, input_dim]
         Batched sequences that have a label associated and
         that have been reserved for training.
-    labels_train : DataLoader
-        Shape = []
+    labels_train : DataLoader iterator
+        Shape = [n_seq_train, 1]
         Batched labels associated to labelled_data_train.
-    labelled_data_valid : DataLoader
-        Shape = []
+    labelled_data_valid : DataLoader iterator
+        Shape = [n_seq_valid, seq_len, input_dim]
         Batched sequences that have a label associated and
         that have been reserved for validation.
-    labels_valid : DataLoader
-        Shape = []
+    labels_valid : DataLoader iterator
+        Shape = [n_seq_valid, 1]
         Batched labels associated to labelled_data_valid.
     optimizer : class
         Implementation of optimizer algorithm.
