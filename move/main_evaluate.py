@@ -25,7 +25,7 @@ evaluation_device = (
     torch.device("cuda:"+str(classifier_config.which_device)) if torch.cuda.is_available() else torch.device("cpu")
 )
 
-fid_classifier_model = classifiers.FID_LinearClassifier(
+fid_classifier_model = classifiers.LinearClassifier(
     input_dim=classifier_config.input_dim,
     h_dim=classifier_config.h_dim_class,
     label_dim=classifier_config.label_dim,
