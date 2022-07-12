@@ -110,7 +110,7 @@ class DeepGenerativeModel(LstmVAE):
         y_for_encoder = y.repeat((1, self.seq_len, 1))
         z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
-        self.kl_divergence = losses.kld(z, (z_mu, z_log_var))
+        #self.kl_divergence = losses.kld((z_mu, z_log_var))
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())

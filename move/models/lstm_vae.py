@@ -342,16 +342,16 @@ class LstmVAE(nn.Module):
 
     def __init__(
         self,
-        n_layers,
-        input_dim,
-        h_dim,
-        latent_dim,
-        kl_weight,
-        output_dim,
-        seq_len,
-        neg_slope,
-        batch_size,
-        label_dim,
+        n_layers = 5,
+        input_dim = 159,
+        h_dim = 100,
+        latent_dim = 256,
+        kl_weight = 1,
+        output_dim = 159,
+        seq_len = 40,
+        neg_slope = 0,
+        batch_size = 80,
+        label_dim = 3,
         with_rotation_layer=True
     ):
         super(LstmVAE, self).__init__()
@@ -417,7 +417,7 @@ class LstmVAE(nn.Module):
 
         q_param = (z_mean, z_log_var)
 
-        self.kl_divergence = losses.kld(z, q_param)
+        #self.kl_divergence = losses.kld(q_param)
 
         x_recon = self.decoder(z)
         if self.with_rotation_layer:
