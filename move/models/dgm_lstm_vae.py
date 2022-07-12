@@ -10,6 +10,26 @@ from torch.autograd import Variable
 
 
 class DeepGenerativeModel(LstmVAE):
+    """
+    M2 code replication from the paper
+    'Semi-Supervised Learning with Deep Generative Models'
+    (Kingma 2014) in PyTorch.
+    The "Generative semi-supervised model" is a probabilistic
+    model that incorporates label information in both
+    inference and generation.
+    Initialise a new generative model
+
+    Parameters
+    ----------
+    n_layers :
+    input_dim :
+    h_dim :
+    latent_dim :
+    output_dim :
+    seq_len :
+    neg_slope :
+    label_dim :
+    """
     def __init__(
         self,
         n_layers,
@@ -24,31 +44,8 @@ class DeepGenerativeModel(LstmVAE):
         h_dim_classif,
         neg_slope_classif,
         n_layers_classif,
-        bias,
-        batch_norm,
         classifier
     ):
-
-        """
-        M2 code replication from the paper
-        'Semi-Supervised Learning with Deep Generative Models'
-        (Kingma 2014) in PyTorch.
-        The "Generative semi-supervised model" is a probabilistic
-        model that incorporates label information in both
-        inference and generation.
-        Initialise a new generative model
-
-        Parameters
-        ----------
-        n_layers :
-        input_dim :
-        h_dim :
-        latent_dim :
-        output_dim :
-        seq_len :
-        neg_slope :
-        label_dim :
-        """
 
         super(DeepGenerativeModel, self).__init__()
         self.label_dim = label_dim
@@ -60,8 +57,6 @@ class DeepGenerativeModel(LstmVAE):
             h_dim=h_dim,
             latent_dim=latent_dim,
             label_dim=label_dim,
-            bias=bias,
-            batch_norm=batch_norm,
         )
 
         self.decoder = LstmDecoder(

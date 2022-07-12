@@ -1,6 +1,9 @@
+"Utility functions used for training and evaluating the model."
+
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
+
 import default_config
 
 def make_onehot_encoder(label_features):

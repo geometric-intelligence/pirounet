@@ -459,7 +459,7 @@ def get_model_data(config):
         reserved for testing.
     """
 
-    ds_all, ds_all_centered, _, _, _ = load_raw()
+    ds_all, ds_all_centered = load_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
     labels_1_to_4, labels_ind = load_labels(effort = config.effort)

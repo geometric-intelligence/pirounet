@@ -58,8 +58,8 @@ device = (
 
 # Training
 epochs = 500
-learning_rate = 3e-4  # 6e-6
-batch_size = 1 #40
+learning_rate = 3e-4  
+batch_size = 80
 with_clip = False
 
 # Input data
@@ -72,15 +72,15 @@ fraction_label = 0.789
 
 # LSTM VAE
 kl_weight = 1
-neg_slope = 0  # 0.1,0.5 LeakyRelu
-n_layers = 5  # ,5,6
+neg_slope = 0 
+n_layers = 5 
 h_dim = 100
 latent_dim = 256
 
 # Classifier
 classifier = 'linear'
 h_dim_classif = 100
-neg_slope_classif = 0  # 0.5 #0.1 # 0.05
+neg_slope_classif = 0 
 n_layers_classif = 2
 
 # Artifacts to produce

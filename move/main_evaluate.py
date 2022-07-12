@@ -51,8 +51,6 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     h_dim_classif=default_config.h_dim_classif,
     neg_slope_classif=default_config.neg_slope_classif,
     n_layers_classif=default_config.n_layers_classif,
-    bias=None,
-    batch_norm=True,
     classifier=default_config.classifier
 ).to(evaluation_device)
 
