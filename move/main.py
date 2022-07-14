@@ -44,7 +44,7 @@ wandb.init(
         "h_dim_classif": default_config.h_dim_classif,
         "label_dim": default_config.label_dim,
         "device": default_config.device,
-        "classifier": default_config.classifier,
+        #"classifier": default_config.classifier,
         "effort": default_config.effort,
         "fraction_label":default_config.fraction_label,
         "generate_after_training": default_config.generate_after_training
@@ -71,7 +71,6 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     h_dim_classif=config.h_dim_classif,
     neg_slope_classif=config.neg_slope_classif,
     n_layers_classif=config.n_layers_classif,
-    classifier=config.classifier,
 ).to(config.device)
 
 logging.info("Get data")

@@ -78,7 +78,6 @@ h_dim = 100
 latent_dim = 256
 
 # Classifier
-classifier = 'linear'
 h_dim_classif = 100
 neg_slope_classif = 0 
 n_layers_classif = 2
