@@ -11,12 +11,12 @@ def reconstruction_loss(x, x_recon):
 
     Parameters
     ----------
-    x : array
-        Shape = [batch_size, seq_len, input_dim]
-        Input batch of sequences.
-    x_recon :   array
-                Shape = [batch_size, seq_len, input_dim]
-                Batch of reconstructed sequences.
+    x :             array
+                    Shape = [batch_size, seq_len, input_dim]
+                    Input batch of sequences.
+    x_recon :       array
+                    Shape = [batch_size, seq_len, input_dim]
+                    Batch of reconstructed sequences.
 
     Returns
     ----------

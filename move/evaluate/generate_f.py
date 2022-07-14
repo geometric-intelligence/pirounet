@@ -1,22 +1,25 @@
-import logging
+"Functions for visualizing dance sequences."
+
 import os
+import logging
 import random
-import time
-
-import default_config
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 import matplotlib
 import matplotlib.pyplot as plt
-import models.utils as utils
+from matplotlib import animation
+from mpl_toolkits.mplot3d.art3d import juggle_axes
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 import torch
 import wandb
-from matplotlib import animation
-from mpl_toolkits.mplot3d.art3d import juggle_axes
 
+import models.utils as utils
+import default_config
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
+
+# This array stores the physical meaning of all 53 keypoints
+# forming the skeleton in each dance pose. 
 point_labels = [
     "ARIEL",
     "C7",
@@ -44,7 +47,6 @@ point_labels = [
     "LTHI",
     "LTOE",
     "LUPA",
-    # 'LabelingHips',
     "MBWT",
     "MFWT",
     "RANK",
@@ -71,7 +73,6 @@ point_labels = [
     "RTOE",
     "RUPA",
     "STRN",
-    # 'SolvingHips',
     "T10",
 ]
 
@@ -174,7 +175,7 @@ skeleton_lines = [
     (("RFHD",), ("ARIEL",)),
 ]
 
-# Normal, connected skeleton:
+# This operation creates a normal, connected skeleton:
 skeleton_idxs = []
 for g1, g2 in skeleton_lines:
     entry = []
@@ -184,7 +185,35 @@ for g1, g2 in skeleton_lines:
 
 
 def getlinesegments(seq, zcolor=None, cmap=None):
-    """Calculate coordinates for the lines."""
+    """Calculates coordinates for the lines.
+
+    If using a colormap, calculates the color based on the location
+    of each segment's middle point.
+
+    Parameters
+    ----------
+    seq :           array
+                    Shape = [seq_len, keypoints (53), 3]
+                    Dance sequence.    
+    zcolor :        string
+                    Color of first skeleton's keypoints and segments.
+    cmap :          string
+                    Matplotlib colormap.
+
+    Returns
+    ----------
+    xline :         array
+                    Shape = [seq_len, n_segments, 3, 2]
+                    Returns 3D start and end points for every
+                    segment in a skeleton by taking mean of
+                    relevant keypoints.
+    
+    colors :        array
+                    Shape = [n_segments, 4]
+                    Stores colors from color map based on
+                    location of middle point of segment.
+    
+    """
     xline = np.zeros((seq.shape[0], len(skeleton_idxs), 3, 2))
 
     if cmap:
@@ -201,7 +230,30 @@ def getlinesegments(seq, zcolor=None, cmap=None):
 
 
 def putlines(ax, segments, color=None, lw=2.5, alpha=None):
-    """Put line segments on the given axis with given colors."""
+    """Puts line segments on the given axis with given colors.
+    
+    Parameters
+    ----------
+    ax :        Plot axis to plot segments on.
+    segments :  array
+                Shape = [n_segments, 3, 2]
+                3D start and end points for each segment in 
+                skeleton.
+    color :     array
+                Shape = [n_segments, 4]
+                Color associated to each segment.
+    lw :        float
+                Line width of each segment.
+    alpha :     float
+                Between 0 and 1. Determines transparency of 
+                segments. 1 = transparent.   
+
+    Returns
+    ----------
+    lines :     list
+                Lines connecting the start and end points of
+                each segment.             
+    """
     lines = []
     # Main skeleton
     for i in range(len(skeleton_idxs)):
@@ -227,18 +279,62 @@ def animatestick(
     ghost=None,
     ghost_shift=1,
     figsize=(12, 8),
-    zcolor=None, #'blue',
-    pointer=None,
+    zcolor=None,
     ax_lims=(-0.4, 0.4),
     speed=45,
     dot_size=20,
     dot_alpha=0.5,
     lw=2.5,
     cmap="inferno",
-    pointer_color="black",
     condition=None,
 ):
-    """Create skeleton animation."""
+    """Creates skeleton animation of one sequence.
+
+    Draws up to two connected skeletons moving in 
+    a unit box, centered at a point on the x,y plane.
+
+    Parameters
+    ----------
+    seq :           array
+                    Shape = [seq_len, keypoints (53), 3]
+                    Sequence of seq_len poses with 53 keypoints each
+                    to be plotted.
+    fname :         string
+                    Filepath + name of animation for saving purposes.
+    ghost :         bool
+                    Shape = [seq_len, keypoints (53), 3]
+                    Sequence of second skeleton. None when plotting
+                    only one skeleton.
+    ghost_shift :   float
+                    Lateral shift between two skeletons.
+    figsize :       tuple
+                    Size of figure.
+    zcolor :        string
+                    Color of first skeleton's keypoints and segments.
+    ax_lims :       tuple
+                    Beginning and ending point of x,y axes of the 
+                    unit cube. z axis limits is a function of these.
+    speed :         int
+                    Intervals for animation.
+    dot_size :      int
+                    Size of keypoint scatterpoints for skeleton(s).
+    dot_alpha :     float
+                    Between 0 and 1. Determines transparency of 
+                    keypoint scatterpoints. 1 = transparent.
+    lw :            float
+                    Line width of skeleton segments.
+    cmap :          string
+                    Matplotlib colormap.
+    condition :     int
+                    Integer representing categorical label associated
+                    to dance sequence, if known.
+
+
+    Returns
+    ----------
+    fname :         string
+                    Filepath + name of animation for saving purposes.
+    """
     # Put data on CPU and convert to numpy array
     if torch.is_tensor(seq):
         seq = seq.cpu().data.numpy()
@@ -300,16 +396,6 @@ def animatestick(
         xline_g = getlinesegments(ghost)
         lines_g = putlines(ax, xline_g[0], ghost_color, lw=lw, alpha=1.0)
 
-    if pointer is not None:
-        vR = 0.15
-        dX, dY = vR * np.cos(pointer), vR * np.sin(pointer)
-        zidx = point_labels.index("CLAV")
-        X = seq[:, zidx, 0]
-        Y = seq[:, zidx, 1]
-        Z = seq[:, zidx, 2]
-        quiv = ax.quiver(X[0], Y[0], Z[0], dX[0], dY[0], 0, color=pointer_color)
-        ax.quiv = quiv
-
     if condition is not None:
         title = str("Generated for label " + str(condition))
 
@@ -329,17 +415,11 @@ def animatestick(
                 l.set_data(xline_g[t, i, :2])
                 l.set_3d_properties(xline_g[t, i, 2])
 
-        if pointer is not None:
-            ax.quiv.remove()
-            ax.quiv = ax.quiver(X[t], Y[t], Z[t], dX[t], dY[t], 0, color=pointer_color)
-
     anim = animation.FuncAnimation(
         fig, update, len(seq), interval=speed, blit=False, save_count=200
     )
-
     anim.save(fname, writer="pillow", fps=30)
     logging.info(f"Artifact saved at {fname}.")
-
     return fname
 
 
@@ -355,12 +435,38 @@ def reconstruct(
     comic=False
 ):
     """
-    Make and save stick video on seq from input_data dataset.
+    Make and save stick gif on sequence from input_data dataset.
     No conditions on output.
+    Animation features original sequence (blue) and reconstructed 
+    sequence (black).
+    Option to create strip-comic plot of each sequence as well.
 
     Parameters
     ----------
-    purpose : str, {"train", "valid"}
+    model :         class
+                    Model to evaluate.
+    epoch :         int
+                    Epoch to evaluate it at.
+    input_data :    array
+                    Shape = [batch_size, seq_len, input_dim]
+                    Batch of input sequences to be reconstructed.
+    input_label :   array
+                    Shape = [batch_size, label_dim]
+                    Batch of one hots associated to input sequences.
+    purpose :       string
+                    {"train", "valid", "test"}
+    config :        dict
+                    Configuration for run.
+    log_to_wandb :  bool
+                    If True, logs the animation file to wandb.
+    single_epoch :  string
+                    Filepath to folder for saving an artifact
+                    not during training (i.e. only for 1 epoch).
+                    Set to None for artifact generation during 
+                    training.
+    comic :         bool
+                    If True, also generates a strip comic style plot
+                    for every sequence, original and reconstructed.
     """
     if config is None:
         logging.info("!! Parameter config is not given: Using default_config")
@@ -418,16 +524,30 @@ def reconstruct(
 def generate(
     model,
     y_given=None,
-    config=None,
+    config=default_config,
 ):
-    """Generate a dance from a given label by sampling in the latent space.
+    """Generate a dance by sampling in the latent space.
 
     If no label y is given, then a random label is chosen.
-    """
 
-    if config is None:
-        logging.info("!! Parameter config is not given: Using default_config")
-        config = default_config
+    Parameters
+    ----------
+    model :     class
+                Model to evaluate.
+    y_given :   int
+                Int associated to categorical label.
+    config :    dict
+                Configuration for run.
+
+    Returns
+    ----------
+    x_create :  array
+                Shape = [1, seq_len, input_dim]
+                Sampled sequence.
+    y_title :   int
+                Categorical label used in the latent variable
+                that generated the sequence.
+    """
 
     onehot_encoder = utils.make_onehot_encoder(config.label_dim)
     if y_given is not None:
@@ -451,53 +571,43 @@ def generate(
     return x_create, y_title
 
 
-def generate_one_move(
-    model,
-    config=None,
-):
-    """
-    Generate a dance from the same body-motion latent variable
-    with all possible different labels.
-
-    """
-
-    if config is None:
-        logging.info("!! Parameter config is not given: Using default_config")
-        config = default_config
-
-    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
-    z_create = torch.randn(size=(1, config.latent_dim)).to(config.device)
-
-    all_moves = []
-    all_labels = []
-    for y in range(config.label_dim):
-        y_onehot = onehot_encoder(y)
-        
-        y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-
-        y_onehot = y_onehot.to(config.device)
-
-        x_create = model.sample(z_create, y_onehot)
-        all_moves.append(x_create.cpu().data.numpy())
-        all_labels.append(y)
-
-    return all_moves, all_labels
-
 def generate_and_save(
     model,
     epoch=None,
     y_given=None,
-    config=None,
-    single_epoch=None,
+    config=default_config,
     log_to_wandb=False,
+    single_epoch=None,
     comic=False,
 ):
-    """Generate a dance from a given label and save the corresponding artifact."""
-    if config is None:
-        logging.info("!! Parameter config is not given: Using default_config")
-        config = default_config
+    """Generate a dance from a given label and save the corresponding 
+    artifact.
+    
+    Parameters
+    ----------
+    model :         class
+                    Model to evaluate.
+    epoch :         int
+                    Epoch to evaluate it at.
+    y_given :       int
+                    Int associated to categorical label.
+    config :        dict
+                    Configuration for run.
+    log_to_wandb :  bool
+                    If True, logs the animation file to wandb.
+    single_epoch :  string
+                    Filepath to folder for saving an artifact
+                    not during training (i.e. only for 1 epoch).
+                    Set to None for artifact generation during 
+                    training.
+    comic :         bool
+                    If True, also generates a strip comic style plot
+                    for every sequence, original and reconstructed.
+    """
 
-    filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+    filepath = os.path.join(
+        os.path.abspath(os.getcwd()), "animations/" + config.run_name
+        )
 
     x_create, y_title = generate(model, y_given)
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
@@ -538,24 +648,54 @@ def generate_and_save(
         wandb.log_artifact(animation_artifact)
         logging.info("ARTIFACT: logged conditional generation to wandb.")
 
-def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, dot_size=0, lw=0.8, zcolor=None,recon=False):
+def draw_comic(
+    frames, 
+    comicname, 
+    figsize=None, 
+    window_size=0.8, 
+    dot_size=0, 
+    lw=0.8, 
+    recon=False):
+    """Generates a strip comic style plot of a dance sequence.
+
+    Extracted poses are plotted in consecutive order along a
+    single axis, left to right.
     
+    Parameters
+    ----------
+    frames :        array
+                    Shape = [seq_len, keypoints, 3]
+                    Dance sequence to be plotted.
+    comicname :     string
+                    Filepath + name of comic for saving purposes.
+    figsize :       tuple
+                    Size of figure.
+    window_size :   float
+                    Sets size of box containing skeleton poses.
+    dot_size :      float
+                    Size of keypoints of each skeleton pose.
+    lw :            float
+                    Line width of each skeleton's segments.
+    recon :         bool
+                    If True, changes color of skeleton to signify
+                    sequence to be a reconstruction.
+    """    
     if torch.is_tensor(frames):
         frames = frames.cpu().data.numpy()
     frames = frames[::4, :, :]
 
     if recon:
-        cmap = 'autumn' #'cool_r'
+        cmap = 'autumn'
     if not recon:
         cmap = 'cool_r'
-    #cmap = 'cool_r'
+
     fig = plt.figure(figsize=figsize)
     ax = p3.Axes3D(fig)
     ax.view_init(30, 0)
     shift_size=0.6
     
     ax.set_xlim(-0.4*window_size,0.4*window_size)
-    ax.set_ylim(0, 6)  #(-window_size,2*len(frames)*window_size)
+    ax.set_ylim(0, 6) 
     ax.set_zlim(-0.1,0.5)
     ax.set_box_aspect([1,8,0.8])
     ax.set_xticklabels([])
@@ -566,30 +706,18 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
     
     cm = matplotlib.cm.get_cmap(cmap)
     
-    if angles is not None:
-        vR = 0.15
-        zidx = point_labels.index("CLAV")
-        X = frames[:,zidx,0]
-        Y = frames[:,zidx,1]
-        dX,dY = vR*np.cos(angles), vR*np.sin(angles)
-        Z = frames[:,zidx,2]
-        #Z = frames[:,2,2]
     n_frame=0
     for iframe,frame in enumerate(frames):
         n_frame += 1
         ax.scatter(frame[:,0],
                        frame[:,1]+0.4+n_frame*shift_size,
                        frame[:,2],
-                       #alpha=0.3,
-                       c= frame[:, 2], #'black', #zcolor,np.arange(0, 53),#
+                       c= frame[:, 2],
                        cmap=cm,
                        s=dot_size,
                        depthshade=True)
 
         zcolor = frame[:, 2] * 2
-        
-        if angles is not None:
-            ax.quiver(X[iframe],iframe*shift_size+Y[iframe],Z[iframe],dX[iframe],dY[iframe],0, color='black')
         
         for i,(g1,g2) in enumerate(skeleton_lines):
             g1_idx = [point_labels.index(l) for l in g1]
@@ -609,39 +737,3 @@ def draw_comic(frames, comicname, angles=None, figsize=None, window_size=0.8, do
                     color=color,
                     lw=lw)
         plt.savefig(comicname)
-
-def generate_and_save_one_move(
-    model,
-    config,
-    path,
-):
-    """
-    Generate label_dim dances using the 
-    samebody motion latent variable and different labels.
-    Save the corresponding artifacts.
-    """
-
-    all_moves, all_labels = generate_one_move(model, config)
-
-    for i, y in enumerate(all_labels):
-
-        x_create_formatted = all_moves[y].reshape((config.seq_len, -1, 3))
-        name = f"one_move_{y}.gif"
-        fname = os.path.join(path, name)
-        plotname = f"comic_{y}.png"
-        comicname = os.path.join(str(path), plotname)
-
-        fname = animatestick(
-            x_create_formatted,
-            fname=fname,
-            ghost=None,
-            dot_alpha=0.7,
-            ghost_shift=0.2,
-            condition=y,
-        )
-
-        draw_comic(
-            x_create_formatted,
-            comicname,
-            recon=True
-        )
