@@ -19,17 +19,17 @@ class LstmEncoder(nn.Module):
 
     Parameters
     ----------
-    n_layers :  int
-                Number of LSTM layers.
-    input_dim : int
-                Number of features per pose,
-                keypoints * 3 dimensions.
-    h_dim : int
-            Number of nodes in hidden layers.
+    n_layers :      int
+                    Number of LSTM layers.
+    input_dim :     int
+                    Number of features per pose,
+                    keypoints * 3 dimensions.
+    h_dim :         int
+                    Number of nodes in hidden layers.
     latent_dim :    int
                     Dimension of latent space.   
-    label_dim : int
-                Amount of categorical labels.
+    label_dim :     int
+                    Amount of categorical labels.
     """
 
     def __init__(
@@ -162,22 +162,22 @@ class LstmDecoder(nn.Module):
 
     Parameters
     ----------
-    n_layers :  int
-                Number of LSTM layers.
-    output_dim : int
-                Number of features per 
-                constructed pose,
-                keypoints * 3 dimensions.
-    h_dim : int
-            Number of nodes in hidden layers.
+    n_layers :      int
+                    Number of LSTM layers.
+    output_dim :    int
+                    Number of features per 
+                    constructed pose,
+                    keypoints * 3 dimensions.
+    h_dim :         int
+                    Number of nodes in hidden layers.
     latent_dim :    int
                     Dimension of latent space. 
-    seq_len :   int
-                Number of poses in a sequence.  
-    neg_slope : int
-                Slope for LeakyRelu activation.
-    label_dim : int
-                Amount of categorical labels.    
+    seq_len :       int
+                    Number of poses in a sequence.  
+    neg_slope :     int
+                    Slope for LeakyRelu activation.
+    label_dim :     int
+                    Amount of categorical labels.    
     batch_size :    int
                     Amount of examples (sequences)
                     in a  batch.
@@ -238,12 +238,12 @@ class LstmDecoder(nn.Module):
 
         Returns
         ----------
-        h : array
-            Shape = [batch_size, seq_len, input_dim] (labeled)
-            OR
-            Shape = [batch_size * label_dim, seq_len, input_dim]
-            (unlabeled)
-            Output batch of sequences.
+        h :         array
+                    Shape = [batch_size, seq_len, input_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, seq_len, input_dim]
+                    (unlabeled)
+                    Output batch of sequences.
         """
         if self.label_dim:
             assert inputs.shape[-1] == self.latent_dim + self.label_dim
@@ -284,9 +284,9 @@ class RotationLayer(nn.Module):
 
         Parameters
         ----------
-        x : array
-            Shape = [batch_size, seq_len, input_dim]
-            Sequence of poses.
+        x :     array
+                Shape = [batch_size, seq_len, input_dim]
+                Sequence of poses.
 
         Returns
         ----------
@@ -308,32 +308,32 @@ class LstmVAE(nn.Module):
 
     Parameters
     ----------
-    n_layers :  int
-                Number of LSTM layers.
-    input_dim : int
-                Number of features per 
-                input pose, keypoints * 
-                3 dimensions.
-    h_dim : int
-            Number of nodes in hidden layers.
-    latent_dim :    int
-                    Dimension of latent space. 
-    kl_weight : int
-                Weight given to KL divergence
-                in regularized loss.
-    output_dim :    int
-                    Number of features per 
-                    output pose, keypoints * 
-                    3 dimensions.
-    seq_len :   int
-                Number of poses in a sequence.  
-    neg_slope : int
-                Slope for LeakyRelu activation. 
-    batch_size :    int
-                    Amount of examples (sequences)
-                    in a  batch.
-    label_dim : int
-                Amount of categorical labels.
+    n_layers :              int
+                            Number of LSTM layers.
+    input_dim :             int
+                            Number of features per 
+                            input pose, keypoints * 
+                            3 dimensions.
+    h_dim :                 int
+                            Number of nodes in hidden layers.
+    latent_dim :            int
+                            Dimension of latent space. 
+    kl_weight :             int
+                            Weight given to KL divergence
+                            in regularized loss.
+    output_dim :            int
+                            Number of features per 
+                            output pose, keypoints * 
+                            3 dimensions.
+    seq_len :               int
+                            Number of poses in a sequence.  
+    neg_slope :             int
+                            Slope for LeakyRelu activation. 
+    batch_size :            int
+                            Amount of examples (sequences)
+                            in a  batch.
+    label_dim :             int
+                            Amount of categorical labels.
     with_rotation_layer :   bool
                             Determines use of 
                             rotation layer.
@@ -399,13 +399,13 @@ class LstmVAE(nn.Module):
 
         Parameters
         ----------
-        x : array
-            Shape = [batch_size, seq_len, input_dim]
-            Input batch of sequence data.
+        x :         array
+                    Shape = [batch_size, seq_len, input_dim]
+                    Input batch of sequence data.
 
         Returns
         -------
-        x_recon :    array
+        x_recon :   array
                     Shape = [batch_size, seq_len, 
                     input_dim]
                     Reconstructed input.

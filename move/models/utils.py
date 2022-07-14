@@ -36,11 +36,11 @@ def batch_one_hot(y, label_dim):
 
     Parameters
     ----------
-    y: array
-        Shape = [batch_size, ]
-        Batch of integer labels.
-    label_dim: int
-        Amount of label categories.
+    y:              array
+                    Shape = [batch_size, ]
+                    Batch of integer labels.
+    label_dim:      int
+                    Amount of label categories.
 
     Returns
     -------
@@ -67,15 +67,15 @@ def log_standard_categorical(p):
 
     Parameters
     ----------
-    p:  tensor
-        Shape = [batch_size, 1, label_features]
-        One-hot categorical distribution.
+    p:          tensor
+                Shape = [batch_size, 1, label_features]
+                One-hot categorical distribution.
 
     Returns
     -------
-    H(p,u) : tensor
-            Shape = [batch_size, 1]
-            Cross entropy for every example in the batch.
+    H(p,u) :    tensor
+                Shape = [batch_size, 1]
+                Cross entropy for every example in the batch.
     """
     prior = F.softmax(torch.ones_like(p), dim=2)
     prior.requires_grad = False
@@ -106,18 +106,18 @@ def enumerate_discrete(x, y_dim):
 
     Parameters
     ----------
-    x: tensor
-        Shape = [batch_size, ]
-        Batch of integer labels.
-    y_dim: int
-        Number of total labels.
+    x:      tensor
+            Shape = [batch_size, ]
+            Batch of integer labels.
+    y_dim:  int
+            Number of total labels.
 
     Returns
     -------
-    mimic :     Variable
-                Shape = [batch_size x label_dim, 1, label_dim]
-                Tensor assigning every possible label y to each 
-                element of x.
+    mimic : Variable
+            Shape = [batch_size x label_dim, 1, label_dim]
+            Tensor assigning every possible label y to each 
+            element of x.
     """
 
     def batch(batch_size, label):

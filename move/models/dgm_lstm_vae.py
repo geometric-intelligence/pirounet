@@ -125,10 +125,14 @@ class DeepGenerativeModel(LstmVAE):
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        z, _, _ = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+        z, _, _ = self.encoder(
+            torch.cat([x, y_for_encoder], dim=2).float()
+            )
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
-        x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
+        x_mu = self.decoder(
+            torch.cat([z, y_for_decoder], dim=1).float()
+            )
 
         return x_mu
 
@@ -169,7 +173,9 @@ class DeepGenerativeModel(LstmVAE):
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+        z, z_mu, z_log_var = self.encoder(
+            torch.cat([x, y_for_encoder], dim=2).float()
+            )
 
         return z, z_mu, z_log_var
 
