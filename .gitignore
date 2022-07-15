@@ -16,7 +16,9 @@ move/*.out
 tests/
 evaluate/generate/
 evaluate/reconstruct/
-evaluate/one_move
+evaluate/z_tiling/
+evaluate/log_files/
+evaluate/confusion/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

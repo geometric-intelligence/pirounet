@@ -1,9 +1,8 @@
 """Architectures of DGM LSTM VAE."""
 
-import torch.nn
-
 import models.losses as losses
 import models.utils as utils
+import torch.nn
 from models.classifiers import LinearClassifier
 from models.lstm_vae import LstmDecoder, LstmEncoder
 
@@ -27,12 +26,12 @@ class DeepGenerativeModel(torch.nn.Module):
     h_dim :             int
                         Number of nodes in hidden layers.
     latent_dim :        int
-                        Dimension of latent space.   
+                        Dimension of latent space.
     output_dim :        int
                         Number of features per output
                         pose, keypoints * 3 dimensions.
     seq_len :           int
-                        Number of poses in a sequence.  
+                        Number of poses in a sequence.
     neg_slope :         int
                         Slope for LeakyRelu activation.
     label_dim :         int
@@ -41,13 +40,13 @@ class DeepGenerativeModel(torch.nn.Module):
                         Amount of examples (sequences)
                         in a  batch.
     h_dim_classif :     int
-                        Amout of nodes in the 
+                        Amout of nodes in the
                         classifier's hidden layers.
     neg_slope_classif : int
                         Slope for LeakReLU activation
                         in classifier.
     n_layers_classif :  int
-                        Amount of hidden linear 
+                        Amount of hidden linear
                         layers in classifier.
     encoder :           object of the class torch.nn.Module
                         Choice of encoder
@@ -56,6 +55,7 @@ class DeepGenerativeModel(torch.nn.Module):
                         Choice of decoder
                         {"LstmDecoder"}
     """
+
     def __init__(
         self,
         n_layers,
@@ -70,15 +70,15 @@ class DeepGenerativeModel(torch.nn.Module):
         h_dim_classif,
         neg_slope_classif,
         n_layers_classif,
-        encoder = None,
-        decoder = None
+        encoder=None,
+        decoder=None,
     ):
 
         super(DeepGenerativeModel, self).__init__()
         self.label_dim = label_dim
         self.seq_len = seq_len
 
-        if encoder is None :
+        if encoder is None:
             self.encoder = LstmEncoder(
                 n_layers=n_layers,
                 input_dim=input_dim,
@@ -87,7 +87,7 @@ class DeepGenerativeModel(torch.nn.Module):
                 label_dim=label_dim,
             )
 
-        if decoder is None :
+        if decoder is None:
             self.decoder = LstmDecoder(
                 n_layers=n_layers,
                 output_dim=output_dim,
@@ -115,7 +115,7 @@ class DeepGenerativeModel(torch.nn.Module):
                     m.bias.data.zero_()
 
     def forward(self, x, y):
-        """ Performs forward pass of the DGM.
+        """Performs forward pass of the DGM.
 
         Parameters
         ----------
@@ -125,29 +125,25 @@ class DeepGenerativeModel(torch.nn.Module):
         y :     array
                 Shape = [batchsize, 1,label_dim]
                 Input batch of labels.
-        
+
         Returns
         ----------
         x_mu :  array
                 Shape = [batchsize, seq_len, input_dim]
-                Batch of reconstructed sequences.       
-            
+                Batch of reconstructed sequences.
+
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        z, _, _ = self.encoder(
-            torch.cat([x, y_for_encoder], dim=2).float()
-            )
+        z, _, _ = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
-        x_mu = self.decoder(
-            torch.cat([z, y_for_decoder], dim=1).float()
-            )
+        x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
 
         return x_mu
 
     def encode(self, x, y):
-        """ Encode a sequence into the latent space.
+        """Encode a sequence into the latent space.
 
         Parameters
         ----------
@@ -165,7 +161,7 @@ class DeepGenerativeModel(torch.nn.Module):
                     OR
                     Shape = [batch_size * label_dim, latent_dim]
                     (unlabeled)
-                    Latent variable sampled from Gaussian 
+                    Latent variable sampled from Gaussian
                     distribution.
 
         z_mu :      array
@@ -183,9 +179,7 @@ class DeepGenerativeModel(torch.nn.Module):
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        z, z_mu, z_log_var = self.encoder(
-            torch.cat([x, y_for_encoder], dim=2).float()
-            )
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
 
         return z, z_mu, z_log_var
 
@@ -209,7 +203,7 @@ class DeepGenerativeModel(torch.nn.Module):
 
     def sample(self, z, y):
         """
-        Decodes sampled variable from the latent space 
+        Decodes sampled variable from the latent space
         to generate an x.
 
         Parameters
@@ -239,10 +233,10 @@ class SVI(torch.nn.Module):
     optimizer, responsible for computing the
     evidence lower bound during training.
     The original version in https://github.com
-    /wohlert/semi-supervised-pytorch includes an 
-    Importance Weighted Sampler to increase Monte 
-    Carlo sampling dimension of x and y, but does 
-    not use it. We exclude it here for clarity 
+    /wohlert/semi-supervised-pytorch includes an
+    Importance Weighted Sampler to increase Monte
+    Carlo sampling dimension of x and y, but does
+    not use it. We exclude it here for clarity
     purposes.
 
     Parameters
@@ -263,7 +257,7 @@ class SVI(torch.nn.Module):
         ----------
         x :             array
                         Shape = [batch_size, seq_len, input_dim]
-                        Input batch of sequences. 
+                        Input batch of sequences.
         y :             array
                         Shape = [batch_size, label_dim]
                         Batch of one hots associated to sequences.
@@ -274,7 +268,7 @@ class SVI(torch.nn.Module):
         Returns in labeled case
         -------
         L_elbo :        float
-                        Mean ELBO for batch, equivalent to 
+                        Mean ELBO for batch, equivalent to
                         L(x,y) in the paper (see appendices
                         for complete derivation).
 
@@ -282,7 +276,7 @@ class SVI(torch.nn.Module):
         Returns in unlabeled case
         -------
         U_elbo :        float
-                        Mean ELBO for batch, equivalent to 
+                        Mean ELBO for batch, equivalent to
                         U(x,y) in the paper (see appendices
                         for complete derivation).
         """
@@ -314,7 +308,9 @@ class SVI(torch.nn.Module):
         prior = -torch.squeeze(utils.log_standard_categorical(ys))
 
         # Equivalent to -L(x, y) for each batch
-        L_elbo_per_batch = likelihood + prior - self.model.kl_weight * self.model.kl_divergence
+        L_elbo_per_batch = (
+            likelihood + prior - self.model.kl_weight * self.model.kl_divergence
+        )
 
         if is_labelled:
             assert L_elbo_per_batch.shape == (batch_size,)
