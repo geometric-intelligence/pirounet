@@ -30,10 +30,7 @@ jobs:
           pip install -e .
       - name: Setup flake8 annotations
         uses: rbialon/flake8-annotations@v1
-      
-      - name: lint [flake8]
-        run: |
-          flake8 move/
+
       - name : lint [black and isort]
         run: |
           black . --check
