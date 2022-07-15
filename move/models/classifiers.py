@@ -24,8 +24,8 @@ class LinearClassifier(nn.Module):
         input_dim : int
                     Number of input features in pose
                     (keypoints * 3 dimensions).
-        h_dim : int
-                Number of nodes in hidden layers.
+        h_dim :     int
+                    Number of nodes in hidden layers.
         label_dim : int
                     Amount of categorical labels.
         seq_len :   int
@@ -53,17 +53,17 @@ class LinearClassifier(nn.Module):
 
         Parameters
         ----------
-        x : array
-            Shape = [batch_size, seq_len, input_dim]
-            Input batch of sequences.
+        x :             array
+                        Shape = [batch_size, seq_len, input_dim]
+                        Input batch of sequences.
         
         Returns
         ----------
-        logits :    array
-                    Shape = [batch_size, label_dim]
-                    Batch of normalized vectors representing
-                    probability of each categorical label
-                    for each sequence.
+        logits :        array
+                        Shape = [batch_size, label_dim]
+                        Batch of normalized vectors representing
+                        probability of each categorical label
+                        for each sequence.
         activation :    array
                         Shape = [batch_size, h_dim_classif]
                         Output of before-last hidden layer

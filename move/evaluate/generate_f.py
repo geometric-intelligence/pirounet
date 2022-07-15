@@ -443,7 +443,7 @@ def reconstruct(
 
     Parameters
     ----------
-    model :         class
+    model :         serialized object
                     Model to evaluate.
     epoch :         int
                     Epoch to evaluate it at.
@@ -532,7 +532,7 @@ def generate(
 
     Parameters
     ----------
-    model :     class
+    model :     serialized object
                 Model to evaluate.
     y_given :   int
                 Int associated to categorical label.
@@ -585,7 +585,7 @@ def generate_and_save(
     
     Parameters
     ----------
-    model :         class
+    model :         serialized object
                     Model to evaluate.
     epoch :         int
                     Epoch to evaluate it at.
@@ -737,3 +737,60 @@ def draw_comic(
                     color=color,
                     lw=lw)
         plt.savefig(comicname)
+
+def generate_many(model, label_dim, num_gen_per_lab, seq_len):
+    """Generates many new sequences by sampling from the latent space.
+
+    While the latent space is entangled, we structure the generation
+    to be sampled from a set of latent variables that were constructed
+    from an equal amount of categorical labels.
+
+    Parameters
+    ----------
+    model :             serialized object
+                        Model to be evaluated.
+    label_dim :         int
+                        Number of possible categorical labels.
+    num_gen_per_lab :   int
+                        Number of latent variables to be constructed
+                        with each label.
+    seq_len :           int
+                        Number of poses per sequence.
+
+    Returns
+    ----------
+    gen_dance :         array
+                        Shape = [label_dim * num_gen_per_lab, seq_len, input_dim]
+                        Generated sequences.
+    gen_labels :        array
+                        Shape = [label_dim * num_gen_per_lab, ]
+    """
+    gen_dance = []
+    for label in range(label_dim):
+        one_label_seq = []
+        for i in range(num_gen_per_lab):
+            x_create, _ = generate(
+                                        model=model, 
+                                        y_given=label, 
+                                        )
+            x_create_formatted = x_create[0].reshape((default_config.seq_len, -1, 3))
+            x_create_formatted = x_create_formatted.cpu().data.numpy()
+            one_label_seq.append(x_create_formatted)
+        
+        gen_dance.append(one_label_seq)
+
+    gen_dance = np.array(gen_dance).reshape((
+        label_dim * num_gen_per_lab,
+        seq_len,
+        -1
+    ))
+    gen_dance = torch.tensor(gen_dance)
+
+    gen_labels = []
+    for i in range(label_dim):
+        gen_label = i * np.ones(num_gen_per_lab, dtype=int)
+        gen_labels = np.concatenate((gen_labels, gen_label.astype(int)))
+
+    gen_labels = torch.tensor(gen_labels.astype(int))
+    
+    return gen_dance, gen_labels

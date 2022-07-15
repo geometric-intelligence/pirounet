@@ -237,7 +237,7 @@ class SVI(torch.nn.Module):
 
     Parameters
     ----------
-    model : class
+    model : serialized object
             Semi-supervised model to be evaluated.
     """
 
