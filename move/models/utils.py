@@ -1,7 +1,10 @@
+"Utility functions used for training and evaluating the model."
+
+import default_config
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-import default_config
+
 
 def make_onehot_encoder(label_features):
     """Convert a number to its one-hot representation vector.
@@ -11,11 +14,13 @@ def make_onehot_encoder(label_features):
     Parameters
     ----------
     label_features: int
-        Amount of label categories
+                    Amount of label categories.
 
     Returns
     -------
     onehot_encode : function
+                    Function that takes in a categorical label integer
+                    and outputs its corresponding one-hot.
     """
 
     def onehot_encode(label):
@@ -26,19 +31,23 @@ def make_onehot_encoder(label_features):
 
     return onehot_encode
 
+
 def batch_one_hot(y, label_dim):
     """Convert a batch of integer labels to a tensor of one-hot labels.
 
     Parameters
     ----------
-    y: shape [batch_size, ]
-        Batch of integer labels
-    label_dim: int
-        Amount of label categories
+    y:              array
+                    Shape = [batch_size, ]
+                    Batch of integer labels.
+    label_dim:      int
+                    Amount of label categories.
 
     Returns
     -------
-    batch_one_hot : tensor with shape [batch_size, 1, label_dim]
+    batch_one_hot : tensor
+                    Shape = [batch_size, 1, label_dim]
+                    Batch of one-hots.
     """
     onehot_encoder = make_onehot_encoder(label_dim)
     batch_one_hot = torch.zeros((1, 1, label_dim))
@@ -50,14 +59,26 @@ def batch_one_hot(y, label_dim):
     batch_one_hot = batch_one_hot[1:, :, :]
     return batch_one_hot
 
+
 def log_standard_categorical(p):
     """
     Calculates the cross entropy between a (one-hot) categorical vector
     and a standard (uniform) categorical distribution.
-    :param p: one-hot categorical distribution with shape [batch_size, 1, label_features]
-    :return: H(p, u)
+    Uses a uniform prior over categroical distribution.
+    The one-hot representation is also called the 1-of-amount_of_labels.
+
+    Parameters
+    ----------
+    p:          tensor
+                Shape = [batch_size, 1, label_features]
+                One-hot categorical distribution.
+
+    Returns
+    -------
+    H(p,u) :    tensor
+                Shape = [batch_size, 1]
+                Cross entropy for every example in the batch.
     """
-    # Uniform prior over y
     prior = F.softmax(torch.ones_like(p), dim=2)
     prior.requires_grad = False
 
@@ -82,12 +103,23 @@ def enumerate_discrete(x, y_dim):
     [0, 0, 1],
     [0, 0, 1]
     ]
-    because it assigns both all 3 labels (in one-hot encodings) to
-    each of the batch_size elements of x
+    because it assigns both all 3 labels (in one-hot encodings)
+    to each of the batch_size elements of x
 
-    :param x: tensor with batch size to mimic
-    :param y_dim: number of total labels
-    :return variable
+    Parameters
+    ----------
+    x:      tensor
+            Shape = [batch_size, ]
+            Batch of integer labels.
+    y_dim:  int
+            Number of total labels.
+
+    Returns
+    -------
+    mimic : Variable
+            Shape = [batch_size x label_dim, 1, label_dim]
+            Tensor assigning every possible label y to each
+            element of x.
     """
 
     def batch(batch_size, label):
@@ -102,18 +134,29 @@ def enumerate_discrete(x, y_dim):
     if x.is_cuda:
         generated = generated.to(default_config.device)
 
-    return Variable(generated.float())
+    mimic = Variable(generated.float())
+    return mimic
 
 
 def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     """
     Uses the LogSumExp (LSE) as an approximation for the sum in a log-domain.
-    :param tensor: Tensor to compute LSE over
-    :param dim: dimension to perform operation over
-    :param sum_op: reductive operation to be applied, e.g. torch.sum or torch.mean
-    :return: LSE
+
+    Parameters
+    ----------
+    tesnor: tensor
+            Tensor over which to compute the LSE.
+    dim:    int
+            Dimension to perform operation over.
+    sum_op: operation
+            reductive operation to be applied, e.g. torch.sum or torch.mean
+
+    Returns
+    -------
+    LSE:    tensor
+            LogSumExp of input tensor.
     """
     max, _ = torch.max(tensor, dim=dim, keepdim=True)
-    return (
-        torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
-    )
+
+    LSE = torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
+    return LSE

@@ -12,11 +12,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = classifier_config.which_device
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import models.utils as utils
-
 import torch
 import torch.autograd
 import torch.nn
 from torch.autograd import Variable
+
 import wandb
 
 
@@ -44,7 +44,7 @@ def run_train_classifier(
     #     model.load_state_dict(checkpoint["model_state_dict"])
     #     optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
     #     print('loaded from checkpoint')
-    
+
     # if config.load_from_checkpoint is None:
     #     print('from scratch')
 
@@ -52,7 +52,7 @@ def run_train_classifier(
 
         # Train
         model.train()
-        total_loss, accuracy = 0,0
+        total_loss, accuracy = 0, 0
         class_loss = 0
 
         batches_seen = 0
@@ -76,7 +76,7 @@ def run_train_classifier(
             logits, _ = model.forward(x)
 
             # classification loss is averaged on minibatch
-            classification_loss = - torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
+            classification_loss = -torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
             class_loss += classification_loss
 
             # J_alpha is averaged on minibatch
@@ -84,7 +84,6 @@ def run_train_classifier(
 
             J_alpha.backward()
             optimizer.step()
-
 
             optimizer.zero_grad()
 
@@ -104,7 +103,7 @@ def run_train_classifier(
             if i_batch % 50 == 0 and i_batch != 0:
                 logging.info(
                     f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
-                )            
+                )
 
         logging.info(f"Epoch: {epoch}")
         logging.info(
@@ -121,7 +120,7 @@ def run_train_classifier(
         wandb.log({"epoch": epoch, "accuracy": accuracy / batches_seen}, step=epoch)
 
         # Validation
-        total_loss_valid, accuracy_valid = 0,0
+        total_loss_valid, accuracy_valid = 0, 0
         model.eval()
 
         batches_v_seen = 0
@@ -138,7 +137,9 @@ def run_train_classifier(
             y = batch_one_hot.to(config.device)
 
             logits_v, _ = model.forward(x)
-            classication_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
+            classication_loss_v = torch.sum(
+                y * torch.log(logits_v + 1e-8), dim=1
+            ).mean()
 
             J_alpha_v = classication_loss_v
 

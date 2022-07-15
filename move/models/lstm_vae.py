@@ -1,4 +1,4 @@
-"""Architectures of LSTM VAE.
+"""Architectures of LSTM VAE, composed of an encoder and a decoder."
 
 The LstmVAE has been adapted from beyond-imitation, using:
 https://towardsdatascience.com/
@@ -6,17 +6,31 @@ implementation-differences-in-lstm-layers-tensorflow
 -vs-pytorch-77a31d742f74
 """
 
-import models.classifiers as classifiers
 import models.losses as losses
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torch.nn import init
 
-class LstmEncoder(torch.nn.Module):
-    """Encoder with LSTM layers."""
+
+class LstmEncoder(nn.Module):
+    """Encoder with LSTM layers.
+
+    Parameters
+    ----------
+    n_layers :      int
+                    Number of LSTM layers.
+    input_dim :     int
+                    Number of features per pose,
+                    keypoints * 3 dimensions.
+    h_dim :         int
+                    Number of nodes in hidden layers.
+    latent_dim :    int
+                    Dimension of latent space.
+    label_dim :     int
+                    Amount of categorical labels.
+    """
 
     def __init__(
         self,
@@ -25,8 +39,6 @@ class LstmEncoder(torch.nn.Module):
         h_dim,
         latent_dim,
         label_dim,
-        bias,
-        batch_norm,
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -50,34 +62,76 @@ class LstmEncoder(torch.nn.Module):
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
         self.logvar_block = torch.nn.Linear(h_dim, latent_dim)
 
-        # self.leakyrelu = torch.nn.LeakyReLU(negative_slope=neg_slope)
-
     def reparametrize(self, z_mean, z_logvar):
         """Sample from a multivariate Gaussian.
         The multivariate Gaussian samples in the vector
         space of dimension latent_dim.
         Parameters
         ----------
-        z_mean : array-like, shape=[batch_size, latent_dim]
-            Mean of the multivariate Gaussian.
-        z_logvar : array-like, shape=[batch_size, latent_dim]
-            Log of the variance of the multivariate Gaussian.
+        z_mean :    array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Mean of the multivariate Gaussian.
+        z_logvar :  array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Log of the variance of the multivariate
+                    Gaussian.
+
+        Returns
+        ----------
+        sample :    array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Latent variable sampled from the
+                    Gaussian distribution.
+
         """
         assert z_mean.shape[-1] == self.latent_dim
         assert z_logvar.shape[-1] == self.latent_dim
 
         std = torch.exp(0.5 * z_logvar)
         eps = torch.randn_like(std)
-        return eps.mul(std).add_(z_mean)
+
+        sample = eps.mul(std).add_(z_mean)
+        return sample
 
     def forward(self, inputs):
         """Perform forward pass of the encoder.
 
         Parameters
         ----------
-        inputs : array-like
-            shape=[batch_size, seq_len, input_dim]
-            where input_dim = 3 * n_body_joints.
+        inputs :    array
+                    Shape = [batch_size, seq_len, input_dim]
+                    Input batch of sequence data.
+
+        Returns
+        ----------
+        z_mean :    array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Mean of the latent variable (batch of).
+        z_logvar :  array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Log variance of the latent variable (batch of).
+        z_sample :  array
+                    Shape = [batch_size, latent_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, latent_dim]
+                    (unlabeled)
+                    Latent variable sampled from the distribution
+                    (batch of).
         """
 
         if self.label_dim:
@@ -101,8 +155,32 @@ class LstmEncoder(torch.nn.Module):
         return z_sample, z_mean, z_logvar
 
 
-class LstmDecoder(torch.nn.Module):
-    """Decoder with LSTM layers."""
+class LstmDecoder(nn.Module):
+    """Decoder with LSTM layers.
+
+
+    Parameters
+    ----------
+    n_layers :      int
+                    Number of LSTM layers.
+    output_dim :    int
+                    Number of features per
+                    constructed pose,
+                    keypoints * 3 dimensions.
+    h_dim :         int
+                    Number of nodes in hidden layers.
+    latent_dim :    int
+                    Dimension of latent space.
+    seq_len :       int
+                    Number of poses in a sequence.
+    neg_slope :     int
+                    Slope for LeakyRelu activation.
+    label_dim :     int
+                    Amount of categorical labels.
+    batch_size :    int
+                    Amount of examples (sequences)
+                    in a  batch.
+    """
 
     def __init__(
         self,
@@ -153,8 +231,18 @@ class LstmDecoder(torch.nn.Module):
 
         Parameters
         ----------
-        inputs : array-like
-            Shape=[batch_size, latent_dim]
+        inputs :    array
+                    Shape = [batch_size, latent_dim]
+                    Batch of latent variables to be decoded.
+
+        Returns
+        ----------
+        h :         array
+                    Shape = [batch_size, seq_len, input_dim] (labeled)
+                    OR
+                    Shape = [batch_size * label_dim, seq_len, input_dim]
+                    (unlabeled)
+                    Output batch of sequences.
         """
         if self.label_dim:
             assert inputs.shape[-1] == self.latent_dim + self.label_dim
@@ -167,13 +255,19 @@ class LstmDecoder(torch.nn.Module):
 
         h = h.repeat(1, self.seq_len, 1)
 
-        h, (h_last_t, c_last_t) = self.lstm(h)
-        h, (h_last_t, c_last_t) = self.lstm_out(h)
+        h, (_, _) = self.lstm(h)
+        h, (_, _) = self.lstm_out(h)
         return h
 
 
-class RotationLayer(torch.nn.Module):
-    """Rotate a sequence of skeletons around axis z."""
+class RotationLayer(nn.Module):
+    """Rotate a sequence of poses around axis z.
+
+    Parameters
+    ----------
+    theta : float
+            Angle by which to rotate sequence.
+    """
 
     def __init__(self, theta):
         super(RotationLayer, self).__init__()
@@ -185,104 +279,22 @@ class RotationLayer(torch.nn.Module):
         )
 
     def forward(self, x):
-        """Rotate a minibatch of sequences of skeletons.
+        """Rotate a minibatch of sequences of poses.
 
         Parameters
         ----------
-        x : array-like
-            Sequence of skeletons.
-            Shape=[batch_size, seq_len, 3*n_body_joints]
+        x :     array
+                Shape = [batch_size, seq_len, input_dim]
+                Sequence of poses.
+
+        Returns
+        ----------
+        x_rot : array
+                Shape = [batch_size, seq_len, input_dim]
+                Rotated sequence of poses.
         """
         batch_size, seq_len, _ = x.shape
         x = x.reshape((batch_size, seq_len, -1, 3))
         x = torch.einsum("...j, ...ij->...i", x, self.rotation_mat)
-        return x.reshape((batch_size, seq_len, -1))
-
-
-class LstmVAE(torch.nn.Module):
-    """Variational Autoencoder model with LSTM.
-
-    The architecture consists of an (LSTM+encoder)
-    and (decoder+LSTM) pair.
-    """
-
-    def __init__(
-        self,
-        n_layers=2,
-        input_dim=3 * 53,
-        h_dim=32,
-        latent_dim=32,
-        kl_weight=0,
-        output_dim=3 * 53,
-        seq_len=128,
-        neg_slope=0.2,
-        batch_size=8,
-        with_rotation_layer=True,
-        label_dim=None,
-    ):
-        super(LstmVAE, self).__init__()
-        self.latent_dim = latent_dim
-        self.with_rotation_layer = with_rotation_layer
-
-        self.encoder = LstmEncoder(
-            n_layers=n_layers,
-            input_dim=input_dim,
-            h_dim=h_dim,
-            latent_dim=latent_dim,
-            label_dim=label_dim,
-            bias=None,
-            batch_norm=None,
-        )
-        self.decoder = LstmDecoder(
-            n_layers=n_layers,
-            output_dim=output_dim,
-            h_dim=h_dim,
-            latent_dim=latent_dim,
-            seq_len=seq_len,
-            neg_slope=neg_slope,
-            label_dim=label_dim,
-            batch_size=batch_size,
-        )
-        self.kl_divergence = 0
-        self.kl_weight = kl_weight
-
-        assert input_dim == output_dim
-
-        # This initializes the weights and biases
-        for m in self.modules():
-            if isinstance(m, torch.nn.Linear):
-                torch.nn.init.xavier_normal_(m.weight.data)
-                if m.bias is not None:
-                    m.bias.data.zero_()
-
-    def forward(self, x, y=None):
-        """Perform forward pass of the VAE.
-
-        Runs a data point through the model in order
-        to provide its reconstruction and q distribution
-        parameters.
-
-        Parameters
-        ----------
-        x : array-like
-            Input data.
-            Shape=[batch_size, seq_len, input_dim].
-
-        Returns
-        -------
-        x_mean : array-like
-            reconstructed input
-        """
-        if self.with_rotation_layer:
-            theta = np.random.uniform(0, 2 * np.pi)
-            x = RotationLayer(theta)(x)
-        z, z_mean, z_log_var = self.encoder(x)
-
-        q_param = (z_mean, z_log_var)
-
-        self.kl_divergence = losses.kld(z, q_param)
-
-        x_recon = self.decoder(z)
-        if self.with_rotation_layer:
-            x_recon = RotationLayer(-theta)(x_recon)
-        return x_recon, z, z_mean, z_log_var
+        x_rot = x.reshape((batch_size, seq_len, -1))
+        return x_rot

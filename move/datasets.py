@@ -5,11 +5,11 @@ import os
 import pickle
 from glob import glob
 
+import default_config
 import numpy as np
 import torch
 from torch.utils.data import ConcatDataset
 
-import default_config
 
 def augment_by_rotations(seq_data, augmentation_factor):
     """Augment the dataset of sequences.
@@ -25,9 +25,9 @@ def augment_by_rotations(seq_data, augmentation_factor):
 
     Parameters
     ----------
-    seq_data : array-like
+    seq_data : array
+        Shape = [n_seqs, seq_len, input_features]
         Original dataset of sequences.
-        Shape=[n_seqs, seq_len, input_features]
     augmentation_factor : int
         Multiplication factor, i.e. how many new sequences
         are generated from one given sequence.
@@ -35,8 +35,9 @@ def augment_by_rotations(seq_data, augmentation_factor):
     Returns
     -------
     rotated_seq_data : array-like
+        Shape = [augmentation_factor*n_seqs, seq_len,
+                input_features]
         Augmented dataset of sequences.
-        Shape=[augmentation_factor*n_seqs, seq_len, input_features]
     """
     rotated_seq_data = []
     for seq in seq_data:
@@ -58,10 +59,11 @@ def augment_by_rotations(seq_data, augmentation_factor):
         rotated_seq_data.append(rotated_seq)
 
     seq_data = np.stack(rotated_seq_data, axis=0).reshape((-1, seq_len, input_features))
+
     return seq_data
 
 
-def load_mariel_raw(pattern="data/mariel_*.npy"):
+def load_raw(pattern="data/mariel_*.npy"):
     """Load six datasets and perform minimal preprocessing.
 
     Processing amunts to center each dancer, such that
@@ -72,6 +74,22 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     overall average (x,y) position per frame is centered at
     the same point and scaled such that all of the coordinates
     fit within the unit cube.
+
+    Parameters
+    ----------
+    pattern : string
+        Path to the raw datafiles.
+
+    Returns
+    -------
+    ds_all : array
+        Shape = [n_seqs, seq_len, input_features]
+        Concatenated dance sequences from all datafiles.
+    ds_all_centered : array
+        Shape = [n_seqs, seq_len, input_features]
+        Concatenated dance sequences from all datafiles.
+        with all datasets centered, i.e. with the x and
+        y offsets subtracted from each individual frame.
     """
     datasets = {}
     ds_all = []
@@ -81,24 +99,20 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     point_mask[exclude_points] = 0
 
     logging.info("Loading raw datasets:")
+
     for f in sorted(glob(pattern)):
         ds_name = os.path.basename(f)[7:-4]
         ds = np.load(f).transpose((1, 0, 2))
         ds = ds[500:-500, point_mask]
+
         logging.info(f"- {f} of shape {ds.shape}")
 
         ds[:, :, 2] *= -1
-        # ds = filter_points(ds)
 
         datasets[ds_name] = ds
         ds_all.append(ds)
 
-    ds_counts = np.array([ds.shape[0] for ds in ds_all])
-    ds_offsets = np.zeros_like(ds_counts)
-    ds_offsets[1:] = np.cumsum(ds_counts[:-1])
-
     ds_all = np.concatenate(ds_all)
-
     low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
     xy_min = min(low[:2])
     xy_max = max(hi[:2])
@@ -107,41 +121,63 @@ def load_mariel_raw(pattern="data/mariel_*.npy"):
     ds_all *= 2 / xy_range
     ds_all[:, :, :2] -= 1.0
 
-    # it's also useful to have these datasets centered,
-    # i.e. with the x and y offsets
-    # subtracted from each individual frame
-
     ds_all_centered = ds_all.copy()
     ds_all_centered[:, :, :2] -= ds_all_centered[:, :, :2].mean(axis=1, keepdims=True)
 
-    datasets_centered = {}
-    for ds in datasets:
-        datasets[ds][:, :, :2] -= xy_min
-        datasets[ds] *= 2 / xy_range
-        datasets[ds][:, :, :2] -= 1.0
-        datasets_centered[ds] = datasets[ds].copy()
-        datasets_centered[ds][:, :, :2] -= datasets[ds][:, :, :2].mean(
-            axis=1, keepdims=True
-        )
-
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
+    return ds_all, ds_all_centered
 
 
 def load_labels(
     effort,
     filepath="/home/papillon/move/move/data/labels_from_app.csv",
     no_NA=True,
-    augment=True
+    augment=True,
 ):
+    """Load labels created by human.
+
+    The web labeling app saves labels in a csv file,
+    in the order of appearance of the sequences in
+    the entire dataset.
+
+    Parameters
+    ----------
+    effort : string
+        Corresponds to the specific category of label
+        the model will be trained on. We use 'time'
+        for Laban Time Effort intensity and 'space'
+        for Laban Space Effort intensity.
+    filepath : string
+        Path to the csv file containing manual labels.
+        Must be moved there from the web-app directory.
+    no_NA : bool
+        True: includes sequences that were labeled as
+        "Non-Applicable", i.e. integer 4.
+        False: excludes these sequences.
+    augment : bool
+        True: Uses label augmentation tool to increase
+        labeled sequences automatically
+        False: Only loads manual labels
+
+    Returns
+    -------
+    labels : array
+        Shape = [n_seqs_labeled, 1]
+        Array of labels assosicated to labeled sequences,
+        stored as an integer for each categorical label.
+    labels_ind : array
+        Shape = [n_seqs_labeled, 1]
+        Array of sequence indices assosicated to labeled
+        sequences (pose index of the labeled sequence's
+        first pose).
+    """
 
     file = open(filepath)
     labels_with_index = np.loadtxt(file, delimiter=",")
 
-    if effort == 'time':
+    if effort == "time":
         labels_with_index = np.delete(labels_with_index, 1, axis=1)
-        
-    if effort == 'space':
+
+    if effort == "space":
         labels_with_index = np.delete(labels_with_index, 2, axis=1)
 
     if augment:
@@ -151,25 +187,50 @@ def load_labels(
         labels_with_index_noNA = []
         for i in range(len(labels_with_index)):
             row = labels_with_index[i]
-            if row[1] != 4.:
+            if row[1] != 4.0:
                 labels_with_index_noNA.append(row)
 
         labels_ind = np.delete(labels_with_index_noNA, 1, axis=1)
         labels = np.delete(labels_with_index_noNA, 0, axis=1)
-        # count1 = np.count_nonzero(labels==1)
-        # count2 = np.count_nonzero(labels==2)
-        # count3 = np.count_nonzero(labels==3)
-    
+
     if not no_NA:
         labels_ind = np.delete(labels_with_index, 1, axis=1)
         labels = np.delete(labels_with_index, 0, axis=1)
-
 
     return labels, labels_ind
 
 
 def augment_labels(labels_with_index, seq_len=default_config.seq_len):
-    all_between_lab = np.zeros((1,2))
+    """Augment labels created by human.
+
+    Tool for automatically increasing the amount of manually
+    created labels, called when labels are loaded. Performs
+    two augmentations:
+    1. Label all sequences between sequences that share a same Effort.
+    For example, if two back-to-back sequences are deemed to have Low
+    Time Effort, all sequences that are a combination of the poses in
+    these two sequences are also labeled with Low Time effort.
+    2. Extend every label to all sequences starting within 6 frames
+    (0.17 seconds) before or after its respective sequence.
+
+    Parameters
+    ----------
+    labels_with_index : array
+        Shape = [n_seqs_labeled, 2]
+        Array of manually labeled sequence indices with associated
+        manually created labels.
+    seq_len : int
+        Amount of poses in a sequence.
+
+    Returns
+    -------
+    labels_with_index_aug : array
+        Shape = [n_augmented_seqs_labeled, 2]
+        Array of manually and automatically labeled sequence indices
+        with associated manually and automatically created labels.
+    """
+
+    all_between_lab = np.zeros((1, 2))
 
     # Label sequences between two identically labelled block sequences
     for j in range(len(labels_with_index)):
@@ -177,9 +238,9 @@ def augment_labels(labels_with_index, seq_len=default_config.seq_len):
             continue
 
         if j != 0:
-            bef_index = labels_with_index[j-1][0]
+            bef_index = labels_with_index[j - 1][0]
             effort = labels_with_index[j][1]
-            bef_effort = labels_with_index[j-1][1]
+            bef_effort = labels_with_index[j - 1][1]
 
             if effort == bef_effort:
                 between_lab = np.zeros((int(seq_len), 2))
@@ -187,14 +248,16 @@ def augment_labels(labels_with_index, seq_len=default_config.seq_len):
                 for i in range(int(seq_len)):
                     between_lab[i][0] = int(bef_index + i + 1)
                     between_lab[i][1] = int(effort)
-                    between_lab = np.array(between_lab).reshape((-1,2))
+                    between_lab = np.array(between_lab).reshape((-1, 2))
 
                 all_between_lab = np.append(all_between_lab, between_lab, axis=0)
-    all_between_lab = all_between_lab[1:,]
-    
-    # Label sequences starting a few poses before and after each block sequence
-    extra_frames = 5
-    fuzzy_labels = np.zeros((1,2))
+    all_between_lab = all_between_lab[
+        1:,
+    ]
+
+    # Label sequences starting 6 poses before and after each block sequence
+    extra_frames = 6
+    fuzzy_labels = np.zeros((1, 2))
 
     for j in range(len(labels_with_index)):
         index_labelled = labels_with_index[j][0]
@@ -208,144 +271,62 @@ def augment_labels(labels_with_index, seq_len=default_config.seq_len):
         if index_labelled != 0:
             for i in range(extra_frames + 1):
                 i_rev = extra_frames - i
-                extra_label_neg = np.expand_dims([index_labelled - (i_rev + 1), effort], axis=0)
+                extra_label_neg = np.expand_dims(
+                    [index_labelled - (i_rev + 1), effort], axis=0
+                )
                 fuzzy_labels = np.append(fuzzy_labels, extra_label_neg, axis=0)
 
-            fuzzy_labels = np.append(fuzzy_labels, labels_with_index[j].reshape((1,2)), axis=0)
+            fuzzy_labels = np.append(
+                fuzzy_labels, labels_with_index[j].reshape((1, 2)), axis=0
+            )
 
             for i in range(extra_frames + 1):
-                extra_label_pos = np.expand_dims([index_labelled + (i + 1), effort], axis=0)
+                extra_label_pos = np.expand_dims(
+                    [index_labelled + (i + 1), effort], axis=0
+                )
                 fuzzy_labels = np.append(fuzzy_labels, extra_label_pos, axis=0)
-    fuzzy_labels = fuzzy_labels[1:,]
+    fuzzy_labels = fuzzy_labels[
+        1:,
+    ]
 
     nonunique = np.append(all_between_lab, fuzzy_labels, axis=0)
 
-    labels_with_index_aug = nonunique[np.unique(nonunique[:,0], axis=0, return_index=True)[1]]
-
-    # with open('smart_labels_mathilde.csv', 'w', newline='') as file:
-    #     writer = csv.writer(file, delimiter=',')
-    #     writer.writerows(labels_with_index_aug)
-    # file.close()
-
+    labels_with_index_aug = nonunique[
+        np.unique(nonunique[:, 0], axis=0, return_index=True)[1]
+    ]
     return labels_with_index_aug
-
-def load_aist_raw(pattern="data/aist/*.pkl"):
-    """Load six datasets and perform minimal preprocessing.
-
-    Processing amunts to center each dancer, such that
-    the barycenter becomes 0.
-    """
-    datasets = {}
-    ds_all = []
-
-    exclude_points = [26, 53]
-    point_mask = np.ones(55, dtype=bool)
-    point_mask[exclude_points] = 0
-
-    logging.info("Loading raw datasets:")
-    for f in sorted(glob(pattern)):
-        ds_name = os.path.basename(f)[7:-4]
-        data = pickle.load(open(f, "rb"))
-
-        kp3d = data["keypoints3d"]
-        kp3d_optim = data["keypoints3d_optim"]
-        logging.info(f"- {f} of shape {kp3d.shape}")
-
-        datasets[ds_name] = kp3d
-        ds_all.append(kp3d)
-
-    ds_counts = np.array([ds.shape[0] for ds in ds_all])
-    ds_offsets = np.zeros_like(ds_counts)
-    ds_offsets[1:] = np.cumsum(ds_counts[:-1])
-
-    ds_all = np.concatenate(ds_all)
-    # print("Full data shape:", ds_all.shape)
-    # # print("Offsets:", ds_offsets)
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    xy_min = min(low[:2])
-    xy_max = max(hi[:2])
-    xy_range = xy_max - xy_min
-    ds_all[:, :, :2] -= xy_min
-    ds_all *= 2 / xy_range
-    ds_all[:, :, :2] -= 1.0
-
-    # it's also useful to have these datasets centered,
-    # i.e. with the x and y offsets
-    # subtracted from each individual frame
-
-    ds_all_centered = ds_all.copy()
-    ds_all_centered[:, :, :2] -= ds_all_centered[:, :, :2].mean(axis=1, keepdims=True)
-
-    datasets_centered = {}
-    for ds in datasets:
-        datasets[ds][:, :, :2] -= xy_min
-        datasets[ds] *= 2 / xy_range
-        datasets[ds][:, :, :2] -= 1.0
-        datasets_centered[ds] = datasets[ds].copy()
-        datasets_centered[ds][:, :, :2] -= datasets[ds][:, :, :2].mean(
-            axis=1, keepdims=True
-        )
-
-    # # print(ds_all.min(axis=(0,1)))
-    low, hi = np.quantile(ds_all, [0.01, 0.99], axis=(0, 1))
-    return ds_all, ds_all_centered, datasets, datasets_centered, ds_counts
-
-
-def get_mariel_data(config, augmentation_factor=1):
-    """Transform mariel data into train/val/test torch loaders.
-
-    Note: Pettee 2019 keeps augmentation_factor=1.
-    """
-    ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
-    my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
-
-    seq_data = np.zeros(
-        (my_data.shape[0] - config.seq_len, config.seq_len, my_data.shape[1])
-    )
-    for i in range((ds_all.shape[0] - config.seq_len)):
-        seq_data[i] = my_data[i : i + config.seq_len]
-    logging.info(f"Preprocessing: Load seq_data of shape {seq_data.shape}")
-
-    if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
-        seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
-
-    # five_perc = int(round(seq_data.shape[0] * 0.05))
-    # ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    # train_ds = seq_data[:ninety_perc, :, :]
-    # valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
-    # test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
-    five_perc = int(round(seq_data.shape[0] * 0.05))
-    ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    valid_ds = seq_data[:five_perc, :, :]
-    test_ds = seq_data[five_perc:(five_perc + five_perc), :, :]
-    train_ds = seq_data[(five_perc + five_perc):, :, :]
-
-    logging.info(f">> Train ds has shape {train_ds.shape}")
-    logging.info(f">> Valid ds has shape {valid_ds.shape}")
-    logging.info(f">> Test ds has shape {test_ds.shape}")
-
-    logging.info("Preprocessing: Convert into torch dataloader")
-    data_train_torch = torch.utils.data.DataLoader(
-        train_ds, batch_size=config.batch_size
-    )
-    data_valid_torch = torch.utils.data.DataLoader(
-        valid_ds, batch_size=config.batch_size
-    )
-    data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
-    return data_train_torch, data_valid_torch, data_test_torch
 
 
 def sequify_all_data(pose_data, seq_len, augmentation_factor):
-    seq_data = np.zeros(
-        (pose_data.shape[0] - seq_len, seq_len, pose_data.shape[1])
-    )
+    """Cut all pose data into sequences.
+
+    Stores every possible continuous seq_long-long sequence from
+    the concatenated pose data. Makes n_poses - seq_len total
+    sequences.
+
+    Parameters
+    ----------
+    pose_data : array
+        Shape = [n_poses, input_dim]
+        Every single pose in the dataset, in order. Does not
+        take into account which ones have been labeled.
+        Input dimensions are amount_of_keypoints * 3 (for
+        3D coordinates)
+    seq_len : int
+        Amount of poses in a sequence.
+    augmentation_factor : int
+        Determines rotational augmentation of data.
+        Independent from label augmentation.
+
+    Returns
+    -------
+    seq_data : array
+        Shape = [n_seqs, seq_len, input_dim]
+        Randomly shuffled array of sequences made
+        from pose data. Includes labeled and
+        unlabeled sequences
+    """
+    seq_data = np.zeros((pose_data.shape[0] - seq_len, seq_len, pose_data.shape[1]))
 
     for i in range((pose_data.shape[0] - seq_len)):
         seq_data[i] = pose_data[i : i + seq_len]
@@ -365,9 +346,34 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
 
 
 def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
-    seq_data = np.zeros(
-        (len(labels_ind), seq_len, pose_data.shape[1])
-    )
+    """Cut labeled pose data into sequences.
+
+    Uses indices of labeled sequences to store sequences that were
+    labeled manually (and automatically, if augmentation used).
+
+    Parameters
+    ----------
+    labels_ind : array
+        Shape = [n_aug_seq_labeled, 1] or [n_seq_labeled, 1]
+        Indices of first pose associated to each labeled sequence.
+    pose_data : array
+        Shape = [n_poses_labeled, input_dim]
+        Every single labeled pose in the dataset, in order.
+        Input dimensions are amount_of_keypoints * 3 (for
+        3D coordinates)
+    seq_len : int
+        Amount of poses in a sequence.
+    augmentation_factor : int
+        Determines rotational augmentation of data.
+        Independent from label augmentation.
+
+    Returns
+    -------
+    seq_data : array
+        Shape = [n_seqs_labeled, seq_len, input_dim]
+        Array of labeled sequences made from pose data.
+    """
+    seq_data = np.zeros((len(labels_ind), seq_len, pose_data.shape[1]))
     for i in range(len(labels_ind)):
         start_ind = int(labels_ind[i])
         seq_data[i] = pose_data[start_ind : start_ind + int(seq_len)]
@@ -381,48 +387,100 @@ def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
         )
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented labelled data has shape: {seq_data.shape}")
-    
-    #np.random.shuffle(seq_data)
 
     return seq_data
 
-def get_dgm_data(config, augmentation_factor=1):
-    """Transform mariel data into train/val/test torch loaders.
 
+def get_model_data(config):
+    """Transforms raw data for training/validating/testing a model.
+
+    Pipeline for loading raw data as torch DataLoaders,
+    separated intro training, validation, and test datasets.
+    The proportion of training labeled data is set by param
+    fraction_label in config. The first 5% is reserved for
+    validation. The last 3% is reserved for testing.
+    For the unalbeled case, we reserve 95% of sequences for
+    training and 5% for testing.
     Note: Pettee 2019 keeps augmentation_factor=1.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration of run as defined in wandb.config
+
+    Returns
+    -------
+    labelled_data_train : array
+        Shape = [n_seqs_labeled * fraction_label, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for training.
+    labels_train : array
+        Shape = [n_seqs_labeled * fraction_label, 1]
+        Labels associated to training labeled sequences.
+    unlabelled_data_train : array
+        Shape = [n_seqs (* 0.95), seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for training.
+    labelled_data_valid : array
+        Shape = [n_seqs_labeled * 0.05, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for validation.
+    labels_valid : array
+        Shape = [n_seqs_labeled * 0.05, 1]
+        Labels associated to validation labeled sequences.
+    labelled_data_test : array
+        Shape = [n_seqs_labeled * 0.03, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for testing.
+    labels_test : array
+        Shape = [n_seqs_labeled * 0.03, 1]
+        Labels associated to testing labeled sequences.
+    unlabelled_data_test : array
+        Shape = [n_seqs * 0.05, seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for testing.
     """
-    ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
+
+    ds_all, ds_all_centered = load_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    labels_1_to_4, labels_ind = load_labels(effort = config.effort)
-    labels = labels_1_to_4 - 1.
+    labels_1_to_4, labels_ind = load_labels(effort=config.effort)
+    labels = labels_1_to_4 - 1.0
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
 
     # sequify both sets of data
-    seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
+    seq_data_lab = sequify_lab_data(
+        labels_ind, pose_data, config.seq_len, augmentation_factor=1
+    )
     seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
     # divide labelled data into training, validating, and testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
-    original_stopping_point = ((five_perc_lab * 19) + (one_perc_lab * 2))
-    new_stopping_point = int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
+    new_stopping_point = (
+        int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
+    )
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : new_stopping_point, :, :]
-    labelled_data_test_ds = seq_data_lab[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
+    labelled_data_test_ds = seq_data_lab[
+        ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
+    ]
 
-
-    #divide labels into training, validating, and testing sets
+    # divide labels into training, validating, and testing sets
     labels_valid_ds = labels[:(five_perc_lab), :, :]
-    labels_train_ds = labels[(five_perc_lab) : new_stopping_point, :, :]
-    labels_test_ds = labels[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    labels_train_ds = labels[(five_perc_lab):new_stopping_point, :, :]
+    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
     # divide unlabelled data into training and testing sets
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
     ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
-    unlabelled_data_train_ds = seq_data_unlab[:(ninety_perc_unlab + five_perc_unlab), :, :]
-    unlabelled_data_test_ds = seq_data_unlab[(ninety_perc_unlab + five_perc_unlab) :, :, :]
+    unlabelled_data_train_ds = seq_data_unlab[
+        : (ninety_perc_unlab + five_perc_unlab), :, :
+    ]
+    unlabelled_data_test_ds = seq_data_unlab[
+        (ninety_perc_unlab + five_perc_unlab) :, :, :
+    ]
 
     logging.info(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
     logging.info(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
@@ -437,164 +495,37 @@ def get_dgm_data(config, augmentation_factor=1):
 
     labelled_data_train = torch.utils.data.DataLoader(
         labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
-        )
+    )
     labels_train = torch.utils.data.DataLoader(
         labels_train_ds, batch_size=config.batch_size, drop_last=True
-        )
+    )
     unlabelled_data_train = torch.utils.data.DataLoader(
         unlabelled_data_train_ds, batch_size=config.batch_size
-        )
+    )
     labelled_data_valid = torch.utils.data.DataLoader(
         labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
-        )
+    )
     labels_valid = torch.utils.data.DataLoader(
         labels_valid_ds, batch_size=config.batch_size, drop_last=True
-        )
+    )
     labelled_data_test = torch.utils.data.DataLoader(
         labelled_data_test_ds, batch_size=1, drop_last=True
-        )
+    )
     labels_test = torch.utils.data.DataLoader(
         labels_test_ds, batch_size=config.batch_size, drop_last=True
-        )
+    )
     unlabelled_data_test = torch.utils.data.DataLoader(
-        unlabelled_data_test_ds, batch_size=1,
-        )
-    # double_test = torch.utils.data.DataLoader(
-    #     double_test_ds, batch_size=1,
-    #     )
-
-    return labelled_data_train, labels_train, unlabelled_data_train, \
-            labelled_data_valid, labels_valid, labelled_data_test, labels_test,\
-            unlabelled_data_test
-
-
-def get_aist_data(config, augmentation_factor=1):
-    """Transform AIST++ data into train/val/test torch loaders.
-    """
-
-    ds_all, ds_all_centered, _, _, _ = load_aist_raw()
-    my_data = ds_all_centered.reshape((ds_all.shape[0], -1))
-    logging.info(f"Preprocessing: Concatenated centered data has shape {my_data.shape}")
-
-    seq_data = np.zeros(
-        (my_data.shape[0] - config.seq_len, config.seq_len, my_data.shape[1])
+        unlabelled_data_test_ds,
+        batch_size=1,
     )
-    for i in range((ds_all.shape[0] - config.seq_len)):
-        seq_data[i] = my_data[i : i + config.seq_len]
-    logging.info(f"Preprocessing: Load seq_data of shape {seq_data.shape}")
 
-    if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
-        seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
-
-    five_perc = int(round(seq_data.shape[0] * 0.05))
-    ninety_perc = seq_data.shape[0] - (2 * five_perc)
-    train_ds = seq_data[:ninety_perc, :, :]
-    valid_ds = seq_data[ninety_perc : (ninety_perc + five_perc), :, :]
-    test_ds = seq_data[(ninety_perc + five_perc) :, :, :]
-    logging.info(f">> Train ds has shape {train_ds.shape}")
-    logging.info(f">> Valid ds has shape {valid_ds.shape}")
-    logging.info(f">> Test ds has shape {test_ds.shape}")
-
-    logging.info("Preprocessing: Convert into torch dataloader")
-    data_train_torch = torch.utils.data.DataLoader(
-        train_ds, batch_size=config.batch_size
+    return (
+        labelled_data_train,
+        labels_train,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
     )
-    data_valid_torch = torch.utils.data.DataLoader(
-        valid_ds, batch_size=config.batch_size
-    )
-    data_test_torch = torch.utils.data.DataLoader(test_ds, batch_size=1)
-    return data_train_torch, data_valid_torch, data_test_torch
-
-def get_classifier_data(config, augmentation_factor=1):
-    """Transform mariel data into train/val/test torch loaders.
-
-    Note: Pettee 2019 keeps augmentation_factor=1.
-    """
-    ds_all, ds_all_centered, _, _, _ = load_mariel_raw()
-    pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
-
-    labels_1_to_4, labels_ind = load_labels(effort = config.effort)
-    labels = labels_1_to_4 - 1.
-    labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
-
-    # sequify both sets of data
-    seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
-
-    one_perc_lab = int(round(len(labels_ind) * 0.01))
-    five_perc_lab = int(one_perc_lab * 5)
-    new_stopping_point = int(round(len(labels_ind) * default_config.fraction_label)) + five_perc_lab
-
-    # divide labelled data into 90% training, 5% validating, and 5% testing sets
-    one_perc_lab = int(round(len(labels_ind) * 0.01))
-    five_perc_lab = int(one_perc_lab * 5)
-
-    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab) : new_stopping_point, :, :]
-    labelled_data_test_ds = seq_data_lab[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
-
-    #double_test_ds = np.append(labelled_data_test_ds, labelled_data_test_ds)
-
-    # labelled_data_valid_ds = seq_data_lab[(12*five_perc_lab):(13*five_perc_lab), :, :]
-    # train1 = seq_data_lab[:(12*five_perc_lab), :, :]
-    # train2 = seq_data_lab[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    # labelled_data_train_ds = np.append(train1, train2, axis=0)
-    # labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
-
-    #divide labels into 90% training, 5% validating, and 5% testing sets
-    labels_valid_ds = labels[:(five_perc_lab), :, :]
-    labels_train_ds = labels[(five_perc_lab) : new_stopping_point, :, :]
-    labels_test_ds = labels[ ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
-
-
-    #double_test_l_ds = np.append(labels_test_ds, labels_test_ds)
-    # labels_valid_ds = labels[(12*five_perc_lab):(13*five_perc_lab), :, :]
-    # train1l = labels[:(12*five_perc_lab), :, :]
-    # train2l = labels[(13*five_perc_lab):((five_perc_lab * 19) + (one_perc_lab * 3)), :, :]
-    # labels_train_ds = np.append(train1l, train2l)
-    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 3)) :, :, :]
-
-    # logging.info("Get generated data")
-    # labelled_data_gen = np.load('data/shuffled_seq_for_classifier.npy')
-    # labelled_data_gen = labelled_data_gen.reshape(-1, config.seq_len, config.input_dim)
-    # labelled_data_train_ds = np.append(labelled_data_train_ds,labelled_data_gen, axis=0)
-    # labels_train_gen = np.load('data/shuffled_labels_for_classifier.npy')
-    # labels_train_gen = labels_train_gen.reshape(-1, 1, 1)
-    # labels_train_ds = np.append(labels_train_ds, labels_train_gen, axis=0)
-
-    print(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
-    print(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
-    print(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
-    print(f">> Labels train ds has shape {labels_train_ds.shape}")
-    print(f">> Labels valid ds has shape {labels_valid_ds.shape}")
-    print(f">> Labels test ds has shape {labels_test_ds.shape}")
-
-    logging.info("Preprocessing: Convert into torch dataloader")
-
-    labelled_data_train = torch.utils.data.DataLoader(
-        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
-        )
-    labels_train = torch.utils.data.DataLoader(
-        labels_train_ds, batch_size=config.batch_size, drop_last=True
-        )
-    labelled_data_valid = torch.utils.data.DataLoader(
-        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
-        )
-    labels_valid = torch.utils.data.DataLoader(
-        labels_valid_ds, batch_size=config.batch_size, drop_last=True
-        )
-    labelled_data_test = torch.utils.data.DataLoader(
-        labelled_data_test_ds, batch_size=1, drop_last=True
-        )
-    labels_test = torch.utils.data.DataLoader(
-        labels_test_ds, batch_size=config.batch_size, drop_last=True
-        )
-
-    return labelled_data_train, labels_train, \
-            labelled_data_valid, labels_valid, labelled_data_test, labels_test,\
-            
-

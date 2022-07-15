@@ -1,19 +1,19 @@
 """File that generates a confusion matrix from given checkpoint. Specify train/valid/test"""
 import os
 import sys
-#sys.path.append(os. path. abspath('..'))
+
+# sys.path.append(os. path. abspath('..'))
 from os.path import exists
 
-import torch
-from torch.autograd import Variable
-import numpy as np
-import matplotlib.pyplot as plt
-import torch.nn.functional as F
-
-import default_config as config
 import datasets
-from models import dgm_lstm_vae
+import default_config as config
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.nn.functional as F
 from evaluate import generate_f
+from models import dgm_lstm_vae
+from torch.autograd import Variable
 
 model = dgm_lstm_vae.DeepGenerativeModel(
     n_layers=config.n_layers,
@@ -28,68 +28,82 @@ model = dgm_lstm_vae.DeepGenerativeModel(
     h_dim_classif=config.h_dim_classif,
     neg_slope_classif=config.neg_slope_classif,
     n_layers_classif=config.n_layers_classif,
-    bias=None,
-    batch_norm=True,
-    classifier=config.classifier
+    classifier=config.classifier,
 ).to(config.device)
 
-labelled_data_train, labels_train, unlabelled_data_train, labelled_data_valid, \
-    labels_valid, labelled_data_test, labels_test, unlabelled_data_test = \
-    datasets.get_dgm_data(config)
+(
+    labelled_data_train,
+    labels_train,
+    unlabelled_data_train,
+    labelled_data_valid,
+    labels_valid,
+    labelled_data_test,
+    labels_test,
+    unlabelled_data_test,
+) = datasets.get_model_data(config)
 
-old_checkpoint_filepath = os.path.join(os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt")
+old_checkpoint_filepath = os.path.join(
+    os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt"
+)
 checkpoint = torch.load(old_checkpoint_filepath)
-model.load_state_dict(checkpoint['model_state_dict'])
-latest_epoch = checkpoint['epoch']
+model.load_state_dict(checkpoint["model_state_dict"])
+latest_epoch = checkpoint["epoch"]
 
 # 1. change default_config to load desired checkpoint.
 # 2. make default_config match classifier, h_dim, h_dim_class, batch_size
 # 3. pick empty device
 # 4. pick purpose of generation
 ####################################################
-purpose = 'artifact' # artifact, blind, one_move, debug
+purpose = "artifact"  # artifact, blind, one_move, debug
 ####################################################
 
-num_gen_lab = 75 # number of sequences to generate per label
-if purpose == 'artifact':
+num_gen_lab = 75  # number of sequences to generate per label
+if purpose == "artifact":
     for label in range(config.label_dim):
         print(f"doing label {label}")
-        filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "evaluate/generate/" + config.run_name + '_lab' + str(label))
+        filepath_for_artifacts = os.path.join(
+            os.path.abspath(os.getcwd()),
+            "evaluate/generate/" + config.run_name + "_lab" + str(label),
+        )
 
         if exists(filepath_for_artifacts) is False:
             os.mkdir(filepath_for_artifacts)
 
         for i in range(30):
             generate_f.generate_and_save(
-                model=model, 
-                epoch=latest_epoch + i + 1, 
-                y_given=label, 
+                model=model,
+                epoch=latest_epoch + i + 1,
+                y_given=label,
                 config=config,
                 log_to_wandb=False,
                 single_epoch=filepath_for_artifacts,
                 comic=False,
             )
 
-if purpose == 'blind':
+if purpose == "blind":
     set_of_blind_sequences = []
     for label in range(config.label_dim):
         one_label_seq = []
         for i in range(num_gen_lab):
             x_create, y_title = generate_f.generate(
-                                            model=model, 
-                                            y_given=label, 
-                                            )
+                model=model,
+                y_given=label,
+            )
             x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
             x_create_formatted = x_create_formatted.cpu().data.numpy()
-            one_label_seq.append(x_create_formatted) # shape [100, 40, 53, 3]
-        
+            one_label_seq.append(x_create_formatted)  # shape [100, 40, 53, 3]
+
         set_of_blind_sequences.append(one_label_seq)
 
-    set_of_blind_sequences = np.array(set_of_blind_sequences).reshape(-1, config.seq_len, 53, 3 )
+    set_of_blind_sequences = np.array(set_of_blind_sequences).reshape(
+        -1, config.seq_len, 53, 3
+    )
 
     # make array of original labels with size [300, 1]
-    associated_labels = np.concatenate((np.zeros(num_gen_lab), np.ones(num_gen_lab), 2 * np.ones(num_gen_lab)))
-    
+    associated_labels = np.concatenate(
+        (np.zeros(num_gen_lab), np.ones(num_gen_lab), 2 * np.ones(num_gen_lab))
+    )
+
     # reshuffle sequences and labels along the first axis
     shuffler = np.random.permutation(len(associated_labels))
     associated_labels_shuffled = np.array(associated_labels[shuffler])
@@ -97,14 +111,16 @@ if purpose == 'blind':
 
     # DO NOT RE-SAVE NEW SEQUENCES, MUST MATCH SEQUENCES IN APP
     # save shuffles sequences and labels. We will plot these sequences in the shuffled order
-    np.save('shuffled_seq_gen2', set_of_blind_sequences_shuffled)
-    np.save('shuffled_labels_gen2', associated_labels_shuffled)    
+    np.save("shuffled_seq_gen2", set_of_blind_sequences_shuffled)
+    np.save("shuffled_labels_gen2", associated_labels_shuffled)
 
-if purpose == 'one_move':
+if purpose == "one_move":
     amount_of_one_moves = 75
 
-    filepath_for_one_move = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}")
-    
+    filepath_for_one_move = os.path.join(
+        os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}"
+    )
+
     if exists(filepath_for_one_move) is False:
         os.mkdir(filepath_for_one_move)
 
@@ -113,9 +129,9 @@ if purpose == 'one_move':
     #     filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}/n_{i}")
     #     if exists(filepath_for_artifacts) is False:
     #         os.mkdir(filepath_for_artifacts)
-        
+
     #     generate_f.generate_and_save_one_move(
-    #         model=model, 
+    #         model=model,
     #         config=config,
     #         path=filepath_for_artifacts,
     #     )
@@ -130,7 +146,7 @@ if purpose == 'one_move':
     all_ajd_02 = []
 
     all_moves_boot = []
-    for i in range (amount_of_one_moves):
+    for i in range(amount_of_one_moves):
         all_moves, _ = generate_f.generate_one_move(model, config)
         all_moves = np.array(all_moves).reshape((3, config.seq_len, -1, 3))
         all_moves_boot.append(all_moves)
@@ -139,9 +155,15 @@ if purpose == 'one_move':
         dist_02 = np.linalg.norm(all_moves[0] - all_moves[2])
         dist_12 = np.linalg.norm(all_moves[1] - all_moves[2])
 
-        ajd_01 = np.mean(np.sqrt(np.sum((all_moves[0] - all_moves[1])**2, axis=2)).reshape(-1))
-        ajd_02= np.mean(np.sqrt(np.sum((all_moves[0] - all_moves[2])**2, axis=2)).reshape(-1))
-        ajd_12= np.mean(np.sqrt(np.sum((all_moves[1] - all_moves[2])**2, axis=2)).reshape(-1))
+        ajd_01 = np.mean(
+            np.sqrt(np.sum((all_moves[0] - all_moves[1]) ** 2, axis=2)).reshape(-1)
+        )
+        ajd_02 = np.mean(
+            np.sqrt(np.sum((all_moves[0] - all_moves[2]) ** 2, axis=2)).reshape(-1)
+        )
+        ajd_12 = np.mean(
+            np.sqrt(np.sum((all_moves[1] - all_moves[2]) ** 2, axis=2)).reshape(-1)
+        )
 
         all_dist_01.append(dist_01)
         all_dist_12.append(dist_12)
@@ -153,30 +175,31 @@ if purpose == 'one_move':
 
     fig, ax = plt.subplots()
     x = range(75)
-    ax.scatter(x, all_ajd_01, c='blue', label='AJD Low-Med')
-    ax.scatter(x, all_ajd_12, c='orange', label='AJD Med-High')
-    ax.scatter(x, all_ajd_02, c='green', label='AJD Low-High')
+    ax.scatter(x, all_ajd_01, c="blue", label="AJD Low-Med")
+    ax.scatter(x, all_ajd_12, c="orange", label="AJD Med-High")
+    ax.scatter(x, all_ajd_02, c="green", label="AJD Low-High")
     plt.legend()
     plt.savefig(f"evaluate/one_move/{config.load_from_checkpoint}/scatter.png")
 
-    #take maximum AJD and look at dances
-    max_ajd = [
-        max(all_ajd_01),
-        max(all_ajd_02),
-        max(all_ajd_12)]
+    # take maximum AJD and look at dances
+    max_ajd = [max(all_ajd_01), max(all_ajd_02), max(all_ajd_12)]
 
     inds_to_pick_from = [
-        all_ajd_01.index(max(all_ajd_01)), 
+        all_ajd_01.index(max(all_ajd_01)),
         all_ajd_02.index(max(all_ajd_02)),
-        all_ajd_12.index(max(all_ajd_12))]
+        all_ajd_12.index(max(all_ajd_12)),
+    ]
 
     ind_to_pick = max_ajd.index(max(max_ajd))
     seq_ind = inds_to_pick_from[ind_to_pick]
-    print(f'max indices are {inds_to_pick_from}')
-    print(f'we look at one_move {seq_ind}')
+    print(f"max indices are {inds_to_pick_from}")
+    print(f"we look at one_move {seq_ind}")
     seq = np.array(all_moves_boot[seq_ind])
 
-    filepath_for_max_ajd_artifacts = os.path.join(os.path.abspath(os.getcwd()), f"evaluate/one_move/{config.load_from_checkpoint}/max_ajd")
+    filepath_for_max_ajd_artifacts = os.path.join(
+        os.path.abspath(os.getcwd()),
+        f"evaluate/one_move/{config.load_from_checkpoint}/max_ajd",
+    )
     if exists(filepath_for_max_ajd_artifacts) is False:
         os.mkdir(filepath_for_max_ajd_artifacts)
 
@@ -196,7 +219,7 @@ if purpose == 'one_move':
             condition=y,
         )
 
-if purpose == 'debug':
+if purpose == "debug":
     all_moves_one_move = []
     all_moves_blind = []
     all_labels = []
@@ -209,16 +232,18 @@ if purpose == 'debug':
         y_one_hot_create = F.one_hot(y, num_classes=config.label_dim)
 
         x_create_one_move = model.sample(z_create_one_move, y_one_hot_create)
-        x_create_one_move_formatted = x_create_one_move[0].reshape((config.seq_len, -1, 3))
+        x_create_one_move_formatted = x_create_one_move[0].reshape(
+            (config.seq_len, -1, 3)
+        )
         x_create_one_move_formatted = x_create_one_move_formatted.cpu().data.numpy()
         one_label_one_move.append(x_create_one_move)
 
-        z_create_blind = z_create_one_move # torch.randn(size=(1, config.latent_dim))
+        z_create_blind = z_create_one_move  # torch.randn(size=(1, config.latent_dim))
         x_create_blind = model.sample(z_create_blind, y_one_hot_create)
         x_create_blind_formatted = x_create_blind[0].reshape((config.seq_len, -1, 3))
         x_create_blind_formatted = x_create_blind_formatted.cpu().data.numpy()
-        one_label_blind.append(x_create_blind_formatted) 
-        
+        one_label_blind.append(x_create_blind_formatted)
+
         all_moves_one_move.append(x_create_one_move.cpu().data.numpy())
         all_moves_blind.append(x_create_blind.cpu().data.numpy())
         all_labels.append(y)

@@ -21,10 +21,8 @@ to about 4 seconds of continuous movement.
 """
 import torch
 
-run_name = 'semi_sup_study10' # "hdim100_hclass100_batch40_lr3e4"
-load_from_checkpoint = (
-    "checkpoint_15_perc_labelled_epoch489"
-)
+run_name = "semi_sup_study10"  # "hdim100_hclass100_batch40_lr3e4"
+load_from_checkpoint = "checkpoint_15_perc_labelled_epoch489"
 
 # ablation study
 # checkpoint_hdim100_10_epoch183
@@ -51,15 +49,17 @@ load_from_checkpoint = (
 
 
 # Hardware
-which_device = "0" #CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
+which_device = "0"  # CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
 device = (
-    torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
+    torch.device("cuda:" + str(which_device))
+    if torch.cuda.is_available()
+    else torch.device("cpu")
 )
 
 # Training
 epochs = 500
-learning_rate = 3e-4  # 6e-6
-batch_size = 1 #40
+learning_rate = 3e-4
+batch_size = 80
 with_clip = False
 
 # Input data
@@ -67,20 +67,19 @@ seq_len = 40
 input_dim = 159
 label_dim = 3
 amount_of_labels = 1
-effort = 'time'
+effort = "time"
 fraction_label = 0.789
 
 # LSTM VAE
 kl_weight = 1
-neg_slope = 0  # 0.1,0.5 LeakyRelu
-n_layers = 5  # ,5,6
+neg_slope = 0
+n_layers = 5
 h_dim = 100
 latent_dim = 256
 
 # Classifier
-classifier = 'linear'
 h_dim_classif = 100
-neg_slope_classif = 0  # 0.5 #0.1 # 0.05
+neg_slope_classif = 0
 n_layers_classif = 2
 
 # Artifacts to produce
