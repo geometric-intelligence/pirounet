@@ -1,4 +1,5 @@
 import numpy as np
+
 label_dim = 3
 num_gen_per_lab = 10
 gen_labels = []

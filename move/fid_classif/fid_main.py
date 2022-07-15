@@ -13,12 +13,12 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = fid_classifier_config.which_device
 
 import datasets
-import models.classifiers as classifiers
 import fid_train
-
-import torch
-import wandb
+import models.classifiers as classifiers
 import numpy as np
+import torch
+
+import wandb
 
 logging.info(f"Using PyTorch version: {torch. __version__}")
 
@@ -54,7 +54,7 @@ config = wandb.config
 logging.info(f"Config: {config}")
 logging.info(f"---> Using device {config.device}")
 
-#wandb.run.name = fid_classifier_config.run_name
+# wandb.run.name = fid_classifier_config.run_name
 
 logging.info("Initialize classifier model")
 # model = classifiers.FID_lstm_Classifier(
@@ -77,14 +77,14 @@ model = classifiers.LinearClassifier(
 
 logging.info("Get original data")
 (
-labelled_data_train, 
-labels_train, 
-_, 
-labelled_data_valid, 
-labels_valid, 
-labelled_data_test, 
-labels_test,
-_
+    labelled_data_train,
+    labels_train,
+    _,
+    labelled_data_valid,
+    labels_valid,
+    labelled_data_test,
+    labels_test,
+    _,
 ) = datasets.get_model_data(config)
 
 # wandb.watch(model, train.get_loss, log="all", log_freq=100)

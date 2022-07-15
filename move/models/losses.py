@@ -23,7 +23,7 @@ def reconstruction_loss(x, x_recon):
     recon_loss :    array
                     Shape = [batch_size, 1]
                     Reconstruction loss for each sequence
-                    in batch.   
+                    in batch.
     """
     assert x.ndim == x_recon.ndim == 3
     batch_size = x.shape[0]

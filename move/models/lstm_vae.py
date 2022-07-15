@@ -6,13 +6,13 @@ implementation-differences-in-lstm-layers-tensorflow
 -vs-pytorch-77a31d742f74
 """
 
+import models.losses as losses
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
 
-import models.losses as losses
 
 class LstmEncoder(nn.Module):
     """Encoder with LSTM layers.
@@ -27,7 +27,7 @@ class LstmEncoder(nn.Module):
     h_dim :         int
                     Number of nodes in hidden layers.
     latent_dim :    int
-                    Dimension of latent space.   
+                    Dimension of latent space.
     label_dim :     int
                     Amount of categorical labels.
     """
@@ -62,7 +62,6 @@ class LstmEncoder(nn.Module):
         self.mean_block = torch.nn.Linear(h_dim, latent_dim)
         self.logvar_block = torch.nn.Linear(h_dim, latent_dim)
 
-
     def reparametrize(self, z_mean, z_logvar):
         """Sample from a multivariate Gaussian.
         The multivariate Gaussian samples in the vector
@@ -80,9 +79,9 @@ class LstmEncoder(nn.Module):
                     OR
                     Shape = [batch_size * label_dim, latent_dim]
                     (unlabeled)
-                    Log of the variance of the multivariate 
+                    Log of the variance of the multivariate
                     Gaussian.
-        
+
         Returns
         ----------
         sample :    array
@@ -111,7 +110,7 @@ class LstmEncoder(nn.Module):
         inputs :    array
                     Shape = [batch_size, seq_len, input_dim]
                     Input batch of sequence data.
-        
+
         Returns
         ----------
         z_mean :    array
@@ -158,26 +157,26 @@ class LstmEncoder(nn.Module):
 
 class LstmDecoder(nn.Module):
     """Decoder with LSTM layers.
-    
+
 
     Parameters
     ----------
     n_layers :      int
                     Number of LSTM layers.
     output_dim :    int
-                    Number of features per 
+                    Number of features per
                     constructed pose,
                     keypoints * 3 dimensions.
     h_dim :         int
                     Number of nodes in hidden layers.
     latent_dim :    int
-                    Dimension of latent space. 
+                    Dimension of latent space.
     seq_len :       int
-                    Number of poses in a sequence.  
+                    Number of poses in a sequence.
     neg_slope :     int
                     Slope for LeakyRelu activation.
     label_dim :     int
-                    Amount of categorical labels.    
+                    Amount of categorical labels.
     batch_size :    int
                     Amount of examples (sequences)
                     in a  batch.
@@ -262,12 +261,12 @@ class LstmDecoder(nn.Module):
 
 
 class RotationLayer(nn.Module):
-    """ Rotate a sequence of poses around axis z.
+    """Rotate a sequence of poses around axis z.
 
-        Parameters
-        ----------
-        theta : float
-                Angle by which to rotate sequence.    
+    Parameters
+    ----------
+    theta : float
+            Angle by which to rotate sequence.
     """
 
     def __init__(self, theta):
@@ -299,4 +298,3 @@ class RotationLayer(nn.Module):
         x = torch.einsum("...j, ...ij->...i", x, self.rotation_mat)
         x_rot = x.reshape((batch_size, seq_len, -1))
         return x_rot
-        

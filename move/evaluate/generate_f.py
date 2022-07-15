@@ -1,25 +1,26 @@
 "Functions for visualizing dance sequences."
 
-import os
 import logging
+import os
 import random
+
+import default_config
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import animation
-from mpl_toolkits.mplot3d.art3d import juggle_axes
+import models.utils as utils
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 import torch
-import wandb
+from matplotlib import animation
+from mpl_toolkits.mplot3d.art3d import juggle_axes
 
-import models.utils as utils
-import default_config
+import wandb
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
 
 # This array stores the physical meaning of all 53 keypoints
-# forming the skeleton in each dance pose. 
+# forming the skeleton in each dance pose.
 point_labels = [
     "ARIEL",
     "C7",
@@ -194,7 +195,7 @@ def getlinesegments(seq, zcolor=None, cmap=None):
     ----------
     seq :           array
                     Shape = [seq_len, keypoints (53), 3]
-                    Dance sequence.    
+                    Dance sequence.
     zcolor :        string
                     Color of first skeleton's keypoints and segments.
     cmap :          string
@@ -207,12 +208,12 @@ def getlinesegments(seq, zcolor=None, cmap=None):
                     Returns 3D start and end points for every
                     segment in a skeleton by taking mean of
                     relevant keypoints.
-    
+
     colors :        array
                     Shape = [n_segments, 4]
                     Stores colors from color map based on
                     location of middle point of segment.
-    
+
     """
     xline = np.zeros((seq.shape[0], len(skeleton_idxs), 3, 2))
 
@@ -231,13 +232,13 @@ def getlinesegments(seq, zcolor=None, cmap=None):
 
 def putlines(ax, segments, color=None, lw=2.5, alpha=None):
     """Puts line segments on the given axis with given colors.
-    
+
     Parameters
     ----------
     ax :        Plot axis to plot segments on.
     segments :  array
                 Shape = [n_segments, 3, 2]
-                3D start and end points for each segment in 
+                3D start and end points for each segment in
                 skeleton.
     color :     array
                 Shape = [n_segments, 4]
@@ -245,14 +246,14 @@ def putlines(ax, segments, color=None, lw=2.5, alpha=None):
     lw :        float
                 Line width of each segment.
     alpha :     float
-                Between 0 and 1. Determines transparency of 
-                segments. 1 = transparent.   
+                Between 0 and 1. Determines transparency of
+                segments. 1 = transparent.
 
     Returns
     ----------
     lines :     list
                 Lines connecting the start and end points of
-                each segment.             
+                each segment.
     """
     lines = []
     # Main skeleton
@@ -290,7 +291,7 @@ def animatestick(
 ):
     """Creates skeleton animation of one sequence.
 
-    Draws up to two connected skeletons moving in 
+    Draws up to two connected skeletons moving in
     a unit box, centered at a point on the x,y plane.
 
     Parameters
@@ -312,14 +313,14 @@ def animatestick(
     zcolor :        string
                     Color of first skeleton's keypoints and segments.
     ax_lims :       tuple
-                    Beginning and ending point of x,y axes of the 
+                    Beginning and ending point of x,y axes of the
                     unit cube. z axis limits is a function of these.
     speed :         int
                     Intervals for animation.
     dot_size :      int
                     Size of keypoint scatterpoints for skeleton(s).
     dot_alpha :     float
-                    Between 0 and 1. Determines transparency of 
+                    Between 0 and 1. Determines transparency of
                     keypoint scatterpoints. 1 = transparent.
     lw :            float
                     Line width of skeleton segments.
@@ -432,12 +433,12 @@ def reconstruct(
     config,
     log_to_wandb=False,
     single_epoch=None,
-    comic=False
+    comic=False,
 ):
     """
     Make and save stick gif on sequence from input_data dataset.
     No conditions on output.
-    Animation features original sequence (blue) and reconstructed 
+    Animation features original sequence (blue) and reconstructed
     sequence (black).
     Option to create strip-comic plot of each sequence as well.
 
@@ -462,7 +463,7 @@ def reconstruct(
     single_epoch :  string
                     Filepath to folder for saving an artifact
                     not during training (i.e. only for 1 epoch).
-                    Set to None for artifact generation during 
+                    Set to None for artifact generation during
                     training.
     comic :         bool
                     If True, also generates a strip comic style plot
@@ -471,7 +472,7 @@ def reconstruct(
     if config is None:
         logging.info("!! Parameter config is not given: Using default_config")
         config = default_config
- 
+
     x = input_data
     y = input_label
     x_recon = model(x, y)  # has shape [batch_size, seq_len, 159]
@@ -484,16 +485,18 @@ def reconstruct(
         name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
     else:
         name = f"recon_{purpose}_{config.run_name}.gif"
-    
+
     if single_epoch is None:
-        filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+        filepath = os.path.join(
+            os.path.abspath(os.getcwd()), "animations/" + config.run_name
+        )
         fname = os.path.join(filepath, name)
 
     if single_epoch is not None:
         fname = os.path.join(str(single_epoch), name)
         plotname = f"comic_{purpose}_{config.run_name}"
-        comicname_recon = os.path.join(str(single_epoch), plotname + '_recon.png')
-        comicname = os.path.join(str(single_epoch), plotname + '.png')
+        comicname_recon = os.path.join(str(single_epoch), plotname + "_recon.png")
+        comicname = os.path.join(str(single_epoch), plotname + ".png")
 
     fname = animatestick(
         x_recon_formatted,
@@ -504,11 +507,7 @@ def reconstruct(
     )
 
     if comic:
-        draw_comic(
-            x_recon_formatted,
-            comicname_recon,
-            recon=True
-        )
+        draw_comic(x_recon_formatted, comicname_recon, recon=True)
         draw_comic(
             x_formatted,
             comicname,
@@ -580,9 +579,9 @@ def generate_and_save(
     single_epoch=None,
     comic=False,
 ):
-    """Generate a dance from a given label and save the corresponding 
+    """Generate a dance from a given label and save the corresponding
     artifact.
-    
+
     Parameters
     ----------
     model :         serialized object
@@ -598,7 +597,7 @@ def generate_and_save(
     single_epoch :  string
                     Filepath to folder for saving an artifact
                     not during training (i.e. only for 1 epoch).
-                    Set to None for artifact generation during 
+                    Set to None for artifact generation during
                     training.
     comic :         bool
                     If True, also generates a strip comic style plot
@@ -607,18 +606,20 @@ def generate_and_save(
 
     filepath = os.path.join(
         os.path.abspath(os.getcwd()), "animations/" + config.run_name
-        )
+    )
 
     x_create, y_title = generate(model, y_given)
     x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
-    
+
     if epoch is not None:
         name = f"create_{y_given}_epoch_{epoch}_{config.run_name}.gif"
     else:
         name = f"create_{y_given}_{config.run_name}.gif"
-    
-    if single_epoch is None:    
-        filepath = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+
+    if single_epoch is None:
+        filepath = os.path.join(
+            os.path.abspath(os.getcwd()), "animations/" + config.run_name
+        )
         fname = os.path.join(filepath, name)
 
     if single_epoch is not None:
@@ -636,11 +637,7 @@ def generate_and_save(
     )
 
     if comic:
-        draw_comic(
-            x_create_formatted,
-            comicname,
-            recon=True
-        )
+        draw_comic(x_create_formatted, comicname, recon=True)
 
     if log_to_wandb:
         animation_artifact = wandb.Artifact("animation", type="video")
@@ -648,19 +645,15 @@ def generate_and_save(
         wandb.log_artifact(animation_artifact)
         logging.info("ARTIFACT: logged conditional generation to wandb.")
 
+
 def draw_comic(
-    frames, 
-    comicname, 
-    figsize=None, 
-    window_size=0.8, 
-    dot_size=0, 
-    lw=0.8, 
-    recon=False):
+    frames, comicname, figsize=None, window_size=0.8, dot_size=0, lw=0.8, recon=False
+):
     """Generates a strip comic style plot of a dance sequence.
 
     Extracted poses are plotted in consecutive order along a
     single axis, left to right.
-    
+
     Parameters
     ----------
     frames :        array
@@ -679,64 +672,69 @@ def draw_comic(
     recon :         bool
                     If True, changes color of skeleton to signify
                     sequence to be a reconstruction.
-    """    
+    """
     if torch.is_tensor(frames):
         frames = frames.cpu().data.numpy()
     frames = frames[::4, :, :]
 
     if recon:
-        cmap = 'autumn'
+        cmap = "autumn"
     if not recon:
-        cmap = 'cool_r'
+        cmap = "cool_r"
 
     fig = plt.figure(figsize=figsize)
     ax = p3.Axes3D(fig)
     ax.view_init(30, 0)
-    shift_size=0.6
-    
-    ax.set_xlim(-0.4*window_size,0.4*window_size)
-    ax.set_ylim(0, 6) 
-    ax.set_zlim(-0.1,0.5)
-    ax.set_box_aspect([1,8,0.8])
+    shift_size = 0.6
+
+    ax.set_xlim(-0.4 * window_size, 0.4 * window_size)
+    ax.set_ylim(0, 6)
+    ax.set_zlim(-0.1, 0.5)
+    ax.set_box_aspect([1, 8, 0.8])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])
     ax.get_xaxis().set_ticks([])
     ax.get_yaxis().set_ticks([])
-    
+
     cm = matplotlib.cm.get_cmap(cmap)
-    
-    n_frame=0
-    for iframe,frame in enumerate(frames):
+
+    n_frame = 0
+    for iframe, frame in enumerate(frames):
         n_frame += 1
-        ax.scatter(frame[:,0],
-                       frame[:,1]+0.4+n_frame*shift_size,
-                       frame[:,2],
-                       c= frame[:, 2],
-                       cmap=cm,
-                       s=dot_size,
-                       depthshade=True)
+        ax.scatter(
+            frame[:, 0],
+            frame[:, 1] + 0.4 + n_frame * shift_size,
+            frame[:, 2],
+            c=frame[:, 2],
+            cmap=cm,
+            s=dot_size,
+            depthshade=True,
+        )
 
         zcolor = frame[:, 2] * 2
-        
-        for i,(g1,g2) in enumerate(skeleton_lines):
+
+        for i, (g1, g2) in enumerate(skeleton_lines):
             g1_idx = [point_labels.index(l) for l in g1]
             g2_idx = [point_labels.index(l) for l in g2]
 
             if zcolor is not None:
-                color = cm(0.5*(zcolor[g1_idx].mean() + zcolor[g2_idx].mean()))
+                color = cm(0.5 * (zcolor[g1_idx].mean() + zcolor[g2_idx].mean()))
             else:
                 color = None
 
-            x1 = np.mean(frame[g1_idx],axis=0)
-            x2 = np.mean(frame[g2_idx],axis=0)
-            
-            ax.plot(np.linspace(x1[0],x2[0],10),
-                    np.linspace(x1[1],x2[1],10)+iframe*shift_size,
-                    np.linspace(x1[2],x2[2],10),
-                    color=color,
-                    lw=lw)
+            x1 = np.mean(frame[g1_idx], axis=0)
+            x2 = np.mean(frame[g2_idx], axis=0)
+
+            ax.plot(
+                np.linspace(x1[0], x2[0], 10),
+                np.linspace(x1[1], x2[1], 10) + iframe * shift_size,
+                np.linspace(x1[2], x2[2], 10),
+                color=color,
+                lw=lw,
+            )
         plt.savefig(comicname)
+
 
 def generate_many(model, label_dim, num_gen_per_lab, seq_len):
     """Generates many new sequences by sampling from the latent space.
@@ -770,20 +768,16 @@ def generate_many(model, label_dim, num_gen_per_lab, seq_len):
         one_label_seq = []
         for i in range(num_gen_per_lab):
             x_create, _ = generate(
-                                        model=model, 
-                                        y_given=label, 
-                                        )
+                model=model,
+                y_given=label,
+            )
             x_create_formatted = x_create[0].reshape((default_config.seq_len, -1, 3))
             x_create_formatted = x_create_formatted.cpu().data.numpy()
             one_label_seq.append(x_create_formatted)
-        
+
         gen_dance.append(one_label_seq)
 
-    gen_dance = np.array(gen_dance).reshape((
-        label_dim * num_gen_per_lab,
-        seq_len,
-        -1
-    ))
+    gen_dance = np.array(gen_dance).reshape((label_dim * num_gen_per_lab, seq_len, -1))
     gen_dance = torch.tensor(gen_dance)
 
     gen_labels = []
@@ -792,5 +786,5 @@ def generate_many(model, label_dim, num_gen_per_lab, seq_len):
         gen_labels = np.concatenate((gen_labels, gen_label.astype(int)))
 
     gen_labels = torch.tensor(gen_labels.astype(int))
-    
+
     return gen_dance, gen_labels

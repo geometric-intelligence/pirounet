@@ -3,6 +3,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class LinearClassifier(nn.Module):
     def __init__(
         self,
@@ -34,7 +35,7 @@ class LinearClassifier(nn.Module):
                     Slope for LeakkyRelu activation.
         n_layers :  int
                     Number of linear layers.
-             
+
         """
         super(LinearClassifier, self).__init__()
         self.dense = nn.Linear(seq_len * input_dim, h_dim)
@@ -56,7 +57,7 @@ class LinearClassifier(nn.Module):
         x :             array
                         Shape = [batch_size, seq_len, input_dim]
                         Input batch of sequences.
-        
+
         Returns
         ----------
         logits :        array
@@ -81,7 +82,7 @@ class LinearClassifier(nn.Module):
         else:
             for layer in self.layers[:-1]:
                 x = F.relu(layer(x))
-            activation = x 
+            activation = x
 
         logits = F.softmax(self.layers[-1](x), dim=1)
         return logits, activation

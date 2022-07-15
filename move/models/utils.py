@@ -1,10 +1,10 @@
 "Utility functions used for training and evaluating the model."
 
+import default_config
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-import default_config
 
 def make_onehot_encoder(label_features):
     """Convert a number to its one-hot representation vector.
@@ -19,7 +19,7 @@ def make_onehot_encoder(label_features):
     Returns
     -------
     onehot_encode : function
-                    Function that takes in a categorical label integer 
+                    Function that takes in a categorical label integer
                     and outputs its corresponding one-hot.
     """
 
@@ -30,6 +30,7 @@ def make_onehot_encoder(label_features):
         return y
 
     return onehot_encode
+
 
 def batch_one_hot(y, label_dim):
     """Convert a batch of integer labels to a tensor of one-hot labels.
@@ -57,6 +58,7 @@ def batch_one_hot(y, label_dim):
 
     batch_one_hot = batch_one_hot[1:, :, :]
     return batch_one_hot
+
 
 def log_standard_categorical(p):
     """
@@ -101,7 +103,7 @@ def enumerate_discrete(x, y_dim):
     [0, 0, 1],
     [0, 0, 1]
     ]
-    because it assigns both all 3 labels (in one-hot encodings) 
+    because it assigns both all 3 labels (in one-hot encodings)
     to each of the batch_size elements of x
 
     Parameters
@@ -116,7 +118,7 @@ def enumerate_discrete(x, y_dim):
     -------
     mimic : Variable
             Shape = [batch_size x label_dim, 1, label_dim]
-            Tensor assigning every possible label y to each 
+            Tensor assigning every possible label y to each
             element of x.
     """
 
@@ -147,7 +149,7 @@ def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     dim:    int
             Dimension to perform operation over.
     sum_op: operation
-            reductive operation to be applied, e.g. torch.sum or torch.mean    
+            reductive operation to be applied, e.g. torch.sum or torch.mean
 
     Returns
     -------
@@ -156,9 +158,5 @@ def log_sum_exp(tensor, dim=-1, sum_op=torch.sum):
     """
     max, _ = torch.max(tensor, dim=dim, keepdim=True)
 
-    LSE = (
-        torch.log(
-            sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8
-            ) + max
-    )
+    LSE = torch.log(sum_op(torch.exp(tensor - max), dim=dim, keepdim=True) + 1e-8) + max
     return LSE

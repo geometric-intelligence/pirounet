@@ -1,19 +1,20 @@
 """Defines the training function for the deep generative model."""
 
-import os
-from os.path import exists
 import itertools
 import logging
-import torch
-import torch.autograd
-import torch.nn
-from torch.autograd import Variable
-import wandb
+import os
+from os.path import exists
 
 import default_config
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
 import models.utils as utils
+import torch
+import torch.autograd
+import torch.nn
+from torch.autograd import Variable
+
+import wandb
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -31,8 +32,8 @@ def run_train_dgm(
 ):
     """Run training and track it with wandb.
 
-    The loss given is averaged on the number 
-    of examples (i.e. sequences) that have been 
+    The loss given is averaged on the number
+    of examples (i.e. sequences) that have been
     seen until the current minibatch.
 
     Parameters
@@ -41,26 +42,26 @@ def run_train_dgm(
                             Deep generative Torch model.
     labelled_data_train :   DataLoader iterator
                             Shape = [n_seq_train, seq_len, input_dim]
-                            Batched sequences that have a label 
-                            associated and that have been reserved for 
+                            Batched sequences that have a label
+                            associated and that have been reserved for
                             training.
     labels_train :          DataLoader iterator
                             Shape = [n_seq_train, 1]
-                            Batched labels associated to 
+                            Batched labels associated to
                             labelled_data_train.
     labelled_data_valid :   DataLoader iterator
                             Shape = [n_seq_valid, seq_len, input_dim]
                             Batched sequences that have a label
-                            associated and that have been reserved for 
+                            associated and that have been reserved for
                             validation.
     labels_valid :          DataLoader iterator
                             Shape = [n_seq_valid, 1]
-                            Batched labels associated to 
+                            Batched labels associated to
                             labelled_data_valid.
     optimizer :             class
                             Implementation of optimizer algorithm.
     config :                dict
-                            Configuration for the run as inherited from 
+                            Configuration for the run as inherited from
                             wandb.config.
     """
 
@@ -79,8 +80,10 @@ def run_train_dgm(
 
     else:
         latest_epoch = 0
-    
-    filepath_for_artifacts = os.path.join(os.path.abspath(os.getcwd()), "animations/" + config.run_name)
+
+    filepath_for_artifacts = os.path.join(
+        os.path.abspath(os.getcwd()), "animations/" + config.run_name
+    )
 
     if exists(filepath_for_artifacts) is False:
         os.mkdir(filepath_for_artifacts)
@@ -117,7 +120,7 @@ def run_train_dgm(
             if i_batch == 0:
                 logging.info(f"Train minibatch x of shape: {x.shape}")
 
-            L = -elbo(x, y) 
+            L = -elbo(x, y)
             labloss += L
             U = -elbo(u)
             unlabloss += U
@@ -147,8 +150,7 @@ def run_train_dgm(
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
             accuracy += torch.mean(
                 (
-                    torch.max(logits, 1).indices == 
-                    torch.max(y_like_logits, 1).indices
+                    torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices
                 ).float()
             )
 
@@ -159,7 +161,9 @@ def run_train_dgm(
 
                 logging.info(f"        Recon labeled-loss {labloss / (batches_seen)}")
 
-                logging.info(f"        Recon unlabeled-loss {unlabloss / (batches_seen)}")
+                logging.info(
+                    f"        Recon unlabeled-loss {unlabloss / (batches_seen)}"
+                )
 
                 generate_f.reconstruct(
                     model=model,
@@ -168,8 +172,8 @@ def run_train_dgm(
                     input_label=y,
                     purpose="train",
                     config=config,
-                    log_to_wandb=True
-                )                
+                    log_to_wandb=True,
+                )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
@@ -179,19 +183,35 @@ def run_train_dgm(
             )
         )
 
-        wandb.log({"epoch": epoch + latest_epoch, "loss": total_loss / batches_seen}, step=epoch)
         wandb.log(
-            {"epoch": epoch + latest_epoch, "labelled_recon_loss": labloss / batches_seen}, step=epoch
-        )
-        wandb.log(
-            {"epoch": epoch + latest_epoch, "unlabelled_recon_loss": unlabloss / batches_seen},
+            {"epoch": epoch + latest_epoch, "loss": total_loss / batches_seen},
             step=epoch,
         )
         wandb.log(
-            {"epoch": epoch + latest_epoch, "classification_loss": class_loss / batches_seen},
+            {
+                "epoch": epoch + latest_epoch,
+                "labelled_recon_loss": labloss / batches_seen,
+            },
             step=epoch,
         )
-        wandb.log({"epoch": epoch + latest_epoch, "accuracy": accuracy / batches_seen}, step=epoch)
+        wandb.log(
+            {
+                "epoch": epoch + latest_epoch,
+                "unlabelled_recon_loss": unlabloss / batches_seen,
+            },
+            step=epoch,
+        )
+        wandb.log(
+            {
+                "epoch": epoch + latest_epoch,
+                "classification_loss": class_loss / batches_seen,
+            },
+            step=epoch,
+        )
+        wandb.log(
+            {"epoch": epoch + latest_epoch, "accuracy": accuracy / batches_seen},
+            step=epoch,
+        )
 
         # Validation
         total_loss_valid, accuracy_valid = (0, 0)
@@ -214,7 +234,9 @@ def run_train_dgm(
             U = -elbo(x)
 
             logits_v = model.classify(x)
-            classification_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
+            classification_loss_v = torch.sum(
+                y * torch.log(logits_v + 1e-8), dim=1
+            ).mean()
 
             J_alpha_v = L - alpha * classification_loss_v + U
 
@@ -243,7 +265,7 @@ def run_train_dgm(
                     input_label=y,
                     purpose="valid",
                     config=config,
-                    log_to_wandb=True
+                    log_to_wandb=True,
                 )
 
             if n_batches > 5 and i_batch != 0:
@@ -262,7 +284,7 @@ def run_train_dgm(
                         input_label=y,
                         purpose="valid",
                         config=config,
-                        log_to_wandb=True
+                        log_to_wandb=True,
                     )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
@@ -274,28 +296,36 @@ def run_train_dgm(
         )
 
         wandb.log(
-            {"epoch": epoch + latest_epoch, "valid_loss": total_loss_valid / batches_v_seen},
+            {
+                "epoch": epoch + latest_epoch,
+                "valid_loss": total_loss_valid / batches_v_seen,
+            },
             step=epoch,
         )
         wandb.log(
-            {"epoch": epoch + latest_epoch, "valid_accuracy": accuracy_valid / batches_v_seen},
+            {
+                "epoch": epoch + latest_epoch,
+                "valid_accuracy": accuracy_valid / batches_v_seen,
+            },
             step=epoch,
         )
 
         for label in range(config.label_dim):
             generate_f.generate_and_save(
-                model=model, 
-                epoch=epoch + latest_epoch, 
-                y_given=label, 
+                model=model,
+                epoch=epoch + latest_epoch,
+                y_given=label,
                 config=config,
-                log_to_wandb=True
+                log_to_wandb=True,
             )
 
         logging.info("Save a checkpoint.")
 
         checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()),
-            "saved/checkpoint_{}_epoch{}.pt".format(config.run_name, epoch + latest_epoch),
+            "saved/checkpoint_{}_epoch{}.pt".format(
+                config.run_name, epoch + latest_epoch
+            ),
         )
 
         torch.save(

@@ -6,14 +6,15 @@ logging.basicConfig(level=logging.INFO)
 
 import os
 import warnings
-import torch
-import wandb
 
 import datasets
+import default_config
 import evaluate.generate_f as generate_f
 import models.dgm_lstm_vae as dgm_lstm_vae
+import torch
 import train
-import default_config
+
+import wandb
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = default_config.which_device
@@ -44,10 +45,10 @@ wandb.init(
         "h_dim_classif": default_config.h_dim_classif,
         "label_dim": default_config.label_dim,
         "device": default_config.device,
-        #"classifier": default_config.classifier,
+        # "classifier": default_config.classifier,
         "effort": default_config.effort,
-        "fraction_label":default_config.fraction_label,
-        "generate_after_training": default_config.generate_after_training
+        "fraction_label": default_config.fraction_label,
+        "generate_after_training": default_config.generate_after_training,
     },
 )
 

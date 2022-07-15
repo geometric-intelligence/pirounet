@@ -9,15 +9,15 @@ The Classifier maps:
 """
 import torch
 
-run_name = 'classifier_metrics_test' # "hdim100_hclass100_batch40_lr3e4"
-load_from_checkpoint = (
-   "checkpoint_classifier_fid_epoch206"
-)
+run_name = "classifier_metrics_test"  # "hdim100_hclass100_batch40_lr3e4"
+load_from_checkpoint = "checkpoint_classifier_fid_epoch206"
 
 # Hardware
 which_device = "0"
 device = (
-    torch.device("cuda:"+str(which_device)) if torch.cuda.is_available() else torch.device("cpu")
+    torch.device("cuda:" + str(which_device))
+    if torch.cuda.is_available()
+    else torch.device("cpu")
 )
 
 # Training
@@ -30,7 +30,7 @@ seq_len = 40
 input_dim = 159
 label_dim = 3
 amount_of_labels = 1
-effort = 'time'
+effort = "time"
 fraction_label = 0.92
 
 # Classifier's linear layers
