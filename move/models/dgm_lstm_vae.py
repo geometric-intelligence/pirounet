@@ -5,10 +5,10 @@ import torch.nn
 import models.losses as losses
 import models.utils as utils
 from models.classifiers import LinearClassifier
-from models.lstm_vae import LstmDecoder, LstmEncoder, LstmVAE
+from models.lstm_vae import LstmDecoder, LstmEncoder
 
 
-class DeepGenerativeModel(LstmVAE):
+class DeepGenerativeModel(torch.nn.Module):
     """
     M2 code replication from the paper
     'Semi-Supervised Learning with Deep Generative Models'
@@ -49,6 +49,12 @@ class DeepGenerativeModel(LstmVAE):
     n_layers_classif :  int
                         Amount of hidden linear 
                         layers in classifier.
+    encoder :           object of the class torch.nn.Module
+                        Choice of encoder
+                        {"LstmEncoder"}
+    decoder :           clobject of the class torch.nn.Moduleass
+                        Choice of decoder
+                        {"LstmDecoder"}
     """
     def __init__(
         self,
@@ -64,30 +70,34 @@ class DeepGenerativeModel(LstmVAE):
         h_dim_classif,
         neg_slope_classif,
         n_layers_classif,
+        encoder = None,
+        decoder = None
     ):
 
         super(DeepGenerativeModel, self).__init__()
         self.label_dim = label_dim
         self.seq_len = seq_len
 
-        self.encoder = LstmEncoder(
-            n_layers=n_layers,
-            input_dim=input_dim,
-            h_dim=h_dim,
-            latent_dim=latent_dim,
-            label_dim=label_dim,
-        )
+        if encoder is None :
+            self.encoder = LstmEncoder(
+                n_layers=n_layers,
+                input_dim=input_dim,
+                h_dim=h_dim,
+                latent_dim=latent_dim,
+                label_dim=label_dim,
+            )
 
-        self.decoder = LstmDecoder(
-            n_layers=n_layers,
-            output_dim=output_dim,
-            h_dim=h_dim,
-            latent_dim=latent_dim,
-            seq_len=seq_len,
-            neg_slope=neg_slope,
-            label_dim=label_dim,
-            batch_size=batch_size,
-        )
+        if decoder is None :
+            self.decoder = LstmDecoder(
+                n_layers=n_layers,
+                output_dim=output_dim,
+                h_dim=h_dim,
+                latent_dim=latent_dim,
+                seq_len=seq_len,
+                neg_slope=neg_slope,
+                label_dim=label_dim,
+                batch_size=batch_size,
+            )
 
         self.classifier = LinearClassifier(
             input_dim=input_dim,

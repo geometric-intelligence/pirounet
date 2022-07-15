@@ -245,7 +245,7 @@ def ajd_test(model, device, labelled_data, labels, label_dim):
 
     Parameters
     ----------
-    model :         serialized_obj
+    model :         object of the model class torch.nn.Module
                     Model to be evaluated.
     device :        torch.device
                     CUDA device identity.
