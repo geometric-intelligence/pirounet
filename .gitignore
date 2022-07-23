@@ -14,11 +14,7 @@ move/saved
 move/*.out
 *.out
 tests/
-evaluate/generate/
-evaluate/reconstruct/
-evaluate/z_tiling/
-evaluate/log_files/
-evaluate/confusion/
+results/old
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

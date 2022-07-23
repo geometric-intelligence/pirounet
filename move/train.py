@@ -165,15 +165,15 @@ def run_train_dgm(
                     f"        Recon unlabeled-loss {unlabloss / (batches_seen)}"
                 )
 
-                generate_f.reconstruct(
-                    model=model,
-                    epoch=epoch + latest_epoch,
-                    input_data=x,
-                    input_label=y,
-                    purpose="train",
-                    config=config,
-                    log_to_wandb=True,
-                )
+        generate_f.reconstruct(
+            model=model,
+            config=default_config,
+            epoch=epoch + latest_epoch,
+            input_data=labelled_data_train,
+            input_label=labels_train,
+            purpose="train",
+            log_to_wandb=True,
+        )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
@@ -256,18 +256,6 @@ def run_train_dgm(
                     {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                 )
 
-                logging.info(f"Artifacts for epoch {epoch}")
-
-                generate_f.reconstruct(
-                    model=model,
-                    epoch=epoch + latest_epoch,
-                    input_data=x,
-                    input_label=y,
-                    purpose="valid",
-                    config=config,
-                    log_to_wandb=True,
-                )
-
             if n_batches > 5 and i_batch != 0:
                 if i_batch % 5 == 0:
                     logging.info(
@@ -275,17 +263,15 @@ def run_train_dgm(
                         {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                     )
 
-                    logging.info(f"Artifacts for epoch {epoch}")
-
-                    generate_f.reconstruct(
-                        model=model,
-                        epoch=epoch + latest_epoch,
-                        input_data=x,
-                        input_label=y,
-                        purpose="valid",
-                        config=config,
-                        log_to_wandb=True,
-                    )
+        generate_f.reconstruct(
+            model=model,
+            config=default_config,
+            epoch=epoch + latest_epoch,
+            input_data=labelled_data_valid,
+            input_label=labels_valid,
+            purpose="valid",
+            log_to_wandb=True,
+        )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
@@ -310,14 +296,16 @@ def run_train_dgm(
             step=epoch,
         )
 
-        for label in range(config.label_dim):
-            generate_f.generate_and_save(
-                model=model,
-                epoch=epoch + latest_epoch,
-                y_given=label,
-                config=config,
-                log_to_wandb=True,
-            )
+        generate_f.generate_and_save(
+            model=model,
+            config=eval_config,
+            epoch=epoch + latest_epoch,
+            num_artifacts=1,
+            type="cond",
+            encoded_data=labelled_data_valid,
+            encoded_labels=labels_valid,
+            log_to_wandb=True,
+        )
 
         logging.info("Save a checkpoint.")
 

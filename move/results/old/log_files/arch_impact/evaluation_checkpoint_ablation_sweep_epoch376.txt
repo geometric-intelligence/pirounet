@@ -1,0 +1,18 @@
+========== Metrics for checkpoint checkpoint_ablation_sweep_epoch376 ==========
+Classif Accuracy (Valid): 0.42417582417582417
+Classif Accuracy (Test): 0.41365461847389556
+------------------------------
+FID: 727.9927910363513 +/- 0.0
+Diversity: 36.6342658996582 +/- 0.0
+Multimodality: 35.76176071166992 +/- 0.0
+------------------------------
+Gen Diversity: 64.60234069824219 +/- 0.0
+Gen Multimodality: 65.68998718261719 +/- 0.0
+------------------------------
+AJD valid (recon loss): 0.0341777044240988
+AJD train (recon loss): 0.01875651853582074
+AJD test (recon loss): 0.0211999799392521------------------------------
+Row in table:
+P\%   & 42.4\%   & 0\%  & 64.5999984741211  & 65.69999694824219   & 2.1\% & D\% & --
+------------------------------
+Total amount of sequences (train, valid, test): (7161, 40, 159), (455, 40, 159), (249, 40, 159)
