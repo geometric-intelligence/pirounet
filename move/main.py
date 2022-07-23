@@ -102,8 +102,4 @@ train.run_train_dgm(
     config=config,
 )
 
-if config.generate_after_training:
-    for label in range(config.label_dim):
-        generate_f.generate(model, y_given=label, config=config)
-
 wandb.finish()

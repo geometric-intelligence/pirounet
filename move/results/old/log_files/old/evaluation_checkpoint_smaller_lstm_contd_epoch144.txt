@@ -1,0 +1,7 @@
+========== Metrics for checkpoint checkpoint_smaller_lstm_contd_epoch144 ==========
+FID: 2624.6840441324457
+Diversity: 47.11011505126953
+Gen Diversity: 10.457558631896973
+Multimodality: 29.103914260864258
+Gen Multimodality: 12.731517791748047
+AJD (recon loss): 0.03631648978554358

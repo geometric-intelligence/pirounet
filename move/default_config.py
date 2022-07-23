@@ -81,6 +81,3 @@ latent_dim = 256
 h_dim_classif = 100
 neg_slope_classif = 0
 n_layers_classif = 2
-
-# Artifacts to produce
-generate_after_training = False

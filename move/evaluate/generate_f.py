@@ -1,4 +1,4 @@
-"Functions for visualizing dance sequences."
+"Functions for generating and visualizing dance sequences."
 
 import logging
 import os
@@ -13,6 +13,8 @@ import numpy as np
 import torch
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import juggle_axes
+from sklearn.decomposition import PCA
+from torch.autograd import Variable
 
 import wandb
 
@@ -426,13 +428,13 @@ def animatestick(
 
 def reconstruct(
     model,
+    config,
     epoch,
     input_data,
     input_label,
     purpose,
-    config,
     log_to_wandb=False,
-    single_epoch=None,
+    results_path=None,
     comic=False,
 ):
     """
@@ -449,18 +451,18 @@ def reconstruct(
     epoch :         int
                     Epoch to evaluate it at.
     input_data :    array
-                    Shape = [batch_size, seq_len, input_dim]
-                    Batch of input sequences to be reconstructed.
+                    Shape = [n_seqs, seq_len, input_dim]
+                    Input sequences to be reconstructed.
     input_label :   array
-                    Shape = [batch_size, label_dim]
-                    Batch of one hots associated to input sequences.
+                    Shape = [n_seqs, label_dim]
+                    One hots associated to input sequences.
     purpose :       string
                     {"train", "valid", "test"}
     config :        dict
                     Configuration for run.
     log_to_wandb :  bool
                     If True, logs the animation file to wandb.
-    single_epoch :  string
+    results_path :  string
                     Filepath to folder for saving an artifact
                     not during training (i.e. only for 1 epoch).
                     Set to None for artifact generation during
@@ -469,44 +471,45 @@ def reconstruct(
                     If True, also generates a strip comic style plot
                     for every sequence, original and reconstructed.
     """
-    if config is None:
-        logging.info("!! Parameter config is not given: Using default_config")
-        config = default_config
 
-    x = input_data
-    y = input_label
-    x_recon = model(x, y)  # has shape [batch_size, seq_len, 159]
-    _, seq_len, _ = x.shape
+    for i_batch, (x, y) in enumerate(zip(input_data, input_label)):
 
-    x_formatted = x[0].reshape((seq_len, -1, 3))
-    x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
+        x, y = Variable(x), Variable(y)
+        x, y = x.to(config.device), y.to(config.device)
 
-    if epoch is not None:
-        name = f"recon_epoch_{epoch}_{purpose}_{config.run_name}.gif"
-    else:
-        name = f"recon_{purpose}_{config.run_name}.gif"
+        batch_one_hot = utils.batch_one_hot(y, config.label_dim)
+        y = batch_one_hot.to(config.device)
 
-    if single_epoch is None:
-        filepath = os.path.join(
-            os.path.abspath(os.getcwd()), "animations/" + config.run_name
+        x_recon = model(x, y)  # has shape [batch_size, seq_len, 159]
+        _, seq_len, _ = x.shape
+
+        x_formatted = x[0].reshape((seq_len, -1, 3))
+        x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
+
+        name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.run_name}.gif"
+
+        if results_path is None:
+            filepath = os.path.join(
+                os.path.abspath(os.getcwd()), "animations/" + config.run_name
+            )
+            fname = os.path.join(filepath, name)
+
+        if results_path is not None:
+            fname = os.path.join(str(results_path), name)
+
+        fname = animatestick(
+            x_recon_formatted,
+            fname=fname,
+            ghost=x_formatted,
+            dot_alpha=0.7,
+            ghost_shift=0.2,
         )
-        fname = os.path.join(filepath, name)
-
-    if single_epoch is not None:
-        fname = os.path.join(str(single_epoch), name)
-        plotname = f"comic_{purpose}_{config.run_name}"
-        comicname_recon = os.path.join(str(single_epoch), plotname + "_recon.png")
-        comicname = os.path.join(str(single_epoch), plotname + ".png")
-
-    fname = animatestick(
-        x_recon_formatted,
-        fname=fname,
-        ghost=x_formatted,
-        dot_alpha=0.7,
-        ghost_shift=0.2,
-    )
 
     if comic:
+        plotname = f"comic_{purpose}_{config.run_name}"
+        comicname_recon = os.path.join(str(results_path), plotname + "_recon.png")
+        comicname = os.path.join(str(results_path), plotname + ".png")
+
         draw_comic(x_recon_formatted, comicname_recon, recon=True)
         draw_comic(
             x_formatted,
@@ -520,130 +523,265 @@ def reconstruct(
         logging.info("ARTIFACT: logged reconstruction to wandb.")
 
 
-def generate(
+def generate_rand(
     model,
+    config,
+    n_seq,
     y_given=None,
-    config=default_config,
 ):
     """Generate a dance by sampling in the latent space.
 
     If no label y is given, then a random label is chosen.
+    Choice of "label" does not actually condition the output
+    for an entangled latent space.
 
     Parameters
     ----------
     model :     serialized object
                 Model to evaluate.
-    y_given :   int
-                Int associated to categorical label.
     config :    dict
                 Configuration for run.
+    n_seq :     int
+                Number of sequences to generate.
+    y_given :   int
+                Int associated to categorical label.
+
 
     Returns
     ----------
     x_create :  array
-                Shape = [1, seq_len, input_dim]
-                Sampled sequence.
-    y_title :   int
-                Categorical label used in the latent variable
-                that generated the sequence.
+                Shape = [n_seq, seq_len, input_dim]
+                Sampled sequences.
     """
 
     onehot_encoder = utils.make_onehot_encoder(config.label_dim)
-    if y_given is not None:
-        y_onehot = onehot_encoder(y_given)
-        y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-        y_onehot = y_onehot.to(config.device)
-        y_title = y_given
+    x_create = []
+    for i in range(n_seq):
+        if y_given is not None:
+            y_onehot = onehot_encoder(y_given)
+            y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+            y_onehot = y_onehot.to(config.device)
+            y_title = y_given
 
-    else:
-        y_rand = random.randint(0, config.label_dim - 1)
-        y_onehot = onehot_encoder(y_rand)
-        y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
-        y_onehot = y_onehot.to(config.device)
-        y_title = y_rand
+        else:
+            y_rand = random.randint(0, config.label_dim - 1)
+            y_onehot = onehot_encoder(y_rand)
+            y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+            y_onehot = y_onehot.to(config.device)
+            y_title = y_rand
 
-    z_create = torch.randn(size=(1, config.latent_dim))
-    z_create = z_create.to(config.device)
+        z_create = torch.randn(size=(1, config.latent_dim))
+        z_create = z_create.to(config.device)
 
-    x_create = model.sample(z_create, y_onehot)
+        x_create_one_seq = model.sample(z_create, y_onehot)
+        x_create_one_seq_formatted = x_create_one_seq[0].reshape(
+            (default_config.seq_len, -1, 3)
+        )
 
-    return x_create, y_title
+        x_create = np.append(x_create, x_create_one_seq_formatted.cpu().data.numpy())
+
+    return x_create
+
+
+def generate_cond(
+    model, config, num_gen_cond_lab, encoded_data, encoded_labels, shuffle=False
+):
+    """Generates new sequences by sampling from high-density Efforts
+    in latent space.
+
+    While the latent space is entangled, we structure the generation
+    to be sampled from a set of latent variables that were constructed
+    from an equal amount of categorical labels.
+
+    Parameters
+    ----------
+    model :             serialized object
+                        Model to be evaluated.
+    config :            dict
+                        Configuration for the run.
+    num_gen_cond_lab :  int
+                        Number of latent variables to be constructed
+                        with each label.
+    encoded_data :      array
+                        Shape = [n_seq, seq_len, input_dim]
+                        Set of sequences to be encoded in latent space
+                        for locating high density neighborhoods.
+    encoded_labels :    array
+                        Shape = [n_seq,]
+                        Categorical labels associated to encoded_data
+                        sequences.
+    shuffle :           bool
+                        True: re-shuffle produced sequences to not
+                        categorize by label.
+
+    Returns
+    ----------
+    gen_dance :         array
+                        Shape = [label_dim * num_gen_per_lab, seq_len, input_dim]
+                        Generated sequences.
+    gen_labels :        array
+                        Shape = [label_dim * num_gen_per_lab, ]
+    """
+
+    all_high, pca, z_center = get_high_neighb(
+        model, config, encoded_data, encoded_labels
+    )
+
+    gen_dance = []
+    for y in range(config.label_dim):
+        one_label_seq = []
+        for i in range(num_gen_cond_lab):
+            # decode within high density tile
+            tile_to_pick = np.random.randint(0, len(all_high[y]))
+            tile = all_high[y][tile_to_pick]
+            zx = np.random.uniform(tile[0], tile[0] + config.step_size[y])
+            zy = np.random.uniform(tile[1], tile[1] + config.step_size[y])
+            z = np.array((zx, zy))
+            z = pca[y].inverse_transform(z) + z_center[y]
+
+            z_within_tile = torch.tensor(z).reshape(1, -1).to(config.device).float()
+
+            x_create = model.sample(
+                z_within_tile,
+                utils.batch_one_hot(y, config.label_dim)
+                .reshape((1, 3))
+                .to(config.device),
+            )
+            x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
+
+            one_label_seq = np.append(
+                one_label_seq, x_create_formatted.cpu().data.numpy()
+            )
+
+        gen_dance = np.append(gen_dance, one_label_seq)
+
+        gen_dance = np.array(gen_dance).reshape(-1, default_config.seq_len, 53, 3)
+
+    gen_labels = []
+    for i in range(config.label_dim):
+        gen_label = i * np.ones(num_gen_cond_lab, dtype=int)
+        gen_labels = np.concatenate((gen_labels, gen_label.astype(int)))
+
+    gen_labels = torch.tensor(gen_labels.astype(int))
+
+    if shuffle:
+        shuffler = np.random.permutation(len(gen_labels))
+        gen_labels = np.array(gen_labels)[shuffler]
+        gen_dance = np.array(gen_dance)[shuffler]
+
+    return gen_dance, gen_labels
 
 
 def generate_and_save(
     model,
-    epoch=None,
+    config,
+    epoch,
+    num_artifacts,
+    type,
+    encoded_data=None,
+    encoded_labels=None,
     y_given=None,
-    config=default_config,
     log_to_wandb=False,
-    single_epoch=None,
+    results_path=None,
     comic=False,
 ):
-    """Generate a dance from a given label and save the corresponding
-    artifact.
+    """Generates a dance by randomly sampling the latent space and save
+     the corresponding artifact. Choice of "label" does not actually
+     condition the output for an entangled latent space.
 
     Parameters
     ----------
-    model :         serialized object
-                    Model to evaluate.
-    epoch :         int
-                    Epoch to evaluate it at.
-    y_given :       int
-                    Int associated to categorical label.
-    config :        dict
-                    Configuration for run.
-    log_to_wandb :  bool
-                    If True, logs the animation file to wandb.
-    single_epoch :  string
-                    Filepath to folder for saving an artifact
-                    not during training (i.e. only for 1 epoch).
-                    Set to None for artifact generation during
-                    training.
-    comic :         bool
-                    If True, also generates a strip comic style plot
-                    for every sequence, original and reconstructed.
+    model :             serialized object
+                        Model to evaluate.
+    config :            dict
+                        Configuration for run.
+    epoch :             int
+                        Epoch to evaluate it at.
+    num_artifacts :     int
+                        Number of sequences to produce, either by random
+                        sampling, or for each categorical label.
+    type :              string
+                        {"random", "cond"}
+                        Determines the nature of the generation.
+    encoded_data :      array
+                        Shape = [n_seq, seq_len, input_dim]
+                        Set of sequences to be encoded in latent space
+                        for locating high density neighborhoods.
+                        (only needed for conditional generation)
+    encoded_labels :    array
+                        Shape = [n_seq,]
+                        Categorical labels associated to encoded_data
+                        sequences.
+                        (only needed for conditional generation)
+    y_given :           int
+                        Int associated to categorical label. ONLY use
+                        for testing entanglement of latent space.
+
+    log_to_wandb :      bool
+                        If True, logs the animation file to wandb.
+    results_path :      string
+                        Filepath to folder for saving an artifact
+                        not during training (i.e. only for 1 epoch).
+                        Set to None for artifact generation during
+                        training.
+    comic :             bool
+                        If True, also generates a strip comic style plot
+                        for every sequence, original and reconstructed.
     """
 
     filepath = os.path.join(
         os.path.abspath(os.getcwd()), "animations/" + config.run_name
     )
+    if y_given is not None:
+        x_create = generate_rand(model, config, num_artifacts, y_given)
+    if y_given is None:
+        if type == "random":
+            x_create = generate_rand(model, config, num_artifacts)
+        if type == "cond":
+            x_create, _ = generate_cond(
+                model,
+                config,
+                num_artifacts,
+                encoded_data,
+                encoded_labels,
+                shuffle=False,
+            )
 
-    x_create, y_title = generate(model, y_given)
-    x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
-
-    if epoch is not None:
-        name = f"create_{y_given}_epoch_{epoch}_{config.run_name}.gif"
-    else:
-        name = f"create_{y_given}_{config.run_name}.gif"
-
-    if single_epoch is None:
-        filepath = os.path.join(
-            os.path.abspath(os.getcwd()), "animations/" + config.run_name
-        )
-        fname = os.path.join(filepath, name)
-
-    if single_epoch is not None:
-        fname = os.path.join(str(single_epoch), name)
-        plotname = f"comic_{y_given}_{epoch}_{config.run_name}.png"
-        comicname = os.path.join(str(single_epoch), plotname)
-
-    fname = animatestick(
-        x_create_formatted,
-        fname=fname,
-        ghost=None,
-        dot_alpha=0.7,
-        ghost_shift=0.2,
-        condition=y_title,
+    x_create_formatted = x_create[0].reshape(
+        (-1, config.seq_len, config.input_dim / 3, 3)
     )
 
-    if comic:
-        draw_comic(x_create_formatted, comicname, recon=True)
+    for i in range(len(x_create_formatted)):
+        name = f"create_{i}_epoch_{epoch}_{config.run_name}.gif"
 
-    if log_to_wandb:
-        animation_artifact = wandb.Artifact("animation", type="video")
-        animation_artifact.add_file(fname)
-        wandb.log_artifact(animation_artifact)
-        logging.info("ARTIFACT: logged conditional generation to wandb.")
+        if results_path is None:
+            filepath = os.path.join(
+                os.path.abspath(os.getcwd()), "animations/" + config.run_name
+            )
+            fname = os.path.join(filepath, name)
+
+        if results_path is not None:
+            fname = os.path.join(str(results_path), name)
+            plotname = f"comic_{i}_{epoch}_{config.run_name}.png"
+            comicname = os.path.join(str(results_path), plotname)
+
+        fname = animatestick(
+            x_create_formatted[i],
+            fname=fname,
+            ghost=None,
+            dot_alpha=0.7,
+            ghost_shift=0.2,
+            condition=y_given,
+        )
+
+        if comic:
+            draw_comic(x_create_formatted[i], comicname, recon=True)
+
+        if log_to_wandb:
+            animation_artifact = wandb.Artifact("animation", type="video")
+            animation_artifact.add_file(fname)
+            wandb.log_artifact(animation_artifact)
+            logging.info("ARTIFACT: logged random generation to wandb.")
 
 
 def draw_comic(
@@ -736,55 +874,327 @@ def draw_comic(
         plt.savefig(comicname)
 
 
-def generate_many(model, label_dim, num_gen_per_lab, seq_len):
-    """Generates many new sequences by sampling from the latent space.
+def get_high_neighb(model, config, labelled_data, labels):
+    """Encode data in latent space and locate high density neighborhoods.
 
-    While the latent space is entangled, we structure the generation
-    to be sampled from a set of latent variables that were constructed
-    from an equal amount of categorical labels.
+    Use Principle Component Analysis to search for high density neighborhoods in 2D.
 
     Parameters
-    ----------
-    model :             serialized object
-                        Model to be evaluated.
-    label_dim :         int
-                        Number of possible categorical labels.
-    num_gen_per_lab :   int
-                        Number of latent variables to be constructed
-                        with each label.
-    seq_len :           int
-                        Number of poses per sequence.
+    ---------
+    model :         serialized object
+                    Model to evaluate.
+    config :        dict
+                    Configuration for run.
+    labelled_data : array
+                    Shape = [n_seqs, seq_len, input_dim]
+                    Input sequences to be encoded in the latent space.
+
+    labels :        array
+                    Shape = [n_seqs, ]
+                    Labels associated to input sequences.
 
     Returns
-    ----------
-    gen_dance :         array
-                        Shape = [label_dim * num_gen_per_lab, seq_len, input_dim]
-                        Generated sequences.
-    gen_labels :        array
-                        Shape = [label_dim * num_gen_per_lab, ]
+    ---------
+    all_high :          list
+                        Coordinates for high density neighborhoods per
+                        label.
+    pca :               list
+                        Principle Component Analysis transformation
+                        per label.
+    z_center :          list
+                        Mean of latent variables sampled from high
+                        density neighborhoods, per label.
     """
-    gen_dance = []
-    for label in range(label_dim):
-        one_label_seq = []
-        for i in range(num_gen_per_lab):
-            x_create, _ = generate(
-                model=model,
-                y_given=label,
-            )
-            x_create_formatted = x_create[0].reshape((default_config.seq_len, -1, 3))
-            x_create_formatted = x_create_formatted.cpu().data.numpy()
-            one_label_seq.append(x_create_formatted)
+    z_0 = []
+    z_1 = []
+    z_2 = []
+    batch = 0
 
-        gen_dance.append(one_label_seq)
+    for i_batch, (x, y) in enumerate(zip(labelled_data, labels)):
 
-    gen_dance = np.array(gen_dance).reshape((label_dim * num_gen_per_lab, seq_len, -1))
-    gen_dance = torch.tensor(gen_dance)
+        batch += 1
 
-    gen_labels = []
-    for i in range(label_dim):
-        gen_label = i * np.ones(num_gen_per_lab, dtype=int)
-        gen_labels = np.concatenate((gen_labels, gen_label.astype(int)))
+        x, y = Variable(x), Variable(y)
+        x, y = x.to(default_config.device), y.to(default_config.device)
 
-    gen_labels = torch.tensor(gen_labels.astype(int))
+        y_label = torch.squeeze(y).item()
+        batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
+        y = batch_one_hot.to(default_config.device)
 
-    return gen_dance, gen_labels
+        z, _, _ = model.encode(x, y)
+
+        if y_label == 0:
+            z_0.append(z.cpu().data.numpy())
+        if y_label == 1:
+            z_1.append(z.cpu().data.numpy())
+        if y_label == 2:
+            z_2.append(z.cpu().data.numpy())
+
+    z_0 = np.squeeze(np.array(z_0))
+    z_1 = np.squeeze(np.array(z_1))
+    z_2 = np.squeeze(np.array(z_2))
+
+    z_0_center = np.mean(z_0, axis=0)
+    z_1_center = np.mean(z_1, axis=0)
+    z_2_center = np.mean(z_2, axis=0)
+    z_center = [z_0_center, z_1_center, z_2_center]
+
+    pca0 = PCA(n_components=2).fit(z_0 - z_0_center)
+    z_0_transf = pca0.transform(z_0 - z_0_center)
+
+    pca1 = PCA(n_components=2).fit(z_1 - z_1_center)
+    z_1_transf = pca1.transform(z_1 - z_1_center)
+
+    pca2 = PCA(n_components=2).fit(z_2 - z_2_center)
+    z_2_transf = pca2.transform(z_2 - z_2_center)
+
+    all_z = [z_0_transf, z_1_transf, z_2_transf]
+    pca = [pca0, pca1, pca2]
+
+    z_min, z_max = -8, 8
+
+    grid_xs = [
+        np.arange(z_min, z_max, config.step_size[0]),
+        np.arange(z_min, z_max, config.step_size[1]),
+        np.arange(z_min, z_max, config.step_size[2]),
+    ]
+    grid_ys = [
+        -np.arange(z_min, z_max, config.step_size[0]),
+        -np.arange(z_min, z_max, config.step_size[1]),
+        -np.arange(z_min, z_max, config.step_size[2]),
+    ]
+    n_xs = len(grid_xs[0])
+    n_ys = len(grid_ys[0])
+
+    count = np.zeros((default_config.label_dim, n_xs, n_ys))
+
+    for y in range(default_config.label_dim):
+        for i, y_coord in enumerate(grid_ys[y]):
+            for j, x_coord in enumerate(grid_xs[y]):
+                for z in all_z[y]:
+                    if x_coord < z[0] and z[0] < (x_coord + config.step_size[y]):
+                        if y_coord < z[1] and z[1] < (y_coord + config.step_size[y]):
+                            count[y, i, j] += 1
+
+    sum_of_counts = np.sum(count, axis=0)
+    density = [count[i] / sum_of_counts for i in range(default_config.label_dim)]
+
+    # create array of high density tiles that we can sample from later
+    all_high = []
+    for y in range(default_config.label_dim):
+        high = []
+        for i, y_coord in enumerate(grid_ys[y]):
+            for j, x_coord in enumerate(grid_xs[y]):
+                if (
+                    density[y][i, j] > config.density_thresh[y]
+                    and count[y, i, j] > config.dances_per_tile[y]
+                ):
+                    high.append((x_coord, y_coord))
+        all_high.append(high)
+
+    return all_high, pca, z_center
+
+
+def plot_latentspace(model, config, encoded_labeled_data, encoded_labels, path):
+    """Make and save a plot of data encoded into 3D latent space.
+
+    Also saves a plot of the explained variance of the Principle Components,
+    to ensure reliability of the 3D latent space.
+
+    Parameters
+    ---------
+    model :                 serialized object
+                            Model to evaluate.
+    config :                dict
+                            Configuration for run.
+    encoded_labelled_data : array
+                            Shape = [n_seqs, seq_len, input_dim]
+                            Input sequences to be encoded in the latent space.
+
+    encoded_labels :        array
+                            Shape = [n_seqs, ]
+                            Labels associated to input sequences.
+    path :                  string
+                            Path to directory where latent space plots are saved.
+    """
+    x = torch.tensor(encoded_labeled_data.dataset).to(config.evaluation_device)
+    y = torch.tensor(encoded_labels.dataset).to(config.evaluation_device)
+    batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
+    y = batch_one_hot.to(config.evaluation_device)
+    y_for_encoder = y.repeat((1, default_config.seq_len, 1))
+    y_for_encoder = 0.33 * torch.ones_like(y_for_encoder).to(config.evaluation_device)
+    z, _, _ = model.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+    index = np.arange(0, len(y), 1.0)
+    pca = PCA(n_components=10).fit(z.cpu().detach().numpy())
+    fig, axs = plt.subplots(1, 1, figsize=(8, 8))
+    axs.plot(pca.explained_variance_ratio_)
+    axs.set_xlabel("Number of Principal Components")
+    axs.set_ylabel("Explained variance")
+    z_transformed = pca.transform(z.cpu().data.numpy())
+
+    plt.savefig(fname=path + f"/PC_comp_{default_config.load_from_checkpoint}.png")
+
+    fig = plt.figure()
+    axs = fig.add_subplot(projection="3d")
+
+    sc = axs.scatter(
+        z_transformed[:, 0],
+        z_transformed[:, 1],
+        z_transformed[:, 2],
+        c=np.squeeze(encoded_labels.dataset),
+        alpha=0.4,
+        s=0.5,
+    )
+    lp = lambda i: plt.plot(
+        [],
+        [],
+        [],
+        color=sc.cmap(sc.norm(i)),
+        ms=np.sqrt(5),
+        mec="none",
+        label="Laban Effort {:g}".format(i),
+        ls="",
+        marker="o",
+    )[0]
+    handles = [lp(i) for i in np.unique(np.squeeze(encoded_labels.dataset))]
+
+    plt.legend(handles=handles)
+    plt.savefig(fname=path + f"/encoded_{default_config.load_from_checkpoint}.png")
+
+    # fig, axs = plt.subplots(1, 1, figsize=(8, 8))
+
+    # axs.scatter(
+    #     z_transformed[:, 0],
+    #     z_transformed[:, 1],
+    #     c=index,  # np.squeeze(labels_valid.dataset),
+    #     alpha=0.2,
+    #     s=0.1,
+    # )
+    # plt.savefig(
+    #     f"evaluate/log_files/neighb/latent_space_{default_config.load_from_checkpoint}_neighbour_effort.png"
+    # )
+
+
+def plot_dist_one_move(model, config, path, n_one_moves):
+    """Compute and plot distances between label-produced sequences.
+
+    Tests entanglement of the latent space by comparing similitude of
+    sequences produced with same latent variable, except for the label.
+
+    Parameters
+    ---------
+    model :         serialized object
+                    Model to be evaluated.
+    config :        dict
+                    Configuration for run.
+    path :          string
+                    Filepath for saving artifacts
+    n_one_moves :   int
+                    Amount of sets of sequences to compare
+    """
+    all_dist_01 = []
+    all_dist_12 = []
+    all_dist_02 = []
+    for i in range(n_one_moves):
+        all_moves, _ = generate_one_move(model, config)
+
+        dist_01 = np.linalg.norm(all_moves[0] - all_moves[1])
+        dist_02 = np.linalg.norm(all_moves[0] - all_moves[2])
+        dist_12 = np.linalg.norm(all_moves[1] - all_moves[2])
+
+        all_dist_01.append(dist_01)
+        all_dist_12.append(dist_12)
+        all_dist_02.append(dist_02)
+
+    fig, ax = plt.subplots()
+    x = np.arange(0, 1, n_one_moves)
+    ax.plot(x, all_dist_01, c="blue", label="Dist Low-Med")
+    ax.plot(x, all_dist_12, c="orange", label="Dist Med-High")
+    ax.plot(x, all_dist_02, c="green", label="Dist Low-High")
+    plt.legend()
+    plt.title(f"Distances between label-produced seq ({n_one_moves} sets)")
+    plt.savefig(path + f"/histogram_{config.load_from_checkpoint}.png")
+
+
+def generate_and_save_one_move(
+    model,
+    config,
+    path,
+):
+    """Tests latent space entanglement.
+
+    Generates label_dim dance animations using the
+    samebody motion latent variable and different labels.
+    Save the corresponding artifacts. Different movement
+    means the labels have an impact on generation
+    (disentangled latent space).
+
+    Parameters
+    ---------
+    model :     serialized object
+                Model to be evaluated.
+    config :    dict
+                Configuration for run.
+    path :      string
+                Filepath for saving artifacts
+    """
+
+    all_moves, all_labels = generate_one_move(model, config)
+
+    for i, y in enumerate(all_labels):
+        x_create_formatted = all_moves[y].reshape((config.seq_len, -1, 3))
+        name = f"one_move_{y}.gif"
+        fname = os.path.join(path, name)
+
+        fname = animatestick(
+            x_create_formatted,
+            fname=fname,
+            ghost=None,
+            dot_alpha=0.7,
+            ghost_shift=0.2,
+            condition=y,
+        )
+
+
+def generate_one_move(
+    model,
+    config,
+):
+    """Repeat one mvoe for different labels.
+
+    Generate a sequence from the same body-motion latent variable
+    with all possible different labels.
+
+    Parameters
+    ---------
+    model :         serialized object
+                    Model to be evaluated.
+    config :        dict
+                    Configuration for run.
+
+    Returns
+    ---------
+    all_moves :     array
+                    Shape = [label_dim, seq_len, input_dim/3, 3]
+                    Sequences generated.
+    all_labels :    array
+                    Shape = [label_dim,]
+                    Labels associated to each sequence.
+    """
+
+    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
+    z_create = torch.randn(size=(1, config.latent_dim)).to(config.device)
+
+    all_moves = []
+    all_labels = []
+    for y in range(config.label_dim):
+        y_onehot = onehot_encoder(y)
+
+        y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
+        y_onehot = y_onehot.to(config.device)
+
+        x_create = model.sample(z_create, y_onehot)
+        all_moves.append(x_create.cpu().data.numpy())
+        all_labels.append(y)
+
+    return all_moves, all_labels
