@@ -6,11 +6,14 @@ blind labeling and comparison of labels.)
 import default_config
 import torch
 
+eval_name = "PirouNet_dance"
+# name of evaluation
+
 ##########################################################
 # CUDA device for evaluation
 
 which_device = 0
-evaluation_device = (
+device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()
     else torch.device("cpu")
@@ -19,7 +22,7 @@ evaluation_device = (
 # Tiling hyperparameters
 
 step_size = [0.1, 0.2, 0.2]
-# heigh/width of tiles for labels 0, 1, 2
+# height/width of tiles for labels 0, 1, 2
 
 dances_per_tile = [3, 3, 1]
 # minimum dances required to be in a high density
@@ -32,8 +35,10 @@ density_thresh = [0.8, 0.75, 0.75]
 ##########################################################
 # Data dimensions
 
+input_dim = default_config.input_dim
 label_dim = default_config.label_dim
 seq_len = default_config.seq_len
+latent_dim = default_config.latent_dim
 
 ##########################################################
 # Run that is evaluated
@@ -41,20 +46,26 @@ seq_len = default_config.seq_len
 load_from_checkpoint = default_config.load_from_checkpoint
 
 ##########################################################
+# Labels to be compared
+
+human_labels = "data/labels_shuffled_neighb.csv"
+pirounet_labels = "data/shuffled_labels_variations.npy"
+
+##########################################################
 # Evaluation hyperparameters
 
-stat_sampling_size = 100
+stat_sampling_size = 1
 # how many iterations to bootstrap quantitative metrics
 
 num_gen_cond_lab = 152
 # how many sequences to conditionally generate per label for
 # evaluation by quantiative metrics
 
-num_random_artifacts = 30
+num_random_artifacts = 2
 # how many artifacts (animations) to save during random
 # generation
 
-num_cond_artifacts_per_lab = 10
+num_cond_artifacts_per_lab = 1
 # how many artifacts (animations) to save per label during
 # conditional generation
 

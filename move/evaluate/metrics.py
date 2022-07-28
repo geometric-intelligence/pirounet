@@ -346,10 +346,7 @@ def calc_accuracy(model, device, labelled_data, labels):
         y.cpu().detach().numpy(),
         y_pred.cpu().detach().numpy(),
     )
-
     numerator = conf_mat[0][0] + conf_mat[1][1] + conf_mat[2][2]
-    print(numerator)
     denom = np.concatenate(conf_mat).sum()
-    print(denom)
     accuracy = (numerator / denom) * 100
     return accuracy

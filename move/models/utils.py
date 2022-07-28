@@ -50,14 +50,38 @@ def batch_one_hot(y, label_dim):
                     Batch of one-hots.
     """
     onehot_encoder = make_onehot_encoder(label_dim)
-    batch_one_hot = torch.zeros((1, 1, label_dim))
-    for y_i in y:
-        y_i_enc = onehot_encoder(y_i)
-        y_i_enc = y_i_enc.reshape((1, 1, label_dim))
-        batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
 
-    batch_one_hot = batch_one_hot[1:, :, :]
+    if len(y) > 1:
+        batch_one_hot = torch.zeros((1, 1, label_dim))
+        for y_i in y:
+            y_i_enc = onehot_encoder(y_i)
+            y_i_enc = y_i_enc.reshape((1, 1, label_dim))
+            batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
+        batch_one_hot = batch_one_hot[1:, :, :]
+
     return batch_one_hot
+
+
+def one_hot(y, label_dim):
+    """Convert an integer labels to a tensor one-hot label.
+
+    Parameters
+    ----------
+    y:              float
+                    Categorical label.
+    label_dim:      int
+                    Amount of label categories.
+
+    Returns
+    -------
+    one_hot :       tensor
+                    Shape = [1, 1, label_dim]
+                    One-hot label.
+    """
+    onehot_encoder = make_onehot_encoder(label_dim)
+    one_hot = onehot_encoder(y)
+
+    return one_hot
 
 
 def log_standard_categorical(p):

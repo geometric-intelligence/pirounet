@@ -486,15 +486,15 @@ def reconstruct(
         x_formatted = x[0].reshape((seq_len, -1, 3))
         x_recon_formatted = x_recon[0].reshape((seq_len, -1, 3))
 
-        name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.run_name}.gif"
-
         if results_path is None:
+            name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.run_name}.gif"
             filepath = os.path.join(
                 os.path.abspath(os.getcwd()), "animations/" + config.run_name
             )
             fname = os.path.join(filepath, name)
 
         if results_path is not None:
+            name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.eval_name}.gif"
             fname = os.path.join(str(results_path), name)
 
         fname = animatestick(
@@ -506,7 +506,7 @@ def reconstruct(
         )
 
     if comic:
-        plotname = f"comic_{purpose}_{config.run_name}"
+        plotname = f"comic_{purpose}"
         comicname_recon = os.path.join(str(results_path), plotname + "_recon.png")
         comicname = os.path.join(str(results_path), plotname + ".png")
 
@@ -561,24 +561,22 @@ def generate_rand(
             y_onehot = onehot_encoder(y_given)
             y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
             y_onehot = y_onehot.to(config.device)
-            y_title = y_given
 
         else:
             y_rand = random.randint(0, config.label_dim - 1)
             y_onehot = onehot_encoder(y_rand)
             y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
             y_onehot = y_onehot.to(config.device)
-            y_title = y_rand
 
         z_create = torch.randn(size=(1, config.latent_dim))
         z_create = z_create.to(config.device)
 
         x_create_one_seq = model.sample(z_create, y_onehot)
-        x_create_one_seq_formatted = x_create_one_seq[0].reshape(
-            (default_config.seq_len, -1, 3)
-        )
+        x_create_one_seq_formatted = x_create_one_seq.reshape((config.seq_len, -1, 3))
 
         x_create = np.append(x_create, x_create_one_seq_formatted.cpu().data.numpy())
+
+    x_create = x_create.reshape((n_seq, config.seq_len, config.input_dim))
 
     return x_create
 
@@ -643,11 +641,9 @@ def generate_cond(
 
             x_create = model.sample(
                 z_within_tile,
-                utils.batch_one_hot(y, config.label_dim)
-                .reshape((1, 3))
-                .to(config.device),
+                utils.one_hot(y, config.label_dim).reshape((1, 3)).to(config.device),
             )
-            x_create_formatted = x_create[0].reshape((config.seq_len, -1, 3))
+            x_create_formatted = x_create.reshape((config.seq_len, -1, 3))
 
             one_label_seq = np.append(
                 one_label_seq, x_create_formatted.cpu().data.numpy()
@@ -729,9 +725,6 @@ def generate_and_save(
                         for every sequence, original and reconstructed.
     """
 
-    filepath = os.path.join(
-        os.path.abspath(os.getcwd()), "animations/" + config.run_name
-    )
     if y_given is not None:
         x_create = generate_rand(model, config, num_artifacts, y_given)
     if y_given is None:
@@ -747,22 +740,20 @@ def generate_and_save(
                 shuffle=False,
             )
 
-    x_create_formatted = x_create[0].reshape(
-        (-1, config.seq_len, config.input_dim / 3, 3)
-    )
+    x_create_formatted = x_create.reshape((-1, config.seq_len, 53, 3))
 
     for i in range(len(x_create_formatted)):
-        name = f"create_{i}_epoch_{epoch}_{config.run_name}.gif"
-
         if results_path is None:
+            name = f"create_{i}_epoch_{epoch}_{config.run_name}.gif"
             filepath = os.path.join(
                 os.path.abspath(os.getcwd()), "animations/" + config.run_name
             )
             fname = os.path.join(filepath, name)
 
         if results_path is not None:
+            name = f"create_{i}_epoch_{epoch}_{config.eval_name}.gif"
             fname = os.path.join(str(results_path), name)
-            plotname = f"comic_{i}_{epoch}_{config.run_name}.png"
+            plotname = f"comic_{i}_{epoch}_{config.eval_name}.png"
             comicname = os.path.join(str(results_path), plotname)
 
         fname = animatestick(
@@ -910,25 +901,32 @@ def get_high_neighb(model, config, labelled_data, labels):
     z_2 = []
     batch = 0
 
-    for i_batch, (x, y) in enumerate(zip(labelled_data, labels)):
+    for i_batch, (x_batch, y_batch) in enumerate(zip(labelled_data, labels)):
 
         batch += 1
 
-        x, y = Variable(x), Variable(y)
-        x, y = x.to(default_config.device), y.to(default_config.device)
+        x_batch, y_batch = Variable(x_batch), Variable(y_batch)
+        x_batch, y_batch = x_batch.to(default_config.device), y_batch.to(
+            default_config.device
+        )
 
-        y_label = torch.squeeze(y).item()
-        batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
-        y = batch_one_hot.to(default_config.device)
+        y_labels = torch.squeeze(y_batch)
+        for i in range(len(y_labels)):
+            y_label = y_labels[i].item()
+            one_hot = utils.one_hot(y_label, default_config.label_dim)
+            y = one_hot.to(default_config.device).reshape(
+                (1, 1, default_config.label_dim)
+            )
+            x = x_batch[i].reshape((1, config.seq_len, -1))
 
-        z, _, _ = model.encode(x, y)
+            z, _, _ = model.encode(x, y)
 
-        if y_label == 0:
-            z_0.append(z.cpu().data.numpy())
-        if y_label == 1:
-            z_1.append(z.cpu().data.numpy())
-        if y_label == 2:
-            z_2.append(z.cpu().data.numpy())
+            if y_label == 0:
+                z_0.append(z.cpu().data.numpy())
+            if y_label == 1:
+                z_1.append(z.cpu().data.numpy())
+            if y_label == 2:
+                z_2.append(z.cpu().data.numpy())
 
     z_0 = np.squeeze(np.array(z_0))
     z_1 = np.squeeze(np.array(z_1))
@@ -1017,12 +1015,12 @@ def plot_latentspace(model, config, encoded_labeled_data, encoded_labels, path):
     path :                  string
                             Path to directory where latent space plots are saved.
     """
-    x = torch.tensor(encoded_labeled_data.dataset).to(config.evaluation_device)
-    y = torch.tensor(encoded_labels.dataset).to(config.evaluation_device)
+    x = torch.tensor(encoded_labeled_data.dataset).to(config.device)
+    y = torch.tensor(encoded_labels.dataset).to(config.device)
     batch_one_hot = utils.batch_one_hot(y, default_config.label_dim)
-    y = batch_one_hot.to(config.evaluation_device)
+    y = batch_one_hot.to(config.device)
     y_for_encoder = y.repeat((1, default_config.seq_len, 1))
-    y_for_encoder = 0.33 * torch.ones_like(y_for_encoder).to(config.evaluation_device)
+    y_for_encoder = 0.33 * torch.ones_like(y_for_encoder).to(config.device)
     z, _, _ = model.encoder(torch.cat([x, y_for_encoder], dim=2).float())
     index = np.arange(0, len(y), 1.0)
     pca = PCA(n_components=10).fit(z.cpu().detach().numpy())
@@ -1088,9 +1086,9 @@ def plot_dist_one_move(model, config, path, n_one_moves):
     config :        dict
                     Configuration for run.
     path :          string
-                    Filepath for saving artifacts
+                    Filepath for saving artifacts.
     n_one_moves :   int
-                    Amount of sets of sequences to compare
+                    Amount of sets of sequences to compare.
     """
     all_dist_01 = []
     all_dist_12 = []
@@ -1107,7 +1105,9 @@ def plot_dist_one_move(model, config, path, n_one_moves):
         all_dist_02.append(dist_02)
 
     fig, ax = plt.subplots()
-    x = np.arange(0, 1, n_one_moves)
+    x = np.arange(0, n_one_moves, 1)
+    print(np.array(x).shape)
+    print(np.array(all_dist_01).shape)
     ax.plot(x, all_dist_01, c="blue", label="Dist Low-Med")
     ax.plot(x, all_dist_12, c="orange", label="Dist Med-High")
     ax.plot(x, all_dist_02, c="green", label="Dist Low-High")
@@ -1182,13 +1182,12 @@ def generate_one_move(
                     Labels associated to each sequence.
     """
 
-    onehot_encoder = utils.make_onehot_encoder(config.label_dim)
     z_create = torch.randn(size=(1, config.latent_dim)).to(config.device)
 
     all_moves = []
     all_labels = []
     for y in range(config.label_dim):
-        y_onehot = onehot_encoder(y)
+        y_onehot = utils.one_hot(y, config.label_dim)
 
         y_onehot = y_onehot.reshape((1, y_onehot.shape[0]))
         y_onehot = y_onehot.to(config.device)

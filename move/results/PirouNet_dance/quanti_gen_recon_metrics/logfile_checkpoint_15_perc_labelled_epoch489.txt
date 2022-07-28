@@ -1,0 +1,19 @@
+========== Metrics for checkpoint checkpoint_15_perc_labelled_epoch489 ==========
+Classif Accuracy (Valid): 59.57446808510638
+Classif Accuracy (Test): 61.965811965811966
+------------------------------
+Stats
+FID: 69.68141123826695 +/- 0.0
+Diversity: 21.240087509155273 +/- 0.0
+Multimodality: 9.556432723999023 +/- 0.0
+------------------------------
+Gen Diversity: 15.427311897277832 +/- 0.0
+Gen Multimodality: 10.663507461547852 +/- 0.0
+------------------------------
+AJD valid (recon loss): 0.028028503206328426
+AJD train (recon loss): 0.015443140153347534
+AJD test (recon loss): 0.016630474542883814------------------------------
+Row in table:
+P\%   & 5957.4\%   & 0\%  & 15.399999618530273  & 10.699999809265137   & 1.7\% & D\% & --
+------------------------------
+Total amount of sequences (train, valid, test): (7379, 40, 159), (470, 40, 159), (234, 40, 159)
