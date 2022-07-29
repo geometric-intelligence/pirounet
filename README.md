@@ -5,7 +5,7 @@ PirouNet is a semi-supervised conditional recurrent variational autoencoder. Thi
 
 ![Overview of PirouNet's LSTM+VAE architecture.](/images/arch_overview.jpeg)
 
-## Bibtex ##
+## 🌎 Bibtex ##
 If this code is useful to your research, please cite:
 
 ```
@@ -65,7 +65,7 @@ python main.py
 ```
 For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb sweep command.
 
-### 📓 Load a saved model.
+### 📕 Load a saved model.
 There are basic types of models to load:
 * *PirouNet_{watch}.*
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
@@ -98,7 +98,7 @@ This will produce a subfolder in move/results containing all the qualitative and
 ** Reconstructed dance sequence: **
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
-## Authors ##
+## 💃 Authors ##
 [Mathilde Papillon](https://sites.google.com/view/mathildepapillon)
 
 [Mariel Pettee](https://mariel-pettee.github.io/)
