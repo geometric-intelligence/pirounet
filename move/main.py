@@ -24,8 +24,8 @@ logging.info(f"Using PyTorch version: {torch. __version__}")
 warnings.filterwarnings("ignore")
 
 wandb.init(
-    project="move_labelled_nina",
-    entity="bioshape-lab",
+    project=default_config.project,
+    entity=default_config.entity,
     config={
         "run_name": default_config.run_name,
         "load_from_checkpoint": default_config.load_from_checkpoint,

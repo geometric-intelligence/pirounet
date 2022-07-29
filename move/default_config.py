@@ -10,6 +10,9 @@ import torch
 run_name = "train_PirouNet_dance"
 load_from_checkpoint = "checkpoint_15_perc_labelled_epoch489"
 
+# Wandb
+project = "move_labelled_nina"
+entity = "bioshape-lab"
 
 # Hardware
 which_device = "0"  # CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
@@ -33,14 +36,14 @@ amount_of_labels = 1
 effort = "time"
 fraction_label = 0.789
 
-# LSTM VAE
+# LSTM VAE architecture
 kl_weight = 1
 neg_slope = 0
 n_layers = 5
 h_dim = 100
 latent_dim = 256
 
-# Classifier
+# Classifier architecture
 h_dim_classif = 100
 neg_slope_classif = 0
 n_layers_classif = 2
