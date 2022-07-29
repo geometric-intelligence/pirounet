@@ -71,7 +71,8 @@ def run_train_dgm(
 
     if config.load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()), "saved/" + config.load_from_checkpoint + ".pt"
+            os.path.abspath(os.getcwd()),
+            "saved_models/" + config.load_from_checkpoint + ".pt",
         )
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -165,16 +166,6 @@ def run_train_dgm(
                     f"        Recon unlabeled-loss {unlabloss / (batches_seen)}"
                 )
 
-        generate_f.reconstruct(
-            model=model,
-            config=default_config,
-            epoch=epoch + latest_epoch,
-            input_data=labelled_data_train,
-            input_label=labels_train,
-            purpose="train",
-            log_to_wandb=True,
-        )
-
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
         logging.info(
@@ -263,16 +254,6 @@ def run_train_dgm(
                         {total_loss_valid / batches_v_seen}, accuracy {accuracy_valid / batches_v_seen}"
                     )
 
-        generate_f.reconstruct(
-            model=model,
-            config=default_config,
-            epoch=epoch + latest_epoch,
-            input_data=labelled_data_valid,
-            input_label=labels_valid,
-            purpose="valid",
-            log_to_wandb=True,
-        )
-
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
         logging.info(
@@ -296,22 +277,22 @@ def run_train_dgm(
             step=epoch,
         )
 
-        generate_f.generate_and_save(
-            model=model,
-            config=eval_config,
-            epoch=epoch + latest_epoch,
-            num_artifacts=1,
-            type="cond",
-            encoded_data=labelled_data_valid,
-            encoded_labels=labels_valid,
-            log_to_wandb=True,
-        )
+        # generate_f.generate_and_save(
+        #     model=model,
+        #     config=config,
+        #     epoch=epoch + latest_epoch,
+        #     num_artifacts=1,
+        #     type="cond",
+        #     encoded_data=labelled_data_valid,
+        #     encoded_labels=labels_valid,
+        #     log_to_wandb=True,
+        # )
 
         logging.info("Save a checkpoint.")
 
         checkpoint_filepath = os.path.join(
             os.path.abspath(os.getcwd()),
-            "saved/checkpoint_{}_epoch{}.pt".format(
+            "saved_models/my_models/checkpoint_{}_epoch{}.pt".format(
                 config.run_name, epoch + latest_epoch
             ),
         )

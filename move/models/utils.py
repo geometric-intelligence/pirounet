@@ -45,21 +45,20 @@ def batch_one_hot(y, label_dim):
 
     Returns
     -------
-    batch_one_hot : tensor
+    batch_one_hot_ : tensor
                     Shape = [batch_size, 1, label_dim]
                     Batch of one-hots.
     """
     onehot_encoder = make_onehot_encoder(label_dim)
 
-    if len(y) > 1:
-        batch_one_hot = torch.zeros((1, 1, label_dim))
-        for y_i in y:
-            y_i_enc = onehot_encoder(y_i)
-            y_i_enc = y_i_enc.reshape((1, 1, label_dim))
-            batch_one_hot = torch.cat((batch_one_hot, y_i_enc), dim=0)
-        batch_one_hot = batch_one_hot[1:, :, :]
+    batch_one_hot_ = torch.zeros((1, 1, label_dim))
+    for y_i in y:
+        y_i_enc = onehot_encoder(y_i)
+        y_i_enc = y_i_enc.reshape((1, 1, label_dim))
+        batch_one_hot_ = torch.cat((batch_one_hot_, y_i_enc), dim=0)
+    batch_one_hot_ = batch_one_hot_[1:, :, :]
 
-    return batch_one_hot
+    return batch_one_hot_
 
 
 def one_hot(y, label_dim):

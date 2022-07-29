@@ -1,4 +1,4 @@
-"""Default configuration parameters for training seperate classifier/
+"""Default configuration parameters for seperate classifier.
 
 The Classifier maps:
 
@@ -9,7 +9,6 @@ The Classifier maps:
 """
 import torch
 
-run_name = "classifier_metrics_test"  # "hdim100_hclass100_batch40_lr3e4"
 load_from_checkpoint = "checkpoint_classifier_fid_epoch206"
 
 # Hardware
