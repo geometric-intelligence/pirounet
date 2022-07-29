@@ -31,7 +31,7 @@ If this code is useful to your research, please cite:
 
 ### 🏡 Installation
 
-This codes runs on Python 3.8. We recommend using Anaconda for easy installation. Create the necessary conda environment:
+This codes runs on Python 3.8. We recommend using Anaconda for easy installation. To create the necessary conda environment, run:
 ```
 cd move
 conda env create -f environment.yml
@@ -59,17 +59,16 @@ If specified, “load_from_checkpoint” indicates the saved model to load. Leav
 Other hyperparameters are organized by category: hardware (choice of CUDA device), training, input data, LSTM VAE architecture, and classifier architecture.
 
 #### 3. Train!
-For a single run,
+For a single run, use the command:
 ```
 python main.py
 ```
-For a hyperparameter sweep, simply follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb agent command.
+For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb sweep command.
 
 ### 📓 Load a saved model.
 
 #### PirouNet_{watch}
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
-
 
 #### PirouNet_{dance}
 Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
@@ -78,9 +77,9 @@ Copy contents of saved_models/pirounet_dance_config.py file into default_config.
 In default_config.py, specify “load_from_checkpoint” as the name and epoch corresponding your new model:“checkpoint_{run_name}_epoch{epoch}”.
 Make sure the rest of the hyperparameters match those you used during training.
 
-Once this is done, there are two options
-Continue training using this saved model as a starting point. See “Training” section.
-Evaluate this saved model.
+Once this is done, there are two options:
+1. Continue training using this saved model as a starting point. See “Training” section.
+2. Evaluate this saved model.
 
 #### 🕺 Evaluation
 
