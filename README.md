@@ -92,10 +92,10 @@ python main_eval.py
 ```
 This will produce a subfolder in move/results containing all the qualitative and quantitative metrics included in our paper, as well as extra plots of the latent space and its entanglement. Among the qualitative generation metrics, two examples are provided below.
 
-** Conditionally created dance sequences: **
+**Conditionally created dance sequences:**
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
 
-** Reconstructed dance sequence: **
+**Reconstructed dance sequence:**
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
 ## 💃 Authors ##
