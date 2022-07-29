@@ -96,7 +96,7 @@ Conditionally created dance sequences:
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
 
 Reconstructed dance sequence:
-![PirouNet reconstructs input dance.](/images/reconstruction.gif)
+![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
 ## Authors
 [Mathilde Papillon](https://sites.google.com/view/mathildepapillon)
