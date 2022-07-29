@@ -1,11 +1,11 @@
 Official PyTorch implementation of the paper “PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders”
-#### [[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)]
+***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)]***
 
 PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately prior to training. We propose this [dance labeling web application](https://github.com/mathildepapillon/move_label) which can be customized to the user's labeling needs.
 
 ![Overview of PirouNet's LSTM+VAE architecture.](/images/arch_overview.jpeg)
 
-### Bibtex
+## Bibtex ##
 If this code is useful to your research, please cite:
 
 ```
@@ -29,7 +29,7 @@ If this code is useful to your research, please cite:
 ```
 
 
-### 🏡 Installation
+## 🏡 Installation ##
 
 This codes runs on Python 3.8. We recommend using Anaconda for easy installation. To create the necessary conda environment, run:
 ```
@@ -38,7 +38,7 @@ conda env create -f environment.yml
 conda activate choreo
 ```
 
-### 🚀 Training
+## 🚀 Training ##
 
 To train a new model (see below for loading a saved model), follow the steps below.
 
@@ -66,14 +66,14 @@ python main.py
 For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb sweep command.
 
 ### 📓 Load a saved model.
-
-#### PirouNet_{watch}
+There are basic types of models to load:
+* **PirouNet_{watch}**
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
 
-#### PirouNet_{dance}
+* **PirouNet_{dance}**
 Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
 
-#### Your new model
+* **Your new model**
 In default_config.py, specify “load_from_checkpoint” as the name and epoch corresponding your new model:“checkpoint_{run_name}_epoch{epoch}”.
 Make sure the rest of the hyperparameters match those you used during training.
 
@@ -81,7 +81,7 @@ Once this is done, there are two options:
 1. Continue training using this saved model as a starting point. See “Training” section.
 2. Evaluate this saved model.
 
-#### 🕺 Evaluation
+## 🕺 Evaluation ##
 
 1. Follow the “Load a saved model” instructions to configure default_config.py.
 2. Specify the parameters of the evaluation in eval_config.py. Note that “plot_recognition_accuracy” should only be set to True once a human labeler has blindly labeled PirouNet-generated dance sequences (using generate_for_blind_labeling and the web-labeling app), and exported the csv of labels to the move/move/data directory.
@@ -92,13 +92,13 @@ python main_eval.py
 ```
 This will produce a subfolder in move/results containing all the qualitative and quantitative metrics included in our paper, as well as extra plots of the latent space and its entanglement. Among the qualitative generation metrics, two examples are provided below.
 
-Conditionally created dance sequences:
+** Conditionally created dance sequences: **
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
 
-Reconstructed dance sequence:
+** Reconstructed dance sequence: **
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
-## Authors
+## Authors ##
 [Mathilde Papillon](https://sites.google.com/view/mathildepapillon)
 
 [Mariel Pettee](https://mariel-pettee.github.io/)
