@@ -67,13 +67,13 @@ For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Q
 
 ### 📓 Load a saved model.
 There are basic types of models to load:
-* **PirouNet_{watch}**
+* *PirouNet_{watch}*
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
 
-* **PirouNet_{dance}**
+* *PirouNet_{dance}*
 Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
 
-* **Your new model**
+* *Your new model*
 In default_config.py, specify “load_from_checkpoint” as the name and epoch corresponding your new model:“checkpoint_{run_name}_epoch{epoch}”.
 Make sure the rest of the hyperparameters match those you used during training.
 
