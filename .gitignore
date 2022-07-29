@@ -11,10 +11,9 @@ move/animations
 move/aist_run
 move/slurm
 move/saved_old
-move/saved
-move/*.out
-*.out
-tests/
+move/saved_models/*.pt
+move/saved_models/classifier/*.pt
+test_trash/
 results/old
 # Byte-compiled / optimized / DLL files
 __pycache__/

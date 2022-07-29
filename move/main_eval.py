@@ -51,7 +51,7 @@ fid_classifier_model = classifiers.LinearClassifier(
 
 classif_checkpoint_filepath = os.path.join(
     os.path.abspath(os.getcwd()),
-    "saved/classifier/" + classifier_config.load_from_checkpoint + ".pt",
+    "saved_models/classifier/" + classifier_config.load_from_checkpoint + ".pt",
 )
 classif_checkpoint = torch.load(classif_checkpoint_filepath)
 fid_classifier_model.load_state_dict(classif_checkpoint["model_state_dict"])
@@ -73,7 +73,8 @@ model = dgm_lstm_vae.DeepGenerativeModel(
 ).to(eval_config.device)
 
 dgm_checkpoint_filepath = os.path.join(
-    os.path.abspath(os.getcwd()), "saved/" + default_config.load_from_checkpoint + ".pt"
+    os.path.abspath(os.getcwd()),
+    "saved_models/" + default_config.load_from_checkpoint + ".pt",
 )
 
 checkpoint = torch.load(dgm_checkpoint_filepath)
@@ -326,7 +327,6 @@ if eval_config.quanti_gen_recon_metrics:
     logging.info("       - accuracy: done.")
     ####################################################
     # Log everything
-    row_in_table = f"P\%   & {round(acc_valid*100,1)}\%   & {round(0*100,1)}\%  & {round(gen_diversity,1)}  & {round(gen_multimodality,1)}   & {round(ajd_test*100,1)}\% & D\% & -- "
     evaluate_file = (
         filepath_to_results
         + f"/quanti_gen_recon_metrics/logfile_{eval_config.load_from_checkpoint}.txt"
@@ -355,10 +355,4 @@ if eval_config.quanti_gen_recon_metrics:
         f.write(f"AJD train (recon loss): {ajd_train}\n")
         f.write(f"AJD test (recon loss): {ajd_test}")
         f.write(f"------------------------------ \n")
-        f.write(f"Row in table: \n")
-        f.write(f"{row_in_table}\n")
-        f.write(f"------------------------------ \n")
-        f.write(
-            f"Total amount of sequences (train, valid, test): {labelled_data_train.dataset.shape}, {labelled_data_valid.dataset.shape}, {labelled_data_test.dataset.shape}"
-        )
     logging.info("       - txt log file: done.")

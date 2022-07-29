@@ -1,5 +1,7 @@
 """Architectures of DGM LSTM VAE."""
+from email.policy import default
 
+import default_config
 import models.losses as losses
 import models.utils as utils
 import torch.nn
@@ -135,7 +137,10 @@ class DeepGenerativeModel(torch.nn.Module):
         """
 
         y_for_encoder = y.repeat((1, self.seq_len, 1))
-        z, _, _ = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+        z, z_mu, z_log_var = self.encoder(torch.cat([x, y_for_encoder], dim=2).float())
+
+        self.kl_divergence = losses.kld((z_mu, z_log_var))
+        self.kl_weight = default_config.kl_weight
 
         y_for_decoder = y.reshape((y.shape[0], y.shape[-1]))
         x_mu = self.decoder(torch.cat([z, y_for_decoder], dim=1).float())
@@ -334,6 +339,6 @@ class SVI(torch.nn.Module):
         assert L_weighted.shape == (batch_size,)
 
         # Equivalent to -U(x)
-        U_elbo_per_batch = L_elbo_per_batch - H_weighted
+        U_elbo_per_batch = L_weighted - H_weighted
         U_elbo = torch.mean(U_elbo_per_batch)
         return U_elbo
