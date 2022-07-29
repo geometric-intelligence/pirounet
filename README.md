@@ -1,3 +1,5 @@
+# PirouNet #
+
 Official PyTorch implementation of the paper “PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders”
 ***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)]***
 
