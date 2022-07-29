@@ -1,71 +1,11 @@
 Official PyTorch implementation of the paper “PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders”
-### [Pre-print](https://arxiv.org/pdf/2207.12126.pdf)
+#### [[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)]
 
 PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately using the associated [dance labeling web application](https://github.com/mathildepapillon/move_label).
 
-#### 🏡 Installation
+![Overview of PirouNet's LSTM+VAE architecture.](/images/arch_overview.jpeg)
 
-This codes runs on Python 3.8. We recommend using Anaconda for easy installation. Create the necessary conda environment:
-```
-cd move
-conda env create -f environment.yml
-conda activate choreo
-```
-
-#### 🚀 Training
-
-To train a new model (see below for loading a saved model), follow the steps below.
-
-### 1. Set up [Wandb](https://wandb.ai/home) logging.
-
-Wandb is a powerful tool for logging performance during training, as well as animation artifacts. To use it, simply [create an account](https://wandb.auth0.com/login?state=hKFo2SBNb0U4SjE0ZWN3OGZtbTlJWTRpYkNmU0dUTWZKSDk3Y6FupWxvZ2luo3RpZNkgODhWd254WW1zdG51RTREd0pWOGVKWVVzZkVOZ0dydGqjY2lk2SBWU001N1VDd1Q5d2JHU3hLdEVER1FISUtBQkhwcHpJdw&client=VSM57UCwT9wbGSxKtEDGQHIKABHppzIw&protocol=oauth2&nonce=dEZVS3dvYXFVSjdjZFFGdw%3D%3D&redirect_uri=https%3A%2F%2Fapi.wandb.ai%2Foidc%2Fcallback&response_mode=form_post&response_type=id_token&scope=openid%20profile%20email&signup=true), then run
-```
-wandb login
-```
-to sign into your account.
-
-### 2. Specify hyperparameters in default_config.py.
-
-For wandb: Specify your wandb account under “entity” and title of the project under “project_name”. “run_name” will title this specific run within the project.
-
-If specified, “load_from_checkpoint” indicates the saved model to load. Leave as “None” for training a new model.
-
-Other hyperparameters are organized by category: hardware (choice of CUDA device), training, input data, LSTM VAE architecture, and classifier architecture.
-
-### 3. Train!
-For a single run,
-```
-python main.py
-```
-For a hyperparameter sweep, simply follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb agent command.
-
-#### 📓 Load a saved model.
-
-### PirouNet_{watch}
-Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
-
-
-### PirouNet_{dance}
-Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
-
-### Your new model
-In default_config.py, specify “load_from_checkpoint” as the name and epoch corresponding your new model:“checkpoint_{run_name}_epoch{epoch}”.
-Make sure the rest of the hyperparameters match those you used during training.
-
-Once this is done, there are two options
-Continue training using this saved model as a starting point. See “Training” section.
-Evaluate this saved model.
-
-### 🕺 Evaluation
-
-1. Follow the “Load a saved model” instructions to configure default_config.py.
-2. Specify the parameters of the evaluation in eval_config.py. Note that “plot_recognition_accuracy” should only be set to True once a human labeler has blindly labeled PirouNet-generated dance sequences (using generate_for_blind_labeling and the web-labeling app), and exported the csv of labels to the move/move/data directory.
-3. Run
-```
-python main_eval.py
-```
-
-#### Bibtex
+### Bibtex
 If this code is useful to your research, please cite:
 
 ```
@@ -88,6 +28,72 @@ If this code is useful to your research, please cite:
 }
 ```
 
+
+### 🏡 Installation
+
+This codes runs on Python 3.8. We recommend using Anaconda for easy installation. Create the necessary conda environment:
+```
+cd move
+conda env create -f environment.yml
+conda activate choreo
+```
+
+### 🚀 Training
+
+To train a new model (see below for loading a saved model), follow the steps below.
+
+#### 1. Set up [Wandb](https://wandb.ai/home) logging.
+
+Wandb is a powerful tool for logging performance during training, as well as animation artifacts. To use it, simply [create an account](https://wandb.auth0.com/login?state=hKFo2SBNb0U4SjE0ZWN3OGZtbTlJWTRpYkNmU0dUTWZKSDk3Y6FupWxvZ2luo3RpZNkgODhWd254WW1zdG51RTREd0pWOGVKWVVzZkVOZ0dydGqjY2lk2SBWU001N1VDd1Q5d2JHU3hLdEVER1FISUtBQkhwcHpJdw&client=VSM57UCwT9wbGSxKtEDGQHIKABHppzIw&protocol=oauth2&nonce=dEZVS3dvYXFVSjdjZFFGdw%3D%3D&redirect_uri=https%3A%2F%2Fapi.wandb.ai%2Foidc%2Fcallback&response_mode=form_post&response_type=id_token&scope=openid%20profile%20email&signup=true), then run:
+```
+wandb login
+```
+to sign into your account.
+
+#### 2. Specify hyperparameters in default_config.py.
+
+For wandb: Specify your wandb account under “entity” and title of the project under “project_name”. “run_name” will title this specific run within the project.
+
+If specified, “load_from_checkpoint” indicates the saved model to load. Leave as “None” for training a new model.
+
+Other hyperparameters are organized by category: hardware (choice of CUDA device), training, input data, LSTM VAE architecture, and classifier architecture.
+
+#### 3. Train!
+For a single run,
+```
+python main.py
+```
+For a hyperparameter sweep, simply follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb agent command.
+
+### 📓 Load a saved model.
+
+#### PirouNet_{watch}
+Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
+
+
+#### PirouNet_{dance}
+Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
+
+#### Your new model
+In default_config.py, specify “load_from_checkpoint” as the name and epoch corresponding your new model:“checkpoint_{run_name}_epoch{epoch}”.
+Make sure the rest of the hyperparameters match those you used during training.
+
+Once this is done, there are two options
+Continue training using this saved model as a starting point. See “Training” section.
+Evaluate this saved model.
+
+#### 🕺 Evaluation
+
+1. Follow the “Load a saved model” instructions to configure default_config.py.
+2. Specify the parameters of the evaluation in eval_config.py. Note that “plot_recognition_accuracy” should only be set to True once a human labeler has blindly labeled PirouNet-generated dance sequences (using generate_for_blind_labeling and the web-labeling app), and exported the csv of labels to the move/move/data directory.
+3. Unzip the pre-saved classifier model in saved_models/classifier.
+4. Run the command:
+```
+python main_eval.py
+```
+
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
+![PirouNet reconstructs input dance.](/images/reconstruction.gif)
 
 ## Authors
 [Mathilde Papillon](https://sites.google.com/view/
