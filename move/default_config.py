@@ -15,7 +15,7 @@ project = "move_labelled_nina"
 entity = "bioshape-lab"
 
 # Hardware
-which_device = "0"  # CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
+which_device = "1"  # CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
 device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()

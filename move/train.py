@@ -66,8 +66,9 @@ def run_train_dgm(
     """
 
     elbo = dgm_lstm_vae.SVI(model)
-
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
+
+    graph_constraint = dgm_lstm_vae.graph_constraint(model)
 
     if config.load_from_checkpoint is not None:
         old_checkpoint_filepath = os.path.join(
@@ -124,14 +125,14 @@ def run_train_dgm(
             L = -elbo(x, y)
             labloss += L
             U = -elbo(u)
-            unlabloss += U
 
             logits = model.classify(x)
-
             classification_loss = torch.sum(y * torch.log(logits + 1e-8), dim=1).mean()
             class_loss += classification_loss
 
-            J_alpha = L - alpha * classification_loss + U
+            # graph_loss = graph_constraint(u)
+
+            J_alpha = L - alpha * classification_loss + U  # + config.beta * graph_loss
 
             J_alpha.backward()
 

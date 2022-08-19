@@ -12,7 +12,7 @@ import torch
 load_from_checkpoint = "checkpoint_classifier_fid_epoch206"
 
 # Hardware
-which_device = "0"
+which_device = "1"
 device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()
