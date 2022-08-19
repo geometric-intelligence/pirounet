@@ -232,6 +232,59 @@ class DeepGenerativeModel(torch.nn.Module):
         return x
 
 
+class graph_constraint(torch.nn.Module):
+    """
+    Constraints on graph representation, imposed
+    by the physical invariance of the size of a
+    human body from pose to pose.
+
+    Parameters
+    ----------
+    model : serialized object
+            Semi-supervised model to be evaluated.
+    """
+
+    def __init__(self, model):
+        super(graph_constraint, self).__init__()
+        self.model = model
+
+    def forward(self, x, magni_func=losses.graph_magnitude):
+        """
+        Performs forward pass of the SVI calculation.
+
+        Parameters
+        ----------
+        x :             array
+                        Shape = [batch_size, seq_len, input_dim]
+                        Input batch of sequences.
+        magni_func :    function
+                        Function calculating magnitude of diff
+                        between input and reconstruction.
+
+        Returns
+        -------
+        graph_loss :    float
+                        Magnitude of difference.
+        """
+
+        batch_size = x.shape[0]
+        ys = utils.enumerate_discrete(x, self.model.label_dim)
+        ys = ys.reshape((ys.shape[0], 1, ys.shape[-1]))
+        xs = x.repeat(self.model.label_dim, 1, 1)
+
+        assert xs.shape == (
+            batch_size * self.model.label_dim,
+            x.shape[1],
+            x.shape[2],
+        )
+
+        x_recon = self.model(xs, ys)
+
+        graph_loss = magni_func(x, x_recon)
+
+        return graph_loss
+
+
 class SVI(torch.nn.Module):
     """
     Stochastic variational inference (SVI)
@@ -341,4 +394,8 @@ class SVI(torch.nn.Module):
         # Equivalent to -U(x)
         U_elbo_per_batch = L_weighted - H_weighted
         U_elbo = torch.mean(U_elbo_per_batch)
+
+        # graph constraint on unlabelled data
+        # graph_loss = losses.graph_magnitude(xs, reconstruction)
+
         return U_elbo

@@ -11,9 +11,7 @@ move/animations
 move/aist_run
 move/slurm
 move/saved_old
-move/saved_models/*.pt
-move/saved_models/my_models/*
-move/saved_models/classifier/*.pt
+move/saved_models
 test_trash/
 results/old
 # Byte-compiled / optimized / DLL files
