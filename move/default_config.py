@@ -6,9 +6,9 @@ import torch
 run_name = "PirouNet_dance_more_comics"
 load_from_checkpoint = "checkpoint_pirounet_dance"
 
-# # Wandb
-# project = "your_wandb_project"
-# entity = "your_wandb_username"
+# Wandb
+project = "pirounet"
+entity = "bioshape-lab"
 
 # Hardware
 which_device = "1"
@@ -30,7 +30,9 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = "time"
-fraction_label = 0.789
+# fraction_label = 0.789
+frac_train = 0.8  # train percentage versus valid+test
+train_lab_frac = 0.19  # size of train of labelled data compared to total train size
 
 # LSTM VAE architecture
 kl_weight = 1

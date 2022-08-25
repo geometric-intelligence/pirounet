@@ -223,7 +223,7 @@ def run_train_dgm(
             y = batch_one_hot.to(config.device)
 
             L = -elbo(x, y)
-            U = -elbo(x)
+            U = -elbo(x)  # MAKE IT into unlabelled data u (enumerate)
 
             logits_v = model.classify(x)
             classification_loss_v = torch.sum(

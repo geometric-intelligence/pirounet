@@ -8,6 +8,7 @@ from glob import glob
 import default_config
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 from torch.utils.data import ConcatDataset
 
 
@@ -385,6 +386,28 @@ def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
     return seq_data
 
 
+def array_from_sparse(indices, data, target_shape):
+    """Create an array of given shape, with values at specific indices.
+    The rest of the array will be filled with -1.
+    Parameters
+    ----------
+    indices : iterable(tuple(int))
+        Index of each element which will be assigned a specific value.
+    data : iterable(scalar)
+        Value associated at each index.
+    target_shape : tuple(int)
+        Shape of the output array.
+    Returns
+    -------
+    a : array, shape=target_shape
+        Array of zeros with specified values assigned to specified indices.
+    """
+    out = -1 * np.ones(target_shape)
+    for ind, val in zip(indices, data):
+        out[int(ind)] = val
+    return out
+
+
 def get_model_data(config):
     """Transforms raw data for training/validating/testing a model.
 
@@ -438,15 +461,15 @@ def get_model_data(config):
     ds_all, ds_all_centered = load_raw()
     pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
 
-    labels_1_to_4, labels_ind = load_labels(effort=config.effort)
-    labels = labels_1_to_4 - 1.0
-    labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
+    labels_1_to_4_vals, labels_ind = load_labels(effort=config.effort)
+    labels_vals = labels_1_to_4_vals - 1.0
+    labels_vals = labels_vals.reshape((labels_vals.shape[0], 1, labels_vals.shape[-1]))
 
     # # sequify both sets of data
     # seq_data_lab = sequify_lab_data(
     #     labels_ind, pose_data, config.seq_len, augmentation_factor=1
     # )
-    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
+    seq_data = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
     # augment here now
     augmentation_factor = 1
@@ -455,78 +478,121 @@ def get_model_data(config):
             "Preprocessing: data augmentation by rotations, "
             f"factor = {augmentation_factor}"
         )
-        seq_data_unlab = augment_by_rotations(seq_data_unlab, augmentation_factor)
-        logging.info(
-            f">> Unlabelled augmented seq_data has shape: {seq_data_unlab.shape}"
-        )
+        seq_data = augment_by_rotations(seq_data, augmentation_factor)
+        logging.info(f">> Unlabelled augmented seq_data has shape: {seq_data.shape}")
         aug_labels_ind = []
         for l in labels_ind:
             for i in range(augmentation_factor):
                 aug_labels_ind.append(augmentation_factor * l + i)
         labels_ind = aug_labels_ind
 
-    # divide labelled data into training, validating, and testing sets
-    one_perc_lab = int(round(len(labels_ind) * 0.01))
-    five_perc_lab = int(one_perc_lab * 5)
-    new_stopping_point = (
-        int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
-    )
+    # create labels array corresponding directly to all sequences
+    labels = array_from_sparse(labels_ind, labels_vals, (seq_data.shape[0],))
 
-    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
-    labelled_data_test_ds = seq_data_lab[
-        ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
-    ]
+    # # calculate chunk of unlab data to remove for random sampling purposes
+    # n_remove = len(seq_data_unlab) - len(labels_vals) / config.valid_frac_labels
+    # seq_data_start = seq_data_unlab[: - n_remove, :, :]
+    # labels_start = labels[: - n_remove]
 
-    # divide labels into training, validating, and testing sets
-    labels_valid_ds = labels[:(five_perc_lab), :, :]
-    labels_train_ds = labels[(five_perc_lab):new_stopping_point, :, :]
-    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+    # divide into validation / train / test
+    seq_data_train, seq_data_val_test, labels_train, labels_val_test = train_test_split(
+        seq_data, labels, test_size=(1 - config.frac_train), random_state=42
+    )  # test_size is percentage given to test+valid
 
-    # divide unlabelled data into training and testing sets
-    five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
-    ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
-    unlabelled_data_train_ds = seq_data_unlab[
-        : (ninety_perc_unlab + five_perc_unlab), :, :
-    ]
-    unlabelled_data_test_ds = seq_data_unlab[
-        (ninety_perc_unlab + five_perc_unlab) :, :, :
-    ]
+    seq_data_val, seq_data_test, labels_val, labels_test = train_test_split(
+        seq_data_val_test, labels_val_test, test_size=0.25, random_state=42
+    )  # size of test set compared to validation+test set
 
-    logging.info(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
-    logging.info(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
-    logging.info(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
-    logging.info(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
-    logging.info(f">> Unlabelled Test ds has shape {unlabelled_data_test_ds.shape}")
-    logging.info(f">> Labels train ds has shape {labels_train_ds.shape}")
-    logging.info(f">> Labels valid ds has shape {labels_valid_ds.shape}")
-    logging.info(f">> Labels test ds has shape {labels_test_ds.shape}")
+    # modify fraction of labelled to unlab train
+    n_labels_in_train = np.sum([lab != -1 for lab in labels_train])
+    # current_frac = n_labels_in_train / len(labels_train)
+    n_labels_target = len(labels_train) * config.train_lab_frac
+    n_labels_to_remove = n_labels_in_train - n_labels_target
+
+    if n_labels_to_remove < 0:
+        raise ValueError("va te faire foutre.")
+
+    for i_lab, lab in enumerate(labels_train):
+        if lab != -1:
+            labels_train[i_lab] = -1
+            n_labels_to_remove -= 1
+            if n_labels_to_remove == 0:
+                break
+
+    seq_data_train_labelled = seq_data_train[labels_train != -1]
+    labels_train = labels_train[labels_train != -1]
+    seq_data_val_labelled = seq_data_val[labels_val != -1]
+    labels_val = labels_val[labels_val != -1]
+    seq_data_test_labelled = seq_data_test[labels_test != -1]
+    labels_test = labels_test[labels_test != -1]
+
+    seq_data_train_unlab = seq_data_train
+    seq_data_val_unlab = seq_data_val
+    seq_data_test_unlab = seq_data_test
+
+    # # divide labelled data into training, validating, and testing sets
+    # one_perc_lab = int(round(len(labels_ind) * 0.01))
+    # five_perc_lab = int(one_perc_lab * 5)
+    # new_stopping_point = (
+    #     int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
+    # )
+
+    # labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
+    # labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
+    # labelled_data_test_ds = seq_data_lab[
+    #     ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
+    # ]
+
+    # # divide labels into training, validating, and testing sets
+    # labels_valid_ds = labels[:(five_perc_lab), :, :]
+    # labels_train_ds = labels[(five_perc_lab):new_stopping_point, :, :]
+    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    # # divide unlabelled data into training and testing sets
+    # five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
+    # ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
+    # unlabelled_data_train_ds = seq_data_unlab[
+    #     : (ninety_perc_unlab + five_perc_unlab), :, :
+    # ]
+    # unlabelled_data_test_ds = seq_data_unlab[
+    #     (ninety_perc_unlab + five_perc_unlab) :, :, :
+    # ]
+
+    logging.info(f">> Labelled Train ds has shape {seq_data_train_labelled.shape}")
+    logging.info(f">> Unlabelled Train ds has shape {seq_data_train_unlab.shape}")
+    logging.info(f">> Labelled Validation ds has shape {seq_data_val_labelled.shape}")
+    logging.info(f">> Unlabelled Validation ds has shape {seq_data_val_unlab.shape}")
+    logging.info(f">> Labelled Test ds has shape {seq_data_test_labelled.shape}")
+    logging.info(f">> Unlabelled Test ds has shape {seq_data_test_unlab.shape}")
+    logging.info(f">> Labels train ds has shape {labels_train.shape}")
+    logging.info(f">> Labels valid ds has shape {labels_val.shape}")
+    logging.info(f">> Labels test ds has shape {labels_test.shape}")
 
     logging.info("Preprocessing: Convert into torch dataloader")
 
     labelled_data_train = torch.utils.data.DataLoader(
-        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
+        seq_data_train_labelled, batch_size=config.batch_size, drop_last=True
     )
     labels_train = torch.utils.data.DataLoader(
-        labels_train_ds, batch_size=config.batch_size, drop_last=True
+        labels_train, batch_size=config.batch_size, drop_last=True
     )
     unlabelled_data_train = torch.utils.data.DataLoader(
-        unlabelled_data_train_ds, batch_size=config.batch_size
+        seq_data_train_unlab, batch_size=config.batch_size
     )
     labelled_data_valid = torch.utils.data.DataLoader(
-        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
+        seq_data_val_labelled, batch_size=config.batch_size, drop_last=True
     )
     labels_valid = torch.utils.data.DataLoader(
-        labels_valid_ds, batch_size=config.batch_size, drop_last=True
+        labels_val, batch_size=config.batch_size, drop_last=True
     )
     labelled_data_test = torch.utils.data.DataLoader(
-        labelled_data_test_ds, batch_size=1, drop_last=True
+        seq_data_test_labelled, batch_size=1, drop_last=True
     )
     labels_test = torch.utils.data.DataLoader(
-        labels_test_ds, batch_size=config.batch_size, drop_last=True
+        labels_test, batch_size=config.batch_size, drop_last=True
     )
     unlabelled_data_test = torch.utils.data.DataLoader(
-        unlabelled_data_test_ds,
+        seq_data_test_unlab,
         batch_size=1,
     )
 
