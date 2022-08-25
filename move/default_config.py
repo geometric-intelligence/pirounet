@@ -1,21 +1,17 @@
-"""Default configuration parameters.
-
-PirouNet_watch
-checkpoint_smaller_lstm_contd_epoch144
-PirouNet_dance
-checkpoint_15_perc_labelled_epoch489
+"""Default configuration parameters for PirouNet dance.
+If using for training: modify lines 10 and 11 for appropriate wandb.
 """
 import torch
 
-run_name = "train_PirouNet_dance"
-load_from_checkpoint = "checkpoint_train_PirouNet_dance_epoch1"
+run_name = "PirouNet_dance_more_comics"
+load_from_checkpoint = "checkpoint_pirounet_dance"
 
-# Wandb
-project = "move_labelled_nina"
-entity = "bioshape-lab"
+# # Wandb
+# project = "your_wandb_project"
+# entity = "your_wandb_username"
 
 # Hardware
-which_device = "1"  # CHANGE BACK TO 1 FOR TRAINING (0 for metrics)
+which_device = "1"
 device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()
