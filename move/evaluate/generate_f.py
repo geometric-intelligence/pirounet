@@ -615,10 +615,10 @@ def generate_cond(
     Returns
     ----------
     gen_dance :         array
-                        Shape = [label_dim * num_gen_per_lab, seq_len, input_dim]
+                        Shape = [label_dim * num_gen_cond_lab, seq_len, input_dim]
                         Generated sequences.
     gen_labels :        array
-                        Shape = [label_dim * num_gen_per_lab, ]
+                        Shape = [label_dim * num_gen_cond_lab, ]
     """
 
     all_high, pca, z_center = get_high_neighb(
@@ -841,7 +841,7 @@ def draw_comic(
             depthshade=True,
         )
 
-        zcolor = frame[:, 2] * 2
+        zcolor = frame[:, 2] * 1
 
         for i, (g1, g2) in enumerate(skeleton_lines):
             g1_idx = [point_labels.index(l) for l in g1]
@@ -862,7 +862,7 @@ def draw_comic(
                 color=color,
                 lw=lw,
             )
-        plt.savefig(comicname)
+        plt.savefig(comicname, dpi=500)
 
 
 def get_high_neighb(model, config, labelled_data, labels):

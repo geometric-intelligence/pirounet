@@ -96,17 +96,17 @@ logging.info("Load data.")
 
 if eval_config.quali_generation_metrics:
     logging.info("Qualitative generation metrics :")
-    generate_f.generate_and_save(
-        model=model,
-        config=eval_config,
-        epoch=latest_epoch,
-        num_artifacts=eval_config.num_random_artifacts,
-        type="random",
-        results_path=filepath_to_results
-        + "/quali_generation_metrics/random_generation",
-        comic=False,
-    )
-    logging.info("       - random: done.")
+    # generate_f.generate_and_save(
+    #     model=model,
+    #     config=eval_config,
+    #     epoch=latest_epoch,
+    #     num_artifacts=eval_config.num_random_artifacts,
+    #     type="random",
+    #     results_path=filepath_to_results
+    #     + "/quali_generation_metrics/random_generation",
+    #     comic=False,
+    # )
+    # logging.info("       - random: done.")
 
     generate_f.generate_and_save(
         model=model,
@@ -117,7 +117,7 @@ if eval_config.quali_generation_metrics:
         encoded_data=labelled_data_train,
         encoded_labels=labels_train,
         results_path=filepath_to_results + "/quali_generation_metrics/cond_generation",
-        comic=False,
+        comic=True,
     )
     logging.info("       - conditional: done.")
 

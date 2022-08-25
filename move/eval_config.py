@@ -6,13 +6,13 @@ blind labeling and comparison of labels.)
 import default_config
 import torch
 
-eval_name = "PirouNet_dance_train_test"
+eval_name = "PirouNet_dance_more_comics_bigger_step"
 # name of evaluation
 
 ##########################################################
 # CUDA device for evaluation
 
-which_device = 0
+which_device = 1
 device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()
@@ -21,7 +21,7 @@ device = (
 ##########################################################
 # Tiling hyperparameters
 
-step_size = [0.1, 0.2, 0.2]
+step_size = [0.1, 0.2, 0.4]
 # height/width of tiles for labels 0, 1, 2
 
 dances_per_tile = [3, 3, 1]
@@ -60,7 +60,7 @@ num_random_artifacts = 2
 # how many artifacts (animations) to save during random
 # generation
 
-num_cond_artifacts_per_lab = 1
+num_cond_artifacts_per_lab = 30
 # how many artifacts (animations) to save per label during
 # conditional generation
 
@@ -68,12 +68,12 @@ num_cond_artifacts_per_lab = 1
 # Desired immediate metrics
 
 quali_generation_metrics = True
-quali_recon_metrics = True
-quanti_gen_recon_metrics = True
-generate_for_blind_labeling = True
-plot_classification_accuracy = True
-plot_latent_space = True
-test_entanglement = True
+quali_recon_metrics = False
+quanti_gen_recon_metrics = False
+generate_for_blind_labeling = False
+plot_classification_accuracy = False
+plot_latent_space = False
+test_entanglement = False
 
 ##########################################################
 # Recgonition accuracy metric
