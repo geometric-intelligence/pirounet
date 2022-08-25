@@ -332,15 +332,9 @@ def sequify_all_data(pose_data, seq_len, augmentation_factor):
         seq_data[i] = pose_data[i : i + seq_len]
     logging.info(f"Preprocessing: Load seq_data of shape {seq_data.shape}")
 
-    if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
-        seq_data = augment_by_rotations(seq_data, augmentation_factor)
-        logging.info(f">> Augmented seq_data has shape: {seq_data.shape}")
+    # used to augment here
 
-    np.random.shuffle(seq_data)
+    # np.random.shuffle(seq_data)
 
     return seq_data
 
@@ -448,11 +442,28 @@ def get_model_data(config):
     labels = labels_1_to_4 - 1.0
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
 
-    # sequify both sets of data
-    seq_data_lab = sequify_lab_data(
-        labels_ind, pose_data, config.seq_len, augmentation_factor=1
-    )
+    # # sequify both sets of data
+    # seq_data_lab = sequify_lab_data(
+    #     labels_ind, pose_data, config.seq_len, augmentation_factor=1
+    # )
     seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
+
+    # augment here now
+    augmentation_factor = 1
+    if augmentation_factor > 1:
+        logging.info(
+            "Preprocessing: data augmentation by rotations, "
+            f"factor = {augmentation_factor}"
+        )
+        seq_data_unlab = augment_by_rotations(seq_data_unlab, augmentation_factor)
+        logging.info(
+            f">> Unlabelled augmented seq_data has shape: {seq_data_unlab.shape}"
+        )
+        aug_labels_ind = []
+        for l in labels_ind:
+            for i in range(augmentation_factor):
+                aug_labels_ind.append(augmentation_factor * l + i)
+        labels_ind = aug_labels_ind
 
     # divide labelled data into training, validating, and testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
