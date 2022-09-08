@@ -14,6 +14,8 @@ move/saved_old
 move/saved_models
 test_trash/
 results/old
+move/*.out
+move/move/*.out
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -46,7 +46,9 @@ wandb.init(
         "label_dim": default_config.label_dim,
         "device": default_config.device,
         "effort": default_config.effort,
-        "fraction_label": default_config.fraction_label,
+        # "fraction_label": default_config.fraction_label,
+        "train_ratio": default_config.train_ratio,
+        "train_lab_frac": default_config.train_lab_frac,
     },
 )
 
