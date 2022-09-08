@@ -496,9 +496,8 @@ def get_model_data(config):
 
     # divide into validation / train / test
     seq_data_train, seq_data_val_test, labels_train, labels_val_test = train_test_split(
-        seq_data, labels, test_size=(1 - config.frac_train), random_state=42
+        seq_data, labels, test_size=(1 - config.train_ratio), random_state=42
     )  # test_size is percentage given to test+valid
-
     seq_data_val, seq_data_test, labels_val, labels_test = train_test_split(
         seq_data_val_test, labels_val_test, test_size=0.25, random_state=42
     )  # size of test set compared to validation+test set
@@ -510,17 +509,17 @@ def get_model_data(config):
     n_labels_to_remove = n_labels_in_train - n_labels_target
 
     if n_labels_to_remove < 0:
-        raise ValueError("va te faire foutre.")
+        raise ValueError("Removing too many labels to hit target!")
 
     for i_lab, lab in enumerate(labels_train):
-        if lab != -1:
+        if lab == -1:
+            continue
+        if lab != -1 and n_labels_to_remove > 0:
             labels_train[i_lab] = -1
             n_labels_to_remove -= 1
-            if n_labels_to_remove == 0:
-                break
 
     seq_data_train_labelled = seq_data_train[labels_train != -1]
-    labels_train = labels_train[labels_train != -1]
+    labels_train_true = labels_train[labels_train != -1]
     seq_data_val_labelled = seq_data_val[labels_val != -1]
     labels_val = labels_val[labels_val != -1]
     seq_data_test_labelled = seq_data_test[labels_test != -1]
@@ -564,7 +563,7 @@ def get_model_data(config):
     logging.info(f">> Unlabelled Validation ds has shape {seq_data_val_unlab.shape}")
     logging.info(f">> Labelled Test ds has shape {seq_data_test_labelled.shape}")
     logging.info(f">> Unlabelled Test ds has shape {seq_data_test_unlab.shape}")
-    logging.info(f">> Labels train ds has shape {labels_train.shape}")
+    logging.info(f">> Labels train ds has shape {labels_train_true.shape}")
     logging.info(f">> Labels valid ds has shape {labels_val.shape}")
     logging.info(f">> Labels test ds has shape {labels_test.shape}")
 
@@ -573,8 +572,8 @@ def get_model_data(config):
     labelled_data_train = torch.utils.data.DataLoader(
         seq_data_train_labelled, batch_size=config.batch_size, drop_last=True
     )
-    labels_train = torch.utils.data.DataLoader(
-        labels_train, batch_size=config.batch_size, drop_last=True
+    labels_train_true = torch.utils.data.DataLoader(
+        labels_train_true, batch_size=config.batch_size, drop_last=True
     )
     unlabelled_data_train = torch.utils.data.DataLoader(
         seq_data_train_unlab, batch_size=config.batch_size
@@ -598,7 +597,7 @@ def get_model_data(config):
 
     return (
         labelled_data_train,
-        labels_train,
+        labels_train_true,
         unlabelled_data_train,
         labelled_data_valid,
         labels_valid,

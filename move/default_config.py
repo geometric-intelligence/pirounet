@@ -3,8 +3,8 @@ If using for training: modify lines 10 and 11 for appropriate wandb.
 """
 import torch
 
-run_name = "PirouNet_dance_more_comics"
-load_from_checkpoint = "checkpoint_pirounet_dance"
+run_name = "new_data_sweep1"
+load_from_checkpoint = None  # "checkpoint_pirounet_dance"
 
 # Wandb
 project = "pirounet"
@@ -31,8 +31,8 @@ label_dim = 3
 amount_of_labels = 1
 effort = "time"
 # fraction_label = 0.789
-frac_train = 0.8  # train percentage versus valid+test
-train_lab_frac = 0.19  # size of train of labelled data compared to total train size
+train_ratio = 0.9  # train percentage versus valid+test
+train_lab_frac = 0.21  # size of train of labelled data compared to total train size
 
 # LSTM VAE architecture
 kl_weight = 1
