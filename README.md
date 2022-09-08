@@ -3,7 +3,7 @@
 Official PyTorch implementation of the paper “PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders”
 ***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)]***
 
-PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately prior to training. We propose this [dance labeling web application](https://github.com/mathildepapillon/move_label) which can be customized to the user's labeling needs.
+PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately prior to training. We propose this [dance labeling web application](https://github.com/mathildepapillon/pirounet_label) which can be customized to the user's labeling needs.
 
 ![Overview of PirouNet's LSTM+VAE architecture.](/images/arch_overview.jpeg)
 
@@ -35,7 +35,7 @@ If this code is useful to your research, please cite:
 
 This codes runs on Python 3.8. We recommend using Anaconda for easy installation. To create the necessary conda environment, run:
 ```
-cd move
+cd pirounet
 conda env create -f environment.yml
 conda activate choreo
 ```
@@ -86,13 +86,13 @@ Once this is done, there are two options:
 ## 🕺 Evaluation ##
 
 1. Follow the “Load a saved model” instructions to configure default_config.py.
-2. Specify the parameters of the evaluation in eval_config.py. Note that “plot_recognition_accuracy” should only be set to True once a human labeler has blindly labeled PirouNet-generated dance sequences (using generate_for_blind_labeling and the web-labeling app), and exported the csv of labels to the move/move/data directory.
+2. Specify the parameters of the evaluation in eval_config.py. Note that “plot_recognition_accuracy” should only be set to True once a human labeler has blindly labeled PirouNet-generated dance sequences (using generate_for_blind_labeling and the web-labeling app), and exported the csv of labels to the pirounet/pirounet/data directory.
 3. Unzip the pre-saved classifier model in saved_models/classifier.
 4. Run the command:
 ```
 python main_eval.py
 ```
-This will produce a subfolder in move/results containing all the qualitative and quantitative metrics included in our paper, as well as extra plots of the latent space and its entanglement. Among the qualitative generation metrics, two examples are provided below.
+This will produce a subfolder in pirounet/results containing all the qualitative and quantitative metrics included in our paper, as well as extra plots of the latent space and its entanglement. Among the qualitative generation metrics, two examples are provided below.
 
 **Conditionally created dance sequences:**
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
