@@ -1,7 +1,0 @@
-========== Metrics for checkpoint checkpoint_perc_labelled_3_epoch72 ==========
-FID: 3174.762699874813
-Diversity: 54.11084747314453
-Gen Diversity: 12.69084358215332
-Multimodality: 29.16175079345703
-Gen Multimodality: 15.42161750793457
-AJD (recon loss): 0.06722830332899794

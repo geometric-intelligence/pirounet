@@ -1,7 +1,0 @@
-========== Metrics for checkpoint checkpoint_05_perc_labelled_epoch50 ==========
-FID: 16627.728958965014
-Diversity: 57.54408645629883
-Gen Diversity: 85.85491180419922
-Multimodality: 27.279050827026367
-Gen Multimodality: 82.26432037353516
-AJD (recon loss): 0.09018401999563457
