@@ -1,7 +1,7 @@
 # PirouNet #
 
 Official PyTorch implementation of the paper “PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders”
-***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)], accepted for publication at [[EAI ArtsIT 2022](https://artsit.eai-conferences.org/2022/)]***
+***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)], accepted for publication at [EAI ArtsIT 2022(https://artsit.eai-conferences.org/2022/)]***
 
 PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately prior to training. We propose this [dance labeling web application](https://github.com/mathildepapillon/pirounet_label) which can be customized to the user's labeling needs.
 
