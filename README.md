@@ -5,7 +5,7 @@ Official PyTorch implementation of the paper “PirouNet: Creating Intentional D
 
 PirouNet is a semi-supervised conditional recurrent variational autoencoder. This code is responsible for training and evaluating the model. Labels must be created separately prior to training. We propose this [dance labeling web application](https://github.com/mathildepapillon/pirounet_label) which can be customized to the user's labeling needs.
 
-![Overview of PirouNet's LSTM+VAE architecture.](/images/arch_overview.jpeg)
+![Overview of PirouNet's LSTM+VAE architecture.](/images/pirounet_model.jpg)
 
 ## 🌎 Bibtex ##
 If this code is useful to your research, please cite:
@@ -96,6 +96,8 @@ This will produce a subfolder in pirounet/results containing all the qualitative
 
 **Conditionally created dance sequences:**
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_2.gif)
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_3.gif)
 
 **Reconstructed dance sequence:**
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
