@@ -74,10 +74,10 @@ For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Q
 
 ### 📕 Load a saved model.
 There are basic types of models to load:
-* *PirouNet_{watch}.*
+* $\text{PirouNet}_\text{watch}.$
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
 
-* *PirouNet_{dance}.*
+* $\text{PirouNet}_\text{dance}.$
 Copy contents of saved_models/pirounet_dance_config.py file into default_config.py.
 
 * *Your new model.*
