@@ -73,7 +73,7 @@ python main.py
 For a hyperparameter sweep (multiple runs), we invite you to follow wandb’s [Quickstart guide](https://docs.wandb.ai/guides/sweeps/quickstart) and run the resulting wandb sweep command.
 
 ### 📕 Load a saved model.
-There are basic types of models to load:
+There are three basic types of models to load:
 * $\text{PirouNet}_\text{watch}.$
 Copy contents of saved_models/pirounet_watch_config.py file into default_config.py.
 
