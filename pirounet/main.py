@@ -46,9 +46,10 @@ wandb.init(
         "label_dim": default_config.label_dim,
         "device": default_config.device,
         "effort": default_config.effort,
-        # "fraction_label": default_config.fraction_label,
+        "fraction_label": default_config.fraction_label,
         "train_ratio": default_config.train_ratio,
         "train_lab_frac": default_config.train_lab_frac,
+        "shuffle_data": default_config.shuffle_data,
     },
 )
 
@@ -75,16 +76,29 @@ model = dgm_lstm_vae.DeepGenerativeModel(
 ).to(config.device)
 
 logging.info("Get data")
-(
-    labelled_data_train,
-    labels_train,
-    unlabelled_data_train,
-    labelled_data_valid,
-    labels_valid,
-    labelled_data_test,
-    labels_test,
-    unlabelled_data_test,
-) = datasets.get_model_data(config)
+if config.train_ratio and config.train_lab_frac is not None:
+    (
+        labelled_data_train,
+        labels_train_true,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    ) = datasets.get_model_data(config)
+if config.fraction_label is not None:
+    (
+        labelled_data_train,
+        labels_train,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    ) = datasets.get_model_specific_data(config)
+
 
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate, betas=(0.9, 0.999)

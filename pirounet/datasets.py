@@ -413,11 +413,10 @@ def get_model_data(config):
 
     Pipeline for loading raw data as torch DataLoaders,
     separated intro training, validation, and test datasets.
-    The proportion of training labeled data is set by param
-    fraction_label in config. The first 5% is reserved for
-    validation. The last 3% is reserved for testing.
-    For the unalbeled case, we reserve 95% of sequences for
-    training and 5% for testing.
+    The proportion of training labeled data is set by train_ratio
+    (train percentage versus valid+test percentage) and train_lab_frac
+    (size of training set of labelled data compared to total train size).
+
     Note: Pettee 2019 keeps augmentation_factor=1.
 
     Parameters
@@ -428,32 +427,36 @@ def get_model_data(config):
     Returns
     -------
     labelled_data_train : array
-        Shape = [n_seqs_labeled * fraction_label, seq_len, input_dim]
+        Shape = [n_seqs * train_ratio * train_lab_frac, seq_len, input_dim]
         Array of labeled sequences made from pose data
         reserved for training.
     labels_train : array
-        Shape = [n_seqs_labeled * fraction_label, 1]
+        Shape = [n_seqs * train_ratio * train_lab_frac, 1]
         Labels associated to training labeled sequences.
     unlabelled_data_train : array
-        Shape = [n_seqs (* 0.95), seq_len, input_dim]
+        Shape = [n_seqs * train_ratio, seq_len, input_dim]
         Array of unlabeled sequences made from pose data
         reserved for training.
     labelled_data_valid : array
-        Shape = [n_seqs_labeled * 0.05, seq_len, input_dim]
+        Shape = [labelled_portion(n_seqs * 0.75(1 - train_ratio)), seq_len, input_dim]
         Array of labeled sequences made from pose data
         reserved for validation.
     labels_valid : array
-        Shape = [n_seqs_labeled * 0.05, 1]
+        Shape = [labelled_portion(n_seqs * 0.75(1 - train_ratio)), 1]
         Labels associated to validation labeled sequences.
+    unlabelled_data_valid : array
+        Shape = [n_seqs * 0.75(1 - train_ratio), seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for validation.
     labelled_data_test : array
-        Shape = [n_seqs_labeled * 0.03, seq_len, input_dim]
+        Shape = [labelled_portion(n_seqs * 0.25(1 - train_ratio)), seq_len, input_dim]
         Array of labeled sequences made from pose data
         reserved for testing.
     labels_test : array
-        Shape = [n_seqs_labeled * 0.03, 1]
+        Shape = [labelled_portion(n_seqs * 0.25(1 - train_ratio)), 1]
         Labels associated to testing labeled sequences.
     unlabelled_data_test : array
-        Shape = [n_seqs * 0.05, seq_len, input_dim]
+        Shape = [n_seqs * 0.25(1 - train_ratio), seq_len, input_dim]
         Array of unlabeled sequences made from pose data
         reserved for testing.
     """
@@ -465,13 +468,8 @@ def get_model_data(config):
     labels_vals = labels_1_to_4_vals - 1.0
     labels_vals = labels_vals.reshape((labels_vals.shape[0], 1, labels_vals.shape[-1]))
 
-    # # sequify both sets of data
-    # seq_data_lab = sequify_lab_data(
-    #     labels_ind, pose_data, config.seq_len, augmentation_factor=1
-    # )
     seq_data = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
-    # augment here now
     augmentation_factor = 1
     if augmentation_factor > 1:
         logging.info(
@@ -489,22 +487,24 @@ def get_model_data(config):
     # create labels array corresponding directly to all sequences
     labels = array_from_sparse(labels_ind, labels_vals, (seq_data.shape[0],))
 
-    # # calculate chunk of unlab data to remove for random sampling purposes
-    # n_remove = len(seq_data_unlab) - len(labels_vals) / config.valid_frac_labels
-    # seq_data_start = seq_data_unlab[: - n_remove, :, :]
-    # labels_start = labels[: - n_remove]
-
     # divide into validation / train / test
     seq_data_train, seq_data_val_test, labels_train, labels_val_test = train_test_split(
-        seq_data, labels, test_size=(1 - config.train_ratio), random_state=42
+        seq_data,
+        labels,
+        test_size=(1 - config.train_ratio),
+        random_state=42,
+        shuffle=config.shuffle_data,
     )  # test_size is percentage given to test+valid
     seq_data_val, seq_data_test, labels_val, labels_test = train_test_split(
-        seq_data_val_test, labels_val_test, test_size=0.25, random_state=42
+        seq_data_val_test,
+        labels_val_test,
+        test_size=0.25,
+        random_state=42,
+        shuffle=config.shuffle_data,
     )  # size of test set compared to validation+test set
 
     # modify fraction of labelled to unlab train
     n_labels_in_train = np.sum([lab != -1 for lab in labels_train])
-    # current_frac = n_labels_in_train / len(labels_train)
     n_labels_target = len(labels_train) * config.train_lab_frac
     n_labels_to_remove = n_labels_in_train - n_labels_target
 
@@ -528,34 +528,6 @@ def get_model_data(config):
     seq_data_train_unlab = seq_data_train
     seq_data_val_unlab = seq_data_val
     seq_data_test_unlab = seq_data_test
-
-    # # divide labelled data into training, validating, and testing sets
-    # one_perc_lab = int(round(len(labels_ind) * 0.01))
-    # five_perc_lab = int(one_perc_lab * 5)
-    # new_stopping_point = (
-    #     int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
-    # )
-
-    # labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
-    # labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
-    # labelled_data_test_ds = seq_data_lab[
-    #     ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
-    # ]
-
-    # # divide labels into training, validating, and testing sets
-    # labels_valid_ds = labels[:(five_perc_lab), :, :]
-    # labels_train_ds = labels[(five_perc_lab):new_stopping_point, :, :]
-    # labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
-
-    # # divide unlabelled data into training and testing sets
-    # five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
-    # ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
-    # unlabelled_data_train_ds = seq_data_unlab[
-    #     : (ninety_perc_unlab + five_perc_unlab), :, :
-    # ]
-    # unlabelled_data_test_ds = seq_data_unlab[
-    #     (ninety_perc_unlab + five_perc_unlab) :, :, :
-    # ]
 
     logging.info(f">> Labelled Train ds has shape {seq_data_train_labelled.shape}")
     logging.info(f">> Unlabelled Train ds has shape {seq_data_train_unlab.shape}")
@@ -598,6 +570,148 @@ def get_model_data(config):
     return (
         labelled_data_train,
         labels_train_true,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    )
+
+
+def get_model_specific_data(config):
+    """Transforms raw data for training/validating/testing a model.
+
+    Original data loader used for training PirouNet Dance and
+    PirouNet Watch. Only use for obtaining results from these models
+    consistent with published results.
+
+    Pipeline for loading raw data as torch DataLoaders,
+    separated intro training, validation, and test datasets.
+    The proportion of training labeled data is set by param
+    fraction_label in config. The first 5% is reserved for
+    validation. The last 3% is reserved for testing.
+    For the unalbeled case, we reserve 95% of sequences for
+    training and 5% for testing.
+    Note: Pettee 2019 keeps augmentation_factor=1.
+    Parameters
+    ----------
+    config : dict
+        Configuration of run as defined in wandb.config
+    Returns
+    -------
+    labelled_data_train : array
+        Shape = [n_seqs_labeled * fraction_label, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for training.
+    labels_train : array
+        Shape = [n_seqs_labeled * fraction_label, 1]
+        Labels associated to training labeled sequences.
+    unlabelled_data_train : array
+        Shape = [n_seqs (* 0.95), seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for training.
+    labelled_data_valid : array
+        Shape = [n_seqs_labeled * 0.05, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for validation.
+    labels_valid : array
+        Shape = [n_seqs_labeled * 0.05, 1]
+        Labels associated to validation labeled sequences.
+    labelled_data_test : array
+        Shape = [n_seqs_labeled * 0.03, seq_len, input_dim]
+        Array of labeled sequences made from pose data
+        reserved for testing.
+    labels_test : array
+        Shape = [n_seqs_labeled * 0.03, 1]
+        Labels associated to testing labeled sequences.
+    unlabelled_data_test : array
+        Shape = [n_seqs * 0.05, seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for testing.
+    """
+
+    ds_all, ds_all_centered = load_raw()
+    pose_data = ds_all_centered.reshape((ds_all.shape[0], -1))
+
+    labels_1_to_4, labels_ind = load_labels(effort=config.effort)
+    labels = labels_1_to_4 - 1.0
+    labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
+
+    # sequify both sets of data
+    seq_data_lab = sequify_lab_data(
+        labels_ind, pose_data, config.seq_len, augmentation_factor=1
+    )
+    seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
+
+    # divide labelled data into training, validating, and testing sets
+    one_perc_lab = int(round(len(labels_ind) * 0.01))
+    five_perc_lab = int(one_perc_lab * 5)
+    new_stopping_point = (
+        int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
+    )
+
+    labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
+    labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
+    labelled_data_test_ds = seq_data_lab[
+        ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
+    ]
+
+    # divide labels into training, validating, and testing sets
+    labels_valid_ds = labels[:(five_perc_lab), :, :]
+    labels_train_ds = labels[(five_perc_lab):new_stopping_point, :, :]
+    labels_test_ds = labels[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
+
+    # divide unlabelled data into training and testing sets
+    five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
+    ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
+    unlabelled_data_train_ds = seq_data_unlab[
+        : (ninety_perc_unlab + five_perc_unlab), :, :
+    ]
+    unlabelled_data_test_ds = seq_data_unlab[
+        (ninety_perc_unlab + five_perc_unlab) :, :, :
+    ]
+
+    logging.info(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
+    logging.info(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
+    logging.info(f">> Labelled Validation ds has shape {labelled_data_valid_ds.shape}")
+    logging.info(f">> Labelled Test ds has shape {labelled_data_test_ds.shape}")
+    logging.info(f">> Unlabelled Test ds has shape {unlabelled_data_test_ds.shape}")
+    logging.info(f">> Labels train ds has shape {labels_train_ds.shape}")
+    logging.info(f">> Labels valid ds has shape {labels_valid_ds.shape}")
+    logging.info(f">> Labels test ds has shape {labels_test_ds.shape}")
+
+    logging.info("Preprocessing: Convert into torch dataloader")
+
+    labelled_data_train = torch.utils.data.DataLoader(
+        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
+    )
+    labels_train = torch.utils.data.DataLoader(
+        labels_train_ds, batch_size=config.batch_size, drop_last=True
+    )
+    unlabelled_data_train = torch.utils.data.DataLoader(
+        unlabelled_data_train_ds, batch_size=config.batch_size
+    )
+    labelled_data_valid = torch.utils.data.DataLoader(
+        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
+    )
+    labels_valid = torch.utils.data.DataLoader(
+        labels_valid_ds, batch_size=config.batch_size, drop_last=True
+    )
+    labelled_data_test = torch.utils.data.DataLoader(
+        labelled_data_test_ds, batch_size=1, drop_last=True
+    )
+    labels_test = torch.utils.data.DataLoader(
+        labels_test_ds, batch_size=config.batch_size, drop_last=True
+    )
+    unlabelled_data_test = torch.utils.data.DataLoader(
+        unlabelled_data_test_ds,
+        batch_size=1,
+    )
+
+    return (
+        labelled_data_train,
+        labels_train,
         unlabelled_data_train,
         labelled_data_valid,
         labels_valid,
