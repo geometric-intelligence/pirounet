@@ -1,7 +1,10 @@
 # PirouNet #
 
-Official PyTorch implementation of the paper “PirouNet: Creating Dance through Artist-Centric Deep Learning”,
-***[[Pre-print](https://arxiv.org/pdf/2207.12126.pdf)], accepted for publication at [[EAI ArtsIT 2022](https://artsit.eai-conferences.org/2022/)]***
+Official PyTorch implementation of the paper “PirouNet: Creating Dance through Artist-Centric Deep Learning”
+
+***[[Pre-print](https://arxiv.org/abs/2207.12126)], accepted for publication at [[EAI ArtsIT 2022](https://artsit.eai-conferences.org/2022/)]***
+
+***[[Summary](https://arxiv.org/abs/2209.10010)], accepted for publication at [[NeurIPS Workshop for Creativity and Design 2022](https://neuripscreativityworkshop.github.io/2022/#/)]***
 
 
 ![Overview of PirouNet's LSTM+VAE architecture.](/images/pirounet_model.jpg)
@@ -105,7 +108,7 @@ This will produce a subfolder in pirounet/results containing all the qualitative
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
 ## 💃 Authors ##
-[Mathilde Papillon](https://sites.google.com/view/mathildepapillon)
+[Mathilde Papillon](https://mathildep.ca)
 
 [Mariel Pettee](https://mariel-pettee.github.io/)
 
