@@ -30,7 +30,7 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = "time"
-# fraction_label = 0.789
+shuffle_data = True
 train_ratio = 0.9  # train percentage versus valid+test
 train_lab_frac = 0.21  # size of train of labelled data compared to total train size
 
