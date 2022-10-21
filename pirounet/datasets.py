@@ -438,21 +438,25 @@ def get_model_data(config):
         Array of unlabeled sequences made from pose data
         reserved for training.
     labelled_data_valid : array
-        Shape = [n_seqs * 0.75(1 - train_ratio), seq_len, input_dim]
+        Shape = [labelled_portion(n_seqs * 0.75(1 - train_ratio)), seq_len, input_dim]
         Array of labeled sequences made from pose data
         reserved for validation.
     labels_valid : array
-        Shape = [n_seqs * 0.75(1 - train_ratio), 1]
+        Shape = [labelled_portion(n_seqs * 0.75(1 - train_ratio)), 1]
         Labels associated to validation labeled sequences.
+    unlabelled_data_valid : array
+        Shape = [n_seqs * 0.75(1 - train_ratio), seq_len, input_dim]
+        Array of unlabeled sequences made from pose data
+        reserved for validation.
     labelled_data_test : array
-        Shape = [n_seqs * 0.25(1 - train_ratio), seq_len, input_dim]
+        Shape = [labelled_portion(n_seqs * 0.25(1 - train_ratio)), seq_len, input_dim]
         Array of labeled sequences made from pose data
         reserved for testing.
     labels_test : array
-        Shape = [n_seqs * 0.25(1 - train_ratio), 1]
+        Shape = [labelled_portion(n_seqs * 0.25(1 - train_ratio)), 1]
         Labels associated to testing labeled sequences.
     unlabelled_data_test : array
-        Shape = [n_seqs * 0.05, seq_len, input_dim]
+        Shape = [n_seqs * 0.25(1 - train_ratio), seq_len, input_dim]
         Array of unlabeled sequences made from pose data
         reserved for testing.
     """

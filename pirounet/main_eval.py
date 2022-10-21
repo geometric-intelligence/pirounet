@@ -82,16 +82,28 @@ model.load_state_dict(checkpoint["model_state_dict"])
 latest_epoch = checkpoint["epoch"]
 
 logging.info("Load data.")
-(
-    labelled_data_train,
-    labels_train,
-    unlabelled_data_train,
-    labelled_data_valid,
-    labels_valid,
-    labelled_data_test,
-    labels_test,
-    unlabelled_data_test,
-) = datasets.get_model_data(default_config)
+if default_config.train_ratio and default_config.train_lab_frac is not None:
+    (
+        labelled_data_train,
+        labels_train_true,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    ) = datasets.get_model_data(default_config)
+if default_config.fraction_label is not None:
+    (
+        labelled_data_train,
+        labels_train,
+        unlabelled_data_train,
+        labelled_data_valid,
+        labels_valid,
+        labelled_data_test,
+        labels_test,
+        unlabelled_data_test,
+    ) = datasets.get_model_specific_data(default_config)
 
 
 if eval_config.quali_generation_metrics:

@@ -3,15 +3,15 @@ If using for training: modify lines 10 and 11 for appropriate wandb.
 """
 import torch
 
-run_name = "check_data_sizes"
-load_from_checkpoint = None  # "checkpoint_pirounet_dance"
+run_name = "PirouNet_dance"
+load_from_checkpoint = "checkpoint_pirounet_dance"
 
-# Wandb
-project = "pirounet"
-entity = "bioshape-lab"
+# # Wandb
+# project = "your_wandb_project"
+# entity = "your_wandb_username"
 
 # Hardware
-which_device = "1"
+which_device = "0"
 device = (
     torch.device("cuda:" + str(which_device))
     if torch.cuda.is_available()
@@ -30,10 +30,10 @@ input_dim = 159
 label_dim = 3
 amount_of_labels = 1
 effort = "time"
-shuffle_data = True
-train_ratio = 0.9
-train_lab_frac = 0.21
-fraction_label = None
+fraction_label = 0.789
+shuffle_data = False
+train_ratio = None
+train_lab_frac = None
 
 # LSTM VAE architecture
 kl_weight = 1

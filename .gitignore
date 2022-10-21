@@ -1,5 +1,6 @@
 wandb/
-pirounet/data/*
+pirounet/data/
+
 pirounet/logs/*
 
 _Store
@@ -11,7 +12,10 @@ pirounet/animations
 pirounet/aist_run
 pirounet/slurm
 pirounet/saved_old
-pirounet/saved_models
+pirounet/saved_models/*.pt
+pirounet/saved_models/my_models/*
+pirounet/saved_models/classifier/*
+
 test_trash/
 results/old
 pirounet/*.out

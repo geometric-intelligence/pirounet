@@ -163,9 +163,9 @@ def run_train_dgm(
 
                 logging.info(f"        Recon labeled-loss {labloss / (batches_seen)}")
 
-                logging.info(
-                    f"        Recon unlabeled-loss {unlabloss / (batches_seen)}"
-                )
+                # logging.info(
+                #     f"        Recon unlabeled-loss {unlabloss / (batches_seen)}"
+                # )
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
@@ -186,13 +186,13 @@ def run_train_dgm(
             },
             step=epoch,
         )
-        wandb.log(
-            {
-                "epoch": epoch + latest_epoch,
-                "unlabelled_recon_loss": unlabloss / batches_seen,
-            },
-            step=epoch,
-        )
+        # wandb.log(
+        #     {
+        #         "epoch": epoch + latest_epoch,
+        #         "unlabelled_recon_loss": unlabloss / batches_seen,
+        #     },
+        #     step=epoch,
+        # )
         wandb.log(
             {
                 "epoch": epoch + latest_epoch,
