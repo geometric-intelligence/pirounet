@@ -18,19 +18,19 @@ If this code is useful to your research, please cite:
 ```
 @misc{https://doi.org/10.48550/arxiv.2207.12126,
   doi = {10.48550/ARXIV.2207.12126},
-
+  
   url = {https://arxiv.org/abs/2207.12126},
-
+  
   author = {Papillon, Mathilde and Pettee, Mariel and Miolane, Nina},
-
+  
   keywords = {Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
-
-  title = {PirouNet: Creating Intentional Dance with Semi-Supervised Conditional Recurrent Variational Autoencoders},
-
+  
+  title = {PirouNet: Creating Dance through Artist-Centric Deep Learning},
+  
   publisher = {arXiv},
-
+  
   year = {2022},
-
+  
   copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
 }
 ```
