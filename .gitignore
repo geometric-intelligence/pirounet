@@ -15,6 +15,7 @@ pirounet/saved_old
 pirounet/saved_models/*.pt
 pirounet/saved_models/my_models/*
 pirounet/saved_models/classifier/*
+pirounet/results
 
 test_trash/
 results/old
