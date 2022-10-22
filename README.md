@@ -37,8 +37,6 @@ If this code is useful to your research, please cite:
 
 **Conditionally created dance sequences:**
 ![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
-![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_2.gif)
-![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_3.gif)
 
 **Reconstructed dance sequence:**
 ![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
