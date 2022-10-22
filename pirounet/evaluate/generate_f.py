@@ -494,7 +494,7 @@ def reconstruct(
             fname = os.path.join(filepath, name)
 
         if results_path is not None:
-            name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.eval_name}.gif"
+            name = f"recon_{i_batch}_{purpose}_epoch_{epoch}_{config.run_name}.gif"
             fname = os.path.join(str(results_path), name)
 
         fname = animatestick(
@@ -680,6 +680,7 @@ def generate_and_save(
     log_to_wandb=False,
     results_path=None,
     comic=False,
+    npy_output=False,
 ):
     """Generates a dance by randomly sampling the latent space and save
      the corresponding artifact. Choice of "label" does not actually
@@ -723,6 +724,9 @@ def generate_and_save(
     comic :             bool
                         If True, also generates a strip comic style plot
                         for every sequence, original and reconstructed.
+    npy_output :        bool
+                        If True, also generates a npy file for every
+                        sequence (saves pose data) made for animation.
     """
 
     if y_given is not None:
@@ -749,12 +753,18 @@ def generate_and_save(
                 os.path.abspath(os.getcwd()), "animations/" + config.run_name
             )
             fname = os.path.join(filepath, name)
+            npyname = os.path.join(
+                filepath, f"data_{i}_epoch_{epoch}_{config.run_name}.npy"
+            )
 
         if results_path is not None:
-            name = f"create_{i}_epoch_{epoch}_{config.eval_name}.gif"
+            name = f"create_{i}_epoch_{epoch}_{config.run_name}.gif"
             fname = os.path.join(str(results_path), name)
-            plotname = f"comic_{i}_{epoch}_{config.eval_name}.png"
+            plotname = f"comic_{i}_{epoch}_{config.run_name}.png"
             comicname = os.path.join(str(results_path), plotname)
+            npyname = os.path.join(
+                str(results_path), f"data_{i}_epoch_{epoch}_{config.run_name}.npy"
+            )
 
         fname = animatestick(
             x_create_formatted[i],
@@ -767,6 +777,9 @@ def generate_and_save(
 
         if comic:
             draw_comic(x_create_formatted[i], comicname, recon=True)
+
+        if npy_output:
+            np.save(npyname, x_create_formatted[i])
 
         if log_to_wandb:
             animation_artifact = wandb.Artifact("animation", type="video")

@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 filepath_to_results = os.path.join(
     os.path.abspath(os.getcwd()),
-    "results/" + eval_config.eval_name,
+    "results/" + eval_config.run_name,
 )
 
 if exists(filepath_to_results) is False:
@@ -108,17 +108,18 @@ if default_config.fraction_label is not None:
 
 if eval_config.quali_generation_metrics:
     logging.info("Qualitative generation metrics :")
-    # generate_f.generate_and_save(
-    #     model=model,
-    #     config=eval_config,
-    #     epoch=latest_epoch,
-    #     num_artifacts=eval_config.num_random_artifacts,
-    #     type="random",
-    #     results_path=filepath_to_results
-    #     + "/quali_generation_metrics/random_generation",
-    #     comic=False,
-    # )
-    # logging.info("       - random: done.")
+    generate_f.generate_and_save(
+        model=model,
+        config=eval_config,
+        epoch=latest_epoch,
+        num_artifacts=eval_config.num_random_artifacts,
+        type="random",
+        results_path=filepath_to_results
+        + "/quali_generation_metrics/random_generation",
+        comic=False,
+        npy_output=eval_config.npy_output,
+    )
+    logging.info("       - random: done.")
 
     generate_f.generate_and_save(
         model=model,
@@ -130,6 +131,7 @@ if eval_config.quali_generation_metrics:
         encoded_labels=labels_train,
         results_path=filepath_to_results + "/quali_generation_metrics/cond_generation",
         comic=True,
+        npy_output=eval_config.npy_output,
     )
     logging.info("       - conditional: done.")
 
