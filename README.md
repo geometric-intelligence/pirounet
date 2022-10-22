@@ -35,6 +35,18 @@ If this code is useful to your research, please cite:
 }
 ```
 
+**Conditionally created dance sequences:**
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_2.gif)
+![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_3.gif)
+
+**Reconstructed dance sequence:**
+![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
+
+
+https://user-images.githubusercontent.com/50878631/197310007-62b1e89a-12d9-44f1-a4de-c2c991e626c3.mp4
+
+
 
 ## 🏡 Installation ##
 
@@ -99,13 +111,6 @@ python main_eval.py
 ```
 This will produce a subfolder in pirounet/results containing all the qualitative and quantitative metrics included in our paper, as well as extra plots of the latent space and its entanglement. Among the qualitative generation metrics, two examples are provided below.
 
-**Conditionally created dance sequences:**
-![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_pirounet_originals.gif)
-![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_2.gif)
-![Animated dance sequences conditionally created by PirouNet.](/images/side_by_side_ex_3.gif)
-
-**Reconstructed dance sequence:**
-![PirouNet reconstructs input dance.](/images/side_by_side_recon.gif)
 
 ## 💃 Authors ##
 [Mathilde Papillon](https://mathildep.ca)
