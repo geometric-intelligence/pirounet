@@ -79,7 +79,7 @@ logging.info("Get data")
 if config.train_ratio and config.train_lab_frac is not None:
     (
         labelled_data_train,
-        labels_train_true,
+        labels_train,
         unlabelled_data_train,
         labelled_data_valid,
         labels_valid,
