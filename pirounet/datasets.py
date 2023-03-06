@@ -130,7 +130,7 @@ def load_raw(pattern="data/mariel_*.npy"):
 
 def load_labels(
     effort,
-    filepath="/home/papillon/pirounet/pirounet/data/labels_from_app.csv",
+    filepath="data/labels_from_app.csv",
     no_NA=True,
     augment=True,
 ):
