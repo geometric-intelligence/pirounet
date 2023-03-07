@@ -5,7 +5,7 @@ dependencies:
   - python=3.8
   - pip
   - numpy>=1.22.3
-  - matplotlib>=3.5.1
+  - matplotlib=3.5.1
   - pip:
     - torch>=1.11.0
     - wandb
