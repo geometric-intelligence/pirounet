@@ -16,7 +16,7 @@ PirouNet is a semi-supervised conditional recurrent variational autoencoder. Thi
 If this code is useful to your research, please cite:
 
 ```
-@InProceedings{10.1007/978-3-031-28993-4_31,
+@InProceedings{papillon2023pirounet,
 author="Papillon, Mathilde
 and Pettee, Mariel
 and Miolane, Nina",
