@@ -2,7 +2,7 @@
 
 Official PyTorch implementation of the paper “PirouNet: Creating Dance through Artist-Centric Deep Learning”
 
-[[Pre-print](https://arxiv.org/abs/2207.12126)], shared at [[EAI ArtsIT 2022](https://artsit.eai-conferences.org/2022/)] **Best Paper Award.** (proceedings coming soon on Springer). 
+[[Pre-print](https://arxiv.org/abs/2207.12126)] [[Paper](https://link.springer.com/chapter/10.1007/978-3-031-28993-4_31)], shared at [[EAI ArtsIT 2022](https://artsit.eai-conferences.org/2022/)] **Best Paper Award.** (proceedings coming soon on Springer). 
 
 [[Summary](https://neuripscreativityworkshop.github.io/2022/papers/ml4cd2022_paper06.pdf)], accepted for publication at [[NeurIPS Workshop for Creativity and Design 2022](https://neuripscreativityworkshop.github.io/2022/#/)]
 
@@ -16,22 +16,18 @@ PirouNet is a semi-supervised conditional recurrent variational autoencoder. Thi
 If this code is useful to your research, please cite:
 
 ```
-@misc{https://doi.org/10.48550/arxiv.2207.12126,
-  doi = {10.48550/ARXIV.2207.12126},
-  
-  url = {https://arxiv.org/abs/2207.12126},
-  
-  author = {Papillon, Mathilde and Pettee, Mariel and Miolane, Nina},
-  
-  keywords = {Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  
-  title = {PirouNet: Creating Dance through Artist-Centric Deep Learning},
-  
-  publisher = {arXiv},
-  
-  year = {2022},
-  
-  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+@InProceedings{10.1007/978-3-031-28993-4_31,
+author="Papillon, Mathilde
+and Pettee, Mariel
+and Miolane, Nina",
+editor="Brooks, Anthony L.",
+title="PirouNet: Creating Dance Through Artist-Centric Deep Learning",
+booktitle="ArtsIT, Interactivity and Game Creation",
+year="2023",
+publisher="Springer Nature Switzerland",
+address="Cham",
+pages="447--465",
+isbn="978-3-031-28993-4"
 }
 ```
 
