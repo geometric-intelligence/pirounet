@@ -348,13 +348,12 @@ def animatestick(
         zcolor = np.zeros(seq.shape[1])
 
     fig = plt.figure(figsize=figsize)
-    ax = p3.Axes3D(fig)
+    ax = fig.add_subplot(111, projection='3d')
 
     # The following lines eliminate background lines/axes:
     ax.axis("off")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    ax.set_frame_on(False)
 
     if ghost_shift and ghost is not None:
         seq = seq.copy()
@@ -362,7 +361,7 @@ def animatestick(
         seq[:, :, 0] -= ghost_shift
         ghost[:, :, 0] += ghost_shift
 
-    cm = matplotlib.cm.get_cmap(cmap)
+    cm = matplotlib.colormaps[cmap]
 
     pts = ax.scatter(
         seq[0, :, 0],
@@ -634,8 +633,8 @@ def generate_cond(
             tile = all_high[y][tile_to_pick]
             zx = np.random.uniform(tile[0], tile[0] + config.step_size[y])
             zy = np.random.uniform(tile[1], tile[1] + config.step_size[y])
-            z = np.array((zx, zy))
-            z = pca[y].inverse_transform(z) + z_center[y]
+            z = np.array((zx, zy)).reshape(1, -1)
+            z = pca[y].inverse_transform(z).squeeze() + z_center[y]
 
             z_within_tile = torch.tensor(z).reshape(1, -1).to(config.device).float()
 
@@ -825,7 +824,7 @@ def draw_comic(
         cmap = "cool_r"
 
     fig = plt.figure(figsize=figsize)
-    ax = p3.Axes3D(fig)
+    ax = fig.add_subplot(111, projection='3d')
     ax.view_init(30, 0)
     shift_size = 0.6
 
@@ -839,7 +838,7 @@ def draw_comic(
     ax.get_xaxis().set_ticks([])
     ax.get_yaxis().set_ticks([])
 
-    cm = matplotlib.cm.get_cmap(cmap)
+    cm = matplotlib.colormaps[cmap]
 
     n_frame = 0
     for iframe, frame in enumerate(frames):

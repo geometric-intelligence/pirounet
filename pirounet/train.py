@@ -3,7 +3,7 @@
 import itertools
 import logging
 import os
-from os.path import exists
+import pathlib
 
 import default_config
 import evaluate.generate_f as generate_f
@@ -68,13 +68,14 @@ def run_train_dgm(
     elbo = dgm_lstm_vae.SVI(model)
     alpha = 0.1 * len(unlabelled_data_train) / len(labelled_data_train)
 
+    ROOT_PATH = pathlib.Path(__file__).parent.resolve()
     graph_constraint = dgm_lstm_vae.graph_constraint(model)
 
     if config.load_from_checkpoint is not None:
-        old_checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()),
-            "saved_models/" + config.load_from_checkpoint + ".pt",
-        )
+        old_checkpoint_filepath = ROOT_PATH / 'saved_models'
+        old_checkpoint_filepath.mkdir(exist_ok=True, parents=True)
+        old_checkpoint_filepath = (old_checkpoint_filepath / config.load_from_checkpoint).with_suffix('.pt')
+
         checkpoint = torch.load(old_checkpoint_filepath)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -83,12 +84,10 @@ def run_train_dgm(
     else:
         latest_epoch = 0
 
-    filepath_for_artifacts = os.path.join(
-        os.path.abspath(os.getcwd()), "animations/" + config.run_name
-    )
+    filepath_for_artifacts = ROOT_PATH / 'animations' / config.run_name
 
-    if exists(filepath_for_artifacts) is False:
-        os.mkdir(filepath_for_artifacts)
+    if filepath_for_artifacts.exists() is False:
+        filepath_for_artifacts.mkdir(exist_ok=True, parents=True)
 
     for epoch in range(config.epochs - latest_epoch):
 
@@ -150,16 +149,10 @@ def run_train_dgm(
                 continue
 
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
-            accuracy += torch.mean(
-                (
-                    torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices
-                ).float()
-            )
+            accuracy += torch.mean((torch.max(logits, 1).indices == torch.max(y_like_logits, 1).indices).float())
 
             if i_batch % 50 == 0 and i_batch != 0:
-                logging.info(
-                    f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}"
-                )
+                logging.info(f"Batch {i_batch}/{n_batches} at loss {total_loss / (batches_seen)}, accuracy {accuracy / (batches_seen)}")
 
                 logging.info(f"        Recon labeled-loss {labloss / (batches_seen)}")
 
@@ -169,11 +162,7 @@ def run_train_dgm(
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
-        logging.info(
-            "[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
-                total_loss / batches_seen, accuracy / batches_seen
-            )
-        )
+        logging.info("[Train]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(total_loss / batches_seen, accuracy / batches_seen))
 
         wandb.log(
             {"epoch": epoch + latest_epoch, "loss": total_loss / batches_seen},
@@ -226,21 +215,14 @@ def run_train_dgm(
             U = -elbo(x)  # MAKE IT into unlabelled data u (enumerate)
 
             logits_v = model.classify(x)
-            classification_loss_v = torch.sum(
-                y * torch.log(logits_v + 1e-8), dim=1
-            ).mean()
+            classification_loss_v = torch.sum(y * torch.log(logits_v + 1e-8), dim=1).mean()
 
             J_alpha_v = L - alpha * classification_loss_v + U
 
             total_loss_valid += J_alpha_v.item()
 
             y_like_logits = y.reshape(y.shape[0], y.shape[-1])
-            accuracy_valid += torch.mean(
-                (
-                    torch.max(logits_v, 1).indices
-                    == torch.max(y_like_logits, 1).indices
-                ).float()
-            )
+            accuracy_valid += torch.mean((torch.max(logits_v, 1).indices == torch.max(y_like_logits, 1).indices).float())
 
             if n_batches_valid <= 5 and i_batch != 0:
                 logging.info(
@@ -257,11 +239,7 @@ def run_train_dgm(
 
         logging.info(f"Epoch: {epoch + latest_epoch}")
 
-        logging.info(
-            "[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(
-                total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen
-            )
-        )
+        logging.info("[Validate]\t\t J_a: {:.2f}, mean accuracy on epoch: {:.2f}".format(total_loss_valid / batches_v_seen, accuracy_valid / batches_v_seen))
 
         wandb.log(
             {
@@ -291,12 +269,9 @@ def run_train_dgm(
 
         logging.info("Save a checkpoint.")
 
-        checkpoint_filepath = os.path.join(
-            os.path.abspath(os.getcwd()),
-            "saved_models/my_models/checkpoint_{}_epoch{}.pt".format(
-                config.run_name, epoch + latest_epoch
-            ),
-        )
+        checkpoint_filepath = ROOT_PATH / 'saved_models/my_models'
+        checkpoint_filepath.mkdir(parents=True, exist_ok=True)
+        checkpoint_filepath = checkpoint_filepath / f'checkpoint_{config.run_name}_epoch{epoch + latest_epoch}.pt'
 
         torch.save(
             {

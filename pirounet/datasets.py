@@ -45,18 +45,13 @@ def augment_by_rotations(seq_data, augmentation_factor):
         thetas = np.random.uniform(0, 2 * np.pi, size=(augmentation_factor,))
         c_thetas = np.cos(thetas)
         s_thetas = np.sin(thetas)
-        rotation_mats = [
-            np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-            for c, s in zip(c_thetas, s_thetas)
-        ]
+        rotation_mats = [np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]) for c, s in zip(c_thetas, s_thetas)]
         rotation_mats = np.stack(rotation_mats, axis=0)
         assert rotation_mats.shape == (augmentation_factor, 3, 3), rotation_mats.shape
         seq_len, input_features = seq.shape
         seq = seq.reshape((seq_len, -1, 3))
         rotated_seq = np.einsum("...j, nij->...ni", seq, rotation_mats)
-        rotated_seq = rotated_seq.reshape(
-            (augmentation_factor, seq_len, input_features)
-        )
+        rotated_seq = rotated_seq.reshape((augmentation_factor, seq_len, input_features))
         rotated_seq_data.append(rotated_seq)
 
     seq_data = np.stack(rotated_seq_data, axis=0).reshape((-1, seq_len, input_features))
@@ -92,6 +87,7 @@ def load_raw(pattern="data/mariel_*.npy"):
         with all datasets centered, i.e. with the x and
         y offsets subtracted from each individual frame.
     """
+
     datasets = {}
     ds_all = []
 
@@ -104,7 +100,7 @@ def load_raw(pattern="data/mariel_*.npy"):
     for f in sorted(glob(pattern)):
         ds_name = os.path.basename(f)[7:-4]
         ds = np.load(f).transpose((1, 0, 2))
-        ds = ds[500:-500, point_mask]
+        ds = ds[:, point_mask]
 
         logging.info(f"- {f} of shape {ds.shape}")
 
@@ -252,9 +248,7 @@ def augment_labels(labels_with_index, seq_len=default_config.seq_len):
                     between_lab = np.array(between_lab).reshape((-1, 2))
 
                 all_between_lab = np.append(all_between_lab, between_lab, axis=0)
-    all_between_lab = all_between_lab[
-        1:,
-    ]
+    all_between_lab = all_between_lab[1:,]
 
     # Label sequences starting 6 poses before and after each block sequence
     extra_frames = 6
@@ -272,29 +266,19 @@ def augment_labels(labels_with_index, seq_len=default_config.seq_len):
         if index_labelled != 0:
             for i in range(extra_frames + 1):
                 i_rev = extra_frames - i
-                extra_label_neg = np.expand_dims(
-                    [index_labelled - (i_rev + 1), effort], axis=0
-                )
+                extra_label_neg = np.expand_dims([index_labelled - (i_rev + 1), effort], axis=0)
                 fuzzy_labels = np.append(fuzzy_labels, extra_label_neg, axis=0)
 
-            fuzzy_labels = np.append(
-                fuzzy_labels, labels_with_index[j].reshape((1, 2)), axis=0
-            )
+            fuzzy_labels = np.append(fuzzy_labels, labels_with_index[j].reshape((1, 2)), axis=0)
 
             for i in range(extra_frames + 1):
-                extra_label_pos = np.expand_dims(
-                    [index_labelled + (i + 1), effort], axis=0
-                )
+                extra_label_pos = np.expand_dims([index_labelled + (i + 1), effort], axis=0)
                 fuzzy_labels = np.append(fuzzy_labels, extra_label_pos, axis=0)
-    fuzzy_labels = fuzzy_labels[
-        1:,
-    ]
+    fuzzy_labels = fuzzy_labels[1:,]
 
     nonunique = np.append(all_between_lab, fuzzy_labels, axis=0)
 
-    labels_with_index_aug = nonunique[
-        np.unique(nonunique[:, 0], axis=0, return_index=True)[1]
-    ]
+    labels_with_index_aug = nonunique[np.unique(nonunique[:, 0], axis=0, return_index=True)[1]]
     return labels_with_index_aug
 
 
@@ -370,16 +354,13 @@ def sequify_lab_data(labels_ind, pose_data, seq_len, augmentation_factor):
     """
     seq_data = np.zeros((len(labels_ind), seq_len, pose_data.shape[1]))
     for i in range(len(labels_ind)):
-        start_ind = int(labels_ind[i])
+        start_ind = int(labels_ind[i].flat[0])
         seq_data[i] = pose_data[start_ind : start_ind + int(seq_len)]
 
     logging.info(f"Preprocessing: Load labelled data of shape {seq_data.shape}")
 
     if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
+        logging.info("Preprocessing: data augmentation by rotations, " f"factor = {augmentation_factor}")
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Augmented labelled data has shape: {seq_data.shape}")
 
@@ -472,10 +453,7 @@ def get_model_data(config):
 
     augmentation_factor = 1
     if augmentation_factor > 1:
-        logging.info(
-            "Preprocessing: data augmentation by rotations, "
-            f"factor = {augmentation_factor}"
-        )
+        logging.info("Preprocessing: data augmentation by rotations, " f"factor = {augmentation_factor}")
         seq_data = augment_by_rotations(seq_data, augmentation_factor)
         logging.info(f">> Unlabelled augmented seq_data has shape: {seq_data.shape}")
         aug_labels_ind = []
@@ -541,27 +519,13 @@ def get_model_data(config):
 
     logging.info("Preprocessing: Convert into torch dataloader")
 
-    labelled_data_train = torch.utils.data.DataLoader(
-        seq_data_train_labelled, batch_size=config.batch_size, drop_last=True
-    )
-    labels_train_true = torch.utils.data.DataLoader(
-        labels_train_true, batch_size=config.batch_size, drop_last=True
-    )
-    unlabelled_data_train = torch.utils.data.DataLoader(
-        seq_data_train_unlab, batch_size=config.batch_size
-    )
-    labelled_data_valid = torch.utils.data.DataLoader(
-        seq_data_val_labelled, batch_size=config.batch_size, drop_last=True
-    )
-    labels_valid = torch.utils.data.DataLoader(
-        labels_val, batch_size=config.batch_size, drop_last=True
-    )
-    labelled_data_test = torch.utils.data.DataLoader(
-        seq_data_test_labelled, batch_size=1, drop_last=True
-    )
-    labels_test = torch.utils.data.DataLoader(
-        labels_test, batch_size=config.batch_size, drop_last=True
-    )
+    labelled_data_train = torch.utils.data.DataLoader(seq_data_train_labelled, batch_size=config.batch_size, drop_last=True)
+    labels_train_true = torch.utils.data.DataLoader(labels_train_true, batch_size=config.batch_size, drop_last=True)
+    unlabelled_data_train = torch.utils.data.DataLoader(seq_data_train_unlab, batch_size=config.batch_size)
+    labelled_data_valid = torch.utils.data.DataLoader(seq_data_val_labelled, batch_size=config.batch_size, drop_last=True)
+    labels_valid = torch.utils.data.DataLoader(labels_val, batch_size=config.batch_size, drop_last=True)
+    labelled_data_test = torch.utils.data.DataLoader(seq_data_test_labelled, batch_size=1, drop_last=True)
+    labels_test = torch.utils.data.DataLoader(labels_test, batch_size=config.batch_size, drop_last=True)
     unlabelled_data_test = torch.utils.data.DataLoader(
         seq_data_test_unlab,
         batch_size=1,
@@ -639,23 +603,17 @@ def get_model_specific_data(config):
     labels = labels.reshape((labels.shape[0], 1, labels.shape[-1]))
 
     # sequify both sets of data
-    seq_data_lab = sequify_lab_data(
-        labels_ind, pose_data, config.seq_len, augmentation_factor=1
-    )
+    seq_data_lab = sequify_lab_data(labels_ind, pose_data, config.seq_len, augmentation_factor=1)
     seq_data_unlab = sequify_all_data(pose_data, config.seq_len, augmentation_factor=1)
 
     # divide labelled data into training, validating, and testing sets
     one_perc_lab = int(round(len(labels_ind) * 0.01))
     five_perc_lab = int(one_perc_lab * 5)
-    new_stopping_point = (
-        int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
-    )
+    new_stopping_point = int(round(len(labels_ind) * config.fraction_label)) + five_perc_lab
 
     labelled_data_valid_ds = seq_data_lab[:(five_perc_lab), :, :]
     labelled_data_train_ds = seq_data_lab[(five_perc_lab):new_stopping_point, :, :]
-    labelled_data_test_ds = seq_data_lab[
-        ((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :
-    ]
+    labelled_data_test_ds = seq_data_lab[((five_perc_lab * 19) + (one_perc_lab * 2)) :, :, :]
 
     # divide labels into training, validating, and testing sets
     labels_valid_ds = labels[:(five_perc_lab), :, :]
@@ -665,12 +623,8 @@ def get_model_specific_data(config):
     # divide unlabelled data into training and testing sets
     five_perc_unlab = int(round(seq_data_unlab.shape[0] * 0.05))
     ninety_perc_unlab = seq_data_unlab.shape[0] - (2 * five_perc_unlab)
-    unlabelled_data_train_ds = seq_data_unlab[
-        : (ninety_perc_unlab + five_perc_unlab), :, :
-    ]
-    unlabelled_data_test_ds = seq_data_unlab[
-        (ninety_perc_unlab + five_perc_unlab) :, :, :
-    ]
+    unlabelled_data_train_ds = seq_data_unlab[: (ninety_perc_unlab + five_perc_unlab), :, :]
+    unlabelled_data_test_ds = seq_data_unlab[(ninety_perc_unlab + five_perc_unlab) :, :, :]
 
     logging.info(f">> Labelled Train ds has shape {labelled_data_train_ds.shape}")
     logging.info(f">> Unlabelled Train ds has shape {unlabelled_data_train_ds.shape}")
@@ -683,27 +637,13 @@ def get_model_specific_data(config):
 
     logging.info("Preprocessing: Convert into torch dataloader")
 
-    labelled_data_train = torch.utils.data.DataLoader(
-        labelled_data_train_ds, batch_size=config.batch_size, drop_last=True
-    )
-    labels_train = torch.utils.data.DataLoader(
-        labels_train_ds, batch_size=config.batch_size, drop_last=True
-    )
-    unlabelled_data_train = torch.utils.data.DataLoader(
-        unlabelled_data_train_ds, batch_size=config.batch_size
-    )
-    labelled_data_valid = torch.utils.data.DataLoader(
-        labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True
-    )
-    labels_valid = torch.utils.data.DataLoader(
-        labels_valid_ds, batch_size=config.batch_size, drop_last=True
-    )
-    labelled_data_test = torch.utils.data.DataLoader(
-        labelled_data_test_ds, batch_size=1, drop_last=True
-    )
-    labels_test = torch.utils.data.DataLoader(
-        labels_test_ds, batch_size=config.batch_size, drop_last=True
-    )
+    labelled_data_train = torch.utils.data.DataLoader(labelled_data_train_ds, batch_size=config.batch_size, drop_last=True)
+    labels_train = torch.utils.data.DataLoader(labels_train_ds, batch_size=config.batch_size, drop_last=True)
+    unlabelled_data_train = torch.utils.data.DataLoader(unlabelled_data_train_ds, batch_size=config.batch_size)
+    labelled_data_valid = torch.utils.data.DataLoader(labelled_data_valid_ds, batch_size=config.batch_size, drop_last=True)
+    labels_valid = torch.utils.data.DataLoader(labels_valid_ds, batch_size=config.batch_size, drop_last=True)
+    labelled_data_test = torch.utils.data.DataLoader(labelled_data_test_ds, batch_size=1, drop_last=True)
+    labels_test = torch.utils.data.DataLoader(labels_test_ds, batch_size=config.batch_size, drop_last=True)
     unlabelled_data_test = torch.utils.data.DataLoader(
         unlabelled_data_test_ds,
         batch_size=1,
